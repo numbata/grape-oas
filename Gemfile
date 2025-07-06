@@ -14,8 +14,10 @@ gem "grape", case version = ENV.fetch("GRAPE_VERSION", "< 3.0")
              end
 
 group :development, :test do
+  gem "debug"
   gem "rack"
   gem "rack-test"
   gem "rake"
   gem "rubocop", require: false
+  gem "rubocop-minitest", require: false
 end

@@ -1,3 +1,6 @@
+plugins:
+  - rubocop-minitest
+
 AllCops:
   TargetRubyVersion: 3.1
   UseCache: true
@@ -16,3 +19,13 @@ Style/StringLiteralsInInterpolation:
 
 Style/TrailingCommaInArguments:
   EnforcedStyleForMultiline: consistent_comma
+
+Style/Documentation:
+  Enabled: false
+
+Metrics/AbcSize:
+  Exclude:
+    - test/**/*
+
+Minitest/MultipleAssertions:
+  Enabled: false
