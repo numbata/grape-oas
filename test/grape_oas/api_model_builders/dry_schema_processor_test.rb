@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "dry/validation"
 
 module GrapeOAS
   module ApiModelBuilders
@@ -13,10 +12,11 @@ module GrapeOAS
       def test_or_branch_intersection_keeps_common_enum
         ast = [:or, [
           [:predicate, [:included_in?, [[:list, %w[a b]], [:input, nil]]]],
-          [:predicate, [:included_in?, [[:list, %w[b c]], [:input, nil]]]],
+          [:predicate, [:included_in?, [[:list, %w[b c]], [:input, nil]]]]
         ]]
 
         constraints = processor.new(nil).send(:walk_ast, ast)
+
         assert_equal %w[b], constraints.enum
       end
 
@@ -71,7 +71,7 @@ module GrapeOAS
       def test_min_max_predicates_map_to_bounds
         ast = [:and, [
           [:predicate, [:min?, [[:num, 2], [:input, nil]]]],
-          [:predicate, [:max?, [[:num, 5], [:input, nil]]]],
+          [:predicate, [:max?, [[:num, 5], [:input, nil]]]]
         ]]
         constraints = processor.new(nil).send(:walk_ast, ast)
         schema = GrapeOAS::ApiModel::Schema.new(type: "integer")
@@ -98,6 +98,33 @@ module GrapeOAS
         processor.new(nil).send(:apply_rule_constraints, schema, constraints)
 
         assert_equal "odd", schema.extensions["x-numberParity"]
+      end
+
+      def test_multiple_of_and_bytesize_and_true_false
+        ast_mult = [:predicate, [:multiple_of?, [[:num, 5]]]]
+        ast_true = [:predicate, [:true?, [[:input, nil]]]]
+        ast_false = [:predicate, [:false?, [[:input, nil]]]]
+        ast_bytes = [:predicate, [:bytesize?, [[:num, 3], [:num, 8]]]]
+
+        mult_constraints = processor.new(nil).send(:walk_ast, ast_mult)
+        bytes_constraints = processor.new(nil).send(:walk_ast, ast_bytes)
+        true_constraints = processor.new(nil).send(:walk_ast, ast_true)
+        false_constraints = processor.new(nil).send(:walk_ast, ast_false)
+
+        num_schema = GrapeOAS::ApiModel::Schema.new(type: "integer")
+        str_schema = GrapeOAS::ApiModel::Schema.new(type: "string")
+        bool_schema = GrapeOAS::ApiModel::Schema.new(type: "boolean")
+
+        processor.new(nil).send(:apply_rule_constraints, num_schema, mult_constraints)
+        processor.new(nil).send(:apply_rule_constraints, str_schema, bytes_constraints)
+        processor.new(nil).send(:apply_rule_constraints, bool_schema, true_constraints)
+        bool_schema = GrapeOAS::ApiModel::Schema.new(type: "boolean")
+        processor.new(nil).send(:apply_rule_constraints, bool_schema, false_constraints)
+
+        assert_equal 5, num_schema.extensions&.fetch("multipleOf")
+        assert_equal 3, str_schema.min_length
+        assert_equal 8, str_schema.max_length
+        assert_equal [false], bool_schema.enum
       end
 
       def test_uuid_and_email_formats

@@ -43,17 +43,28 @@ module GrapeOAS
 
         def build_headers(headers)
           return nil unless headers && !headers.empty?
+
           headers.each_with_object({}) do |hdr, h|
             name = hdr[:name] || hdr["name"] || hdr[:key] || hdr["key"]
             next unless name
-            h[name] = hdr[:schema] || hdr["schema"] || { "type" => "string" }
+
+            header_schema = hdr[:schema] || hdr["schema"] || { "type" => "string" }
+            if header_schema.is_a?(Hash) && header_schema.key?("schema")
+              h[name] = header_schema
+            else
+              h[name] = { "type" => header_schema["type"] || header_schema[:type] || header_schema }
+              desc = header_schema[:description] || header_schema["description"] if header_schema.is_a?(Hash)
+              h[name]["description"] = desc if desc
+            end
           end
         end
 
         def build_examples(media_types)
           return nil unless media_types
+
           mt = Array(media_types).first
           return nil unless mt&.examples
+
           mt.examples.is_a?(Hash) ? mt.examples : { mt.mime_type => mt.examples }
         end
       end

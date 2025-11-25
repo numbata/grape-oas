@@ -22,12 +22,13 @@ class DocumentationExtensionTest < Minitest::Test
         api_key: { type: "apiKey", name: "X-API-Key", in: "header" }
       },
       security: [{ api_key: [] }],
-      info: { title: "Doc API", version: "2.0" }
+      info: { title: "Doc API", version: "2.0" },
     )
   end
 
   def test_oas2_output_from_mounted_endpoint
     resp = Rack::MockRequest.new(DocAPI).get("/swagger_doc.json?oas=2")
+
     assert_equal 200, resp.status
     body = JSON.parse(resp.body)
 
@@ -42,12 +43,14 @@ class DocumentationExtensionTest < Minitest::Test
 
   def test_oas3_output_from_mounted_endpoint
     resp = Rack::MockRequest.new(DocAPI).get("/swagger_doc.json?oas=3")
+
     assert_equal 200, resp.status
     body = JSON.parse(resp.body)
 
     assert_equal "3.0.0", body["openapi"]
     assert_equal "Doc API", body.dig("info", "title")
     server_url = body.dig("servers", 0, "url")
+
     assert_equal "https://api.example.com/v1", server_url
     assert body.dig("components", "securitySchemes", "api_key")
     assert_equal [{ "api_key" => [] }], body["security"]

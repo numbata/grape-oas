@@ -55,8 +55,10 @@ module GrapeOAS
       def media_type_extensions(mime)
         content = documentation_options[:content]
         return nil unless content.is_a?(Hash)
+
         mt = content[mime] || content[mime.to_sym]
         return nil unless mt.is_a?(Hash)
+
         ext = mt.select { |k, _| k.to_s.start_with?("x-") }
         ext unless ext.empty?
       end
@@ -72,9 +74,7 @@ module GrapeOAS
                        contract
                      end
 
-        if schema_obj && schema_obj.respond_to?(:types)
-          return GrapeOAS::ApiModelBuilders::DrySchemaProcessor.build(schema_obj)
-        end
+        return GrapeOAS::ApiModelBuilders::DrySchemaProcessor.build(schema_obj) if schema_obj.respond_to?(:types)
 
         contract_hash = if contract.respond_to?(:to_h)
                           contract.to_h
@@ -175,9 +175,7 @@ module GrapeOAS
           return [Array, dry_type.type.member]
         end
 
-        if dry_type.respond_to?(:member)
-          return [Array, dry_type.member]
-        end
+        return [Array, dry_type.member] if dry_type.respond_to?(:member)
 
         primitive = dry_type.respond_to?(:primitive) ? dry_type.primitive : nil
         [primitive, nil]
@@ -211,6 +209,7 @@ module GrapeOAS
 
       def merge_rule_constraints(schema, rc)
         return unless rc
+
         schema.enum ||= rc[:enum]
         schema.nullable ||= rc[:nullable]
         schema.min_length ||= rc[:min] if rc[:min]
@@ -224,16 +223,20 @@ module GrapeOAS
       # Very small parser for FakeType rule_ast used in tests
       def extract_rule_constraints(schema_obj)
         return {} unless schema_obj.respond_to?(:rules)
+
         # Only supports FakeSchema/FakeType used in tests
         constraints = Hash.new { |h, k| h[k] = {} }
         if schema_obj.respond_to?(:types)
           schema_obj.types.each do |name, dry_type|
             next unless dry_type.respond_to?(:rule_ast)
+
             rules = dry_type.rule_ast
             Array(rules).each do |rule|
               next unless rule.is_a?(Array)
+
               _, pred = rule
               next unless pred.is_a?(Array)
+
               pname, pargs = pred
               case pname
               when :size?
@@ -253,6 +256,7 @@ module GrapeOAS
 
       def extract_enum_from_core_values(core)
         return unless core.respond_to?(:values)
+
         vals = core.values
         vals if vals.is_a?(Array)
       rescue StandardError

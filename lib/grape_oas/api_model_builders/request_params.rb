@@ -66,7 +66,8 @@ module GrapeOAS
         schema = if (type_source == Array || type_source.to_s == "Array") && grape_entity?(doc_type || spec[:elements] || spec[:of])
                    entity_type = resolve_entity_class(extract_entity_type_from_array(spec, raw_type, doc_type))
                    items = GrapeOAS::EntityIntrospector.new(entity_type).build_schema if entity_type
-                   items ||= GrapeOAS::ApiModel::Schema.new(type: sanitize_type(extract_entity_type_from_array(spec, raw_type)))
+                   items ||= GrapeOAS::ApiModel::Schema.new(type: sanitize_type(extract_entity_type_from_array(spec,
+                                                                                                               raw_type,)))
                    GrapeOAS::ApiModel::Schema.new(type: "array", items: items)
                  elsif doc[:is_array] && grape_entity?(doc_type)
                    entity_class = resolve_entity_class(doc_type)
@@ -93,8 +94,12 @@ module GrapeOAS
 
         schema.description ||= doc[:desc]
         schema.nullable = nullable if schema.respond_to?(:nullable=)
-        schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties) && schema.respond_to?(:additional_properties=)
-        schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties) && schema.respond_to?(:unevaluated_properties=)
+        if doc.key?(:additional_properties) && schema.respond_to?(:additional_properties=)
+          schema.additional_properties = doc[:additional_properties]
+        end
+        if doc.key?(:unevaluated_properties) && schema.respond_to?(:unevaluated_properties=)
+          schema.unevaluated_properties = doc[:unevaluated_properties]
+        end
         defs = doc[:defs] || doc[:$defs]
         schema.defs = defs if defs.is_a?(Hash) && schema.respond_to?(:defs=)
         schema
@@ -108,11 +113,13 @@ module GrapeOAS
         return spec[:elements] if grape_entity?(spec[:elements])
         return spec[:of] if grape_entity?(spec[:of])
         return doc_type if grape_entity?(doc_type)
+
         raw_type
       end
 
       def sanitize_type(type)
         return "object" if grape_entity?(type)
+
         type = type.to_s if type.is_a?(Symbol)
         case type
         when Integer
@@ -133,8 +140,11 @@ module GrapeOAS
       def resolve_entity_class(type)
         return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
         return nil unless type.is_a?(String) || type.is_a?(Symbol)
+
         const_name = type.to_s
-        Object.const_get(const_name) if Object.const_defined?(const_name) && Object.const_get(const_name).is_a?(Class) && Object.const_get(const_name) <= (defined?(Grape::Entity) ? Grape::Entity : Object)
+        if Object.const_defined?(const_name) && Object.const_get(const_name).is_a?(Class) && Object.const_get(const_name) <= (defined?(Grape::Entity) ? Grape::Entity : Object)
+          Object.const_get(const_name)
+        end
       rescue NameError
         nil
       end

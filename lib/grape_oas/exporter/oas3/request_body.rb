@@ -19,7 +19,7 @@ module GrapeOAS
             "content" => build_content(@request_body.media_types)
           }.compact
 
-          data.merge!(@request_body.extensions) if @request_body.extensions && @request_body.extensions.any?
+          data.merge!(@request_body.extensions) if @request_body.extensions&.any?
           data
         end
 
@@ -33,7 +33,7 @@ module GrapeOAS
               "schema" => Schema.new(mt.schema, @ref_tracker, nullable_keyword: @nullable_keyword).build,
               "examples" => mt.examples
             }.compact
-            entry.merge!(mt.extensions) if mt.extensions && mt.extensions.any?
+            entry.merge!(mt.extensions) if mt.extensions&.any?
             h[mt.mime_type] = entry
           end
         end

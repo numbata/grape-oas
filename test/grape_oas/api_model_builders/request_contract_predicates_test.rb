@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "dry/validation"
 
 module GrapeOAS
   module ApiModelBuilders
@@ -14,7 +13,8 @@ module GrapeOAS
 
       def test_string_size_and_format_and_enum
         contract = Dry::Schema.Params do
-          optional(:status).maybe(:string, min_size?: 5, max_size?: 50, format?: /\A[a-z]+\z/, included_in?: %w[draft published])
+          optional(:status).maybe(:string, min_size?: 5, max_size?: 50, format?: /\A[a-z]+\z/,
+                                           included_in?: %w[draft published],)
         end
 
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
@@ -23,6 +23,7 @@ module GrapeOAS
         Request.new(api: api, route: route, operation: operation).build
 
         status = operation.request_body.media_types.first.schema.properties["status"]
+
         assert_equal 5, status.min_length
         assert_equal 50, status.max_length
         assert_equal "\\A[a-z]+\\z", status.pattern
@@ -42,6 +43,7 @@ module GrapeOAS
         Request.new(api: api, route: route, operation: operation).build
 
         score = operation.request_body.media_types.first.schema.properties["score"]
+
         assert_equal 1, score.minimum
         assert_equal 10, score.maximum
         assert_equal [5], score.extensions["x-excludedValues"]
@@ -59,6 +61,7 @@ module GrapeOAS
         Request.new(api: api, route: route, operation: operation).build
 
         tags = operation.request_body.media_types.first.schema.properties["tags"]
+
         assert_equal "array", tags.type
         assert_equal "string", tags.items.type
         assert_equal 1, tags.min_items

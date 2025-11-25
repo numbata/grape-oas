@@ -20,6 +20,7 @@ module GrapeOAS
 
         refute_nil operation.request_body
         schema = operation.request_body.media_types.first.schema
+
         assert_equal "object", schema.type
         assert_includes schema.properties.keys, "filter"
         assert_equal "array", schema.properties["filter"].type
@@ -34,6 +35,7 @@ module GrapeOAS
 
         schema = operation.request_body.media_types.first.schema
         note = schema.properties["note"]
+
         assert note.nullable
       end
 
@@ -51,8 +53,10 @@ module GrapeOAS
         Request.new(api: @api, route: route, operation: operation).build
 
         rb = operation.request_body
+
         assert_equal "rb", rb.extensions["x-req"]
         mt = rb.media_types.first
+
         assert_equal "ct", mt.extensions["x-ct"]
       end
     end

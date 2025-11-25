@@ -74,7 +74,7 @@ module GrapeOAS
       def test_extracts_tags
         api_class = Class.new(Grape::API) do
           format :json
-          desc "Get users", tags: ["users", "admin"]
+          desc "Get users", tags: %w[users admin]
           get "users" do
             {}
           end
@@ -84,7 +84,7 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route)
         operation = builder.build
 
-        assert_equal ["users", "admin"], operation.tag_names
+        assert_equal %w[users admin], operation.tag_names
       end
 
       def test_adds_tags_to_api
@@ -117,6 +117,7 @@ module GrapeOAS
 
         assert_equal 1, operation.responses.size
         response = operation.responses.first
+
         assert_equal "200", response.http_status
       end
 
@@ -135,7 +136,7 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route)
         operation = builder.build
 
-        assert operation.parameters.any? { |p| p.name == "id" }
+        assert(operation.parameters.any? { |p| p.name == "id" })
       end
     end
   end

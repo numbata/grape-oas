@@ -72,6 +72,7 @@ module GrapeOAS
       def operation_extensions
         doc = route.options[:documentation]
         return nil unless doc.is_a?(Hash)
+
         ext = doc.select { |k, _| k.to_s.start_with?("x-") }
         ext unless ext.empty?
       end

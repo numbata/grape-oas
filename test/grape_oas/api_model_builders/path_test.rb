@@ -22,6 +22,7 @@ module GrapeOAS
 
         assert_equal 1, @api.paths.size
         path = @api.paths.first
+
         assert_equal "/users", path.template
       end
 
@@ -37,6 +38,7 @@ module GrapeOAS
         builder.build
 
         path = @api.paths.first
+
         assert_equal "/users/{id}", path.template
       end
 
@@ -51,6 +53,7 @@ module GrapeOAS
         builder.build
 
         path = @api.paths.first
+
         assert_equal "/users", path.template
       end
 
@@ -72,8 +75,10 @@ module GrapeOAS
 
         assert_equal 1, @api.paths.size
         path = @api.paths.first
+
         assert_equal 2, path.operations.size
         methods = path.operations.map(&:http_method)
+
         assert_includes methods, "get"
         assert_includes methods, "post"
       end
@@ -94,6 +99,7 @@ module GrapeOAS
 
         assert_equal 1, @api.paths.size
         path = @api.paths.first
+
         assert_equal "/visible", path.template
       end
 
@@ -109,6 +115,7 @@ module GrapeOAS
         builder.build
 
         path = @api.paths.first
+
         assert_equal "/users/{user_id}/posts/{post_id}", path.template
       end
     end

@@ -29,14 +29,17 @@ module GrapeOAS
         responses = builder.build
 
         codes = responses.map(&:http_status)
+
         assert_includes codes, "201"
         assert_includes codes, "422"
 
         hdrs_422 = responses.find { |r| r.http_status == "422" }.headers
+
         assert_equal "X-Error", hdrs_422.first[:name]
 
         resp_201 = responses.find { |r| r.http_status == "201" }
         hdrs_default = resp_201.headers
+
         assert_equal "X-Trace", hdrs_default.first[:name]
         assert_equal 10, resp_201.extensions[:"x-rate-limit"]
       end

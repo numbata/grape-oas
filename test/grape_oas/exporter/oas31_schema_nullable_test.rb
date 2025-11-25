@@ -9,7 +9,8 @@ module GrapeOAS
         schema = ApiModel::Schema.new(type: "string", nullable: true)
         built = Exporter::OAS31Schema.new(api_model: dummy_api(schema)).generate
         param_schema = built["paths"]["/x"]["get"]["parameters"].first["schema"]
-        assert_equal ["string", "null"], param_schema["type"]
+
+        assert_equal %w[string null], param_schema["type"]
       end
 
       private
@@ -17,7 +18,10 @@ module GrapeOAS
       def dummy_api(schema)
         api = ApiModel::API.new(title: "t", version: "v")
         path = ApiModel::Path.new(template: "/x")
-        op = ApiModel::Operation.new(http_method: :get, parameters: [ApiModel::Parameter.new(location: "query", name: "q", schema: schema)])
+        op = ApiModel::Operation.new(http_method: :get,
+                                     parameters: [ApiModel::Parameter.new(
+                                       location: "query", name: "q", schema: schema,
+                                     )],)
         path.add_operation(op)
         api.add_path(path)
         api

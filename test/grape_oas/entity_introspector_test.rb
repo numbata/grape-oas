@@ -19,6 +19,9 @@ module GrapeOAS
       expose :tags, documentation: { type: String, is_array: true, values: %w[a b] }
       expose :nickname, documentation: { type: String, example: "JJ", format: "nickname" }
       expose :profile, using: ProfileEntity, documentation: { type: ProfileEntity }
+      def self.documentation
+        { "x-entity-root" => "root-ext" }
+      end
     end
 
     def test_builds_properties_and_refs
@@ -29,24 +32,31 @@ module GrapeOAS
       assert_equal %w[address id name nickname profile tags].sort, schema.properties.keys.sort
 
       id_schema = schema.properties["id"]
+
       assert_equal "integer", id_schema.type
       assert id_schema.nullable
 
       addr_schema = schema.properties["address"]
+
       assert_equal "object", addr_schema.type
       assert_equal "GrapeOAS::EntityIntrospectorTest::AddressEntity", addr_schema.canonical_name
 
       tags_schema = schema.properties["tags"]
+
       assert_equal "array", tags_schema.type
       assert_equal %w[a b], tags_schema.items.enum
 
       nick_schema = schema.properties["nickname"]
+
       assert_equal "nickname", nick_schema.format
       assert_equal "JJ", nick_schema.examples
 
       profile = schema.properties["profile"]
+
       assert_equal "object", profile.type
       assert_includes profile.properties.keys, "bio"
+
+      assert_equal "root-ext", schema.extensions["x-entity-root"]
     end
   end
 end

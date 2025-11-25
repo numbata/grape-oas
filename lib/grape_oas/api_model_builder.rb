@@ -31,6 +31,7 @@ module GrapeOAS
 
     def normalize_base_path(path)
       return nil unless path
+
       path.start_with?("/") ? path : "/#{path}"
     end
 

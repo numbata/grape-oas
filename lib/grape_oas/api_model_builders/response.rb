@@ -39,6 +39,7 @@ module GrapeOAS
       def extract_doc_responses
         doc_resps = route.options.dig(:documentation, :responses)
         return [] unless doc_resps.is_a?(Hash)
+
         doc_resps.map do |code, doc|
           doc = doc.transform_keys { |k| k.is_a?(String) ? k.to_sym : k }
           {
@@ -103,6 +104,7 @@ module GrapeOAS
       def normalize_headers(hdrs)
         return nil if hdrs.nil?
         return hdrs if hdrs.is_a?(Array)
+
         if hdrs.is_a?(Hash)
           return hdrs.map do |name, h|
             {
@@ -142,7 +144,7 @@ module GrapeOAS
 
         schema = GrapeOAS::ApiModel::Schema.new(**schema_args)
         if entity_class
-          schema = enrich_schema_with_entity_doc(schema, entity_class)
+          enrich_schema_with_entity_doc(schema, entity_class)
           schema = GrapeOAS::EntityIntrospector.new(entity_class).build_schema
         end
         schema
@@ -157,6 +159,7 @@ module GrapeOAS
 
       def enrich_schema_with_entity_doc(schema, entity_class)
         return schema unless entity_class.respond_to?(:documentation)
+
         doc = entity_class.documentation
         schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
         schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)

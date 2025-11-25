@@ -43,5 +43,4 @@ module GrapeOAS
   module_function :generate
 end
 
-
 Grape::API::Instance.extend(GrapeOAS::DocumentationExtension)

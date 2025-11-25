@@ -24,7 +24,7 @@ module GrapeOAS
 
           data["security"] = @op.security unless @op.security.nil? || @op.security.empty?
 
-          data.merge!(@op.extensions) if @op.extensions && @op.extensions.any?
+          data.merge!(@op.extensions) if @op.extensions&.any?
 
           data
         end

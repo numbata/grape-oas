@@ -23,11 +23,13 @@ module GrapeOAS
 
       assert_kind_of Hash, schema
       assert_equal "3.1.0", schema["openapi"]
-      assert_equal "https://spec.openapis.org/oas/3.1/draft/2021-05", schema["$schema"]
+      refute schema.key?("$schema"), "OAS3.1 should omit $schema per spec"
       assert_includes schema["paths"], "/books"
       get_op = schema["paths"]["/books"]["get"]
+
       assert get_op
       params = get_op["parameters"]
+
       assert_equal "query", params.first["in"]
     end
   end

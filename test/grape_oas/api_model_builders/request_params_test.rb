@@ -25,6 +25,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         id_param = params.find { |p| p.name == "id" }
+
         assert_equal "path", id_param.location
         assert id_param.required
       end
@@ -45,6 +46,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         filter_param = params.find { |p| p.name == "filter" }
+
         assert_equal "query", filter_param.location
         refute filter_param.required
       end
@@ -65,6 +67,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         count_param = params.find { |p| p.name == "count" }
+
         assert_equal "integer", count_param.schema.type
       end
 
@@ -84,6 +87,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         price_param = params.find { |p| p.name == "price" }
+
         assert_equal "number", price_param.schema.type
       end
 
@@ -103,6 +107,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         active_param = params.find { |p| p.name == "active" }
+
         assert_equal "boolean", active_param.schema.type
       end
 
@@ -122,6 +127,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         data_param = params.find { |p| p.name == "data" }
+
         assert_equal "string", data_param.schema.type
       end
 
@@ -141,6 +147,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         api_key_param = params.find { |p| p.name == "api_key" }
+
         assert_equal "header", api_key_param.location
       end
 
@@ -183,6 +190,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         name_param = params.find { |p| p.name == "name" }
+
         assert_equal "The user name", name_param.description
       end
 
@@ -202,6 +210,7 @@ module GrapeOAS
         _body_schema, params = builder.build
 
         note_param = params.find { |p| p.name == "note" }
+
         assert note_param.schema.nullable
       end
 
@@ -227,6 +236,7 @@ module GrapeOAS
 
         assert body_schema.properties["profile"]
         profile = body_schema.properties["profile"]
+
         assert_equal "object", profile.type
         assert_equal %w[age name].sort, profile.properties.keys.sort
         assert_empty params
@@ -248,6 +258,7 @@ module GrapeOAS
         body_schema, params = builder.build
 
         profiles = body_schema.properties["profiles"]
+
         assert_equal "array", profiles.type
         assert_equal %w[age name].sort, profiles.items.properties.keys.sort
         assert_empty params

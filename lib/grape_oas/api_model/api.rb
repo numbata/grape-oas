@@ -26,7 +26,7 @@ module GrapeOAS
         @base_path  = nil
         @schemes    = []
         @security_definitions = {}
-        @security   = []
+        @security = []
       end
 
       def add_path(path)

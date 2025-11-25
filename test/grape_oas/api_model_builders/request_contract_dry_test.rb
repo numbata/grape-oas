@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "test_helper"
-require "dry/validation"
 
 module GrapeOAS
   module ApiModelBuilders
@@ -25,13 +24,16 @@ module GrapeOAS
         Request.new(api: api, route: route, operation: operation).build
 
         schema = operation.request_body.media_types.first.schema
+
         assert_equal "object", schema.type
 
         status = schema.properties["status"]
+
         assert status.nullable
         assert_equal %w[draft published], status.enum
 
         tags = schema.properties["tags"]
+
         assert_equal 1, tags.min_items
         assert_equal 3, tags.max_items
 

@@ -40,6 +40,7 @@ module GrapeOAS
 
         assert_equal 1, response.media_types.size
         media_type = response.media_types.first
+
         assert_equal "application/json", media_type.mime_type
       end
 
@@ -56,6 +57,7 @@ module GrapeOAS
         response = builder.build.first
 
         schema = response.media_types.first.schema
+
         assert_equal "string", schema.type
       end
 
@@ -78,6 +80,7 @@ module GrapeOAS
         response = builder.build.first
 
         schema = response.media_types.first.schema
+
         assert_equal "object", schema.type
         assert_equal "NamedUserEntity", schema.canonical_name
       end
@@ -99,6 +102,7 @@ module GrapeOAS
         response = builder.build.first
 
         schema = response.media_types.first.schema
+
         assert_equal "TestUserEntity", schema.canonical_name
       end
 
@@ -119,6 +123,7 @@ module GrapeOAS
         responses = builder.build
 
         codes = responses.map(&:http_status)
+
         assert_includes codes, "201"
         assert_includes codes, "422"
       end

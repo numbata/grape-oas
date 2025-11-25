@@ -20,6 +20,7 @@ module GrapeOAS
         :type_predicate,
         :parity,
         :format,
+        :extensions,
         keyword_init: true,
       )
 
@@ -54,9 +55,7 @@ module GrapeOAS
 
       def required?(dry_type)
         # prefer rule-derived info if present
-        if @current_constraints && !@current_constraints.required.nil?
-          return @current_constraints.required
-        end
+        return @current_constraints.required if @current_constraints && !@current_constraints.required.nil?
 
         meta = dry_type.respond_to?(:meta) ? dry_type.meta : {}
         return false if dry_type.respond_to?(:optional?) && dry_type.optional?
@@ -197,6 +196,11 @@ module GrapeOAS
         schema.enum ||= constraints.enum if constraints.enum
         schema.nullable = true if constraints.nullable
 
+        if constraints.extensions&.key?("multipleOf")
+          schema.extensions ||= {}
+          schema.extensions["multipleOf"] ||= constraints.extensions["multipleOf"]
+        end
+
         if constraints.excluded_values
           schema.extensions ||= {}
           schema.extensions["x-excludedValues"] ||= constraints.excluded_values
@@ -216,10 +220,14 @@ module GrapeOAS
       end
 
       def attach_unhandled(schema, constraints)
-        return unless constraints&.unhandled_predicates && !constraints.unhandled_predicates.empty?
+        return unless constraints&.unhandled_predicates
+
+        filtered = Array(constraints.unhandled_predicates) - %i[key? key str? int? bool? boolean? array? hash? number?
+                                                                float?]
+        return if filtered.empty?
 
         schema.extensions ||= {}
-        schema.extensions["x-unhandledPredicates"] = constraints.unhandled_predicates
+        schema.extensions["x-unhandledPredicates"] = filtered
       end
 
       def extract_enum_from_type(dry_type)
@@ -332,10 +340,10 @@ module GrapeOAS
         base = branches.first
         branches[1..].each do |b|
           base.enum = (base.enum & b.enum) if base.enum && b.enum
-          base.min_size = (base.min_size && b.min_size) ? [base.min_size, b.min_size].max : nil
-          base.max_size = (base.max_size && b.max_size) ? [base.max_size, b.max_size].min : nil
-          base.minimum = (base.minimum && b.minimum) ? [base.minimum, b.minimum].max : nil
-          base.maximum = (base.maximum && b.maximum) ? [base.maximum, b.maximum].min : nil
+          base.min_size = base.min_size && b.min_size ? [base.min_size, b.min_size].max : nil
+          base.max_size = base.max_size && b.max_size ? [base.max_size, b.max_size].min : nil
+          base.minimum = base.minimum && b.minimum ? [base.minimum, b.minimum].max : nil
+          base.maximum = base.maximum && b.maximum ? [base.maximum, b.maximum].min : nil
           base.exclusive_minimum &&= b.exclusive_minimum if b.exclusive_minimum == false
           base.exclusive_maximum &&= b.exclusive_maximum if b.exclusive_maximum == false
           base.nullable &&= b.nullable if b.nullable == false
@@ -350,6 +358,8 @@ module GrapeOAS
         args = Array(pred_node[1])
 
         case name
+        when :key?
+          constraints.required = true if constraints.required.nil?
         when :size?, :min_size?
           min_val = extract_numeric_arg(args[0])
           max_val = extract_numeric_arg(args[1]) if name == :size?
@@ -404,6 +414,8 @@ module GrapeOAS
           constraints.format = "uri"
         when :email?
           constraints.format = "email"
+        when :str?, :int?, :array?, :hash?, :number?, :float?
+          # already represented by type inference
         when :date?
           constraints.format = "date"
         when :time?, :date_time?
@@ -416,6 +428,20 @@ module GrapeOAS
           constraints.parity = :odd
         when :even?
           constraints.parity = :even
+        when :multiple_of?, :divisible_by?
+          val = extract_numeric_arg(args.first)
+          constraints.extensions ||= {}
+          constraints.extensions["multipleOf"] ||= val if val
+        when :bytesize?, :max_bytesize?, :min_bytesize?
+          min_val = extract_numeric_arg(args[0]) if %i[bytesize? min_bytesize?].include?(name)
+          max_source = name == :bytesize? ? args[1] : args[0]
+          max_val = extract_numeric_arg(max_source) if %i[bytesize? max_bytesize?].include?(name)
+          constraints.min_size = min_val if min_val
+          constraints.max_size = max_val if max_val
+        when :true?
+          constraints.enum = [true]
+        when :false?
+          constraints.enum = [false]
         else
           constraints.unhandled_predicates << name
         end
@@ -436,9 +462,7 @@ module GrapeOAS
       end
 
       def extract_list_arg(arg)
-        if arg.is_a?(Array)
-          return arg[1] if %i[list set].include?(arg.first)
-        end
+        return arg[1] if arg.is_a?(Array) && %i[list set].include?(arg.first)
 
         return arg if arg.is_a?(Array)
 
@@ -449,6 +473,7 @@ module GrapeOAS
         return arg unless arg.is_a?(Array)
         return arg[1] if arg.length == 2 && %i[value val literal class left right].include?(arg.first)
         return extract_literal_arg(arg.first) if arg.first.is_a?(Array)
+
         arg
       end
 
