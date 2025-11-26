@@ -41,12 +41,12 @@ module GrapeOAS
         return [] unless doc_resps.is_a?(Hash)
 
         doc_resps.map do |code, doc|
-          doc = doc.transform_keys { |k| k.is_a?(String) ? k.to_sym : k }
+          doc = normalize_hash_keys(doc)
           {
             code: code,
-            message: doc[:message] || doc[:description],
+            message: extract_description(doc),
             headers: doc[:headers],
-            entity: doc[:model] || doc[:entity] || route.options[:entity],
+            entity: extract_entity(doc),
             extensions: doc.select { |k, _| k.to_s.start_with?("x-") },
             examples: doc[:examples]
           }
@@ -59,20 +59,59 @@ module GrapeOAS
         items = value.is_a?(Hash) ? [value] : Array(value)
 
         items.map do |entry|
-          if entry.is_a?(Hash)
-            {
-              code: entry[:code] || entry[:status] || entry[:http_status] || default_status_code,
-              message: entry[:message] || entry[:desc] || entry[:description],
-              entity: entry[:model] || entry[:entity] || route.options[:entity],
-              headers: entry[:headers]
-            }
-          elsif entry.is_a?(Array)
-            code, message, entity = entry
-            { code: code, message: message, entity: entity || route.options[:entity], headers: nil }
-          else
-            { code: entry, message: nil, entity: route.options[:entity], headers: nil }
-          end
+          normalize_response_entry(entry)
         end
+      end
+
+      # Normalize a single response entry from various formats
+      def normalize_response_entry(entry)
+        case entry
+        when Hash
+          {
+            code: extract_status_code(entry),
+            message: extract_description(entry),
+            entity: extract_entity(entry),
+            headers: entry[:headers]
+          }
+        when Array
+          code, message, entity = entry
+          {
+            code: code,
+            message: message,
+            entity: entity || route.options[:entity],
+            headers: nil
+          }
+        else
+          # Plain status code (e.g., 404)
+          {
+            code: entry,
+            message: nil,
+            entity: route.options[:entity],
+            headers: nil
+          }
+        end
+      end
+
+      # Extract status code from hash, supporting multiple key names
+      def extract_status_code(hash)
+        hash[:code] || hash[:status] || hash[:http_status] || default_status_code
+      end
+
+      # Extract description from hash, supporting multiple key names
+      def extract_description(hash)
+        hash[:message] || hash[:description] || hash[:desc]
+      end
+
+      # Extract entity from hash, supporting multiple key names
+      def extract_entity(hash)
+        hash[:model] || hash[:entity] || route.options[:entity]
+      end
+
+      # Normalize hash keys (string -> symbol)
+      def normalize_hash_keys(hash)
+        return hash unless hash.is_a?(Hash)
+
+        hash.transform_keys { |k| k.is_a?(String) ? k.to_sym : k }
       end
 
       def default_status_code
@@ -104,34 +143,27 @@ module GrapeOAS
       def normalize_headers(hdrs)
         return nil if hdrs.nil?
         return hdrs if hdrs.is_a?(Array)
+        return nil unless hdrs.is_a?(Hash)
 
-        if hdrs.is_a?(Hash)
-          return hdrs.map do |name, h|
-            {
-              name: name,
-              schema: {
-                "type" => h[:type] || h["type"] || "string",
-                "description" => h[:desc] || h["description"]
-              }.compact
-            }
-          end
-        end
-        nil
+        hdrs.map { |name, h| build_header_schema(name, h) }
       end
 
       def headers_from_route
         hdrs = route.options.dig(:documentation, :headers) || route.settings.dig(:documentation, :headers)
         return [] unless hdrs.is_a?(Hash)
 
-        hdrs.map do |name, h|
-          {
-            name: name,
-            schema: {
-              "type" => h[:type] || "string",
-              "description" => h[:desc] || h[:description]
-            }.compact
-          }
-        end
+        hdrs.map { |name, h| build_header_schema(name, h) }
+      end
+
+      # Build a header schema, normalizing field names
+      def build_header_schema(name, header_spec)
+        {
+          name: name,
+          schema: {
+            "type" => header_spec[:type] || header_spec["type"] || "string",
+            "description" => extract_description(header_spec)
+          }.compact
+        }
       end
 
       def build_schema(entity_class)

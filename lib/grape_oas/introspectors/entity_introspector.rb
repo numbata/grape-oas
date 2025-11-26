@@ -19,7 +19,7 @@ module GrapeOAS
         schema = ApiModel::Schema.new(
           type: "object",
           canonical_name: @entity_class.name,
-          description: entity_doc[:desc] || entity_doc[:description],
+          description: extract_description(entity_doc),
         )
         root_ext = entity_doc.select { |k, _| k.to_s.start_with?("x-") }
         schema.extensions = root_ext if root_ext.any?
@@ -171,8 +171,18 @@ module GrapeOAS
       end
 
       def merge_exposure?(exposure, doc, opts)
-        merge_flag = opts[:merge] || doc[:merge] || (exposure.respond_to?(:for_merge) && exposure.for_merge)
+        merge_flag = extract_merge_flag(exposure, doc, opts)
         merge_flag && resolve_entity_from_opts(exposure, doc)
+      end
+
+      # Extract description from hash, supporting multiple key names
+      def extract_description(hash)
+        hash[:description] || hash[:desc]
+      end
+
+      # Extract merge flag from multiple sources
+      def extract_merge_flag(exposure, doc, opts)
+        opts[:merge] || doc[:merge] || (exposure.respond_to?(:for_merge) && exposure.for_merge)
       end
     end
   end

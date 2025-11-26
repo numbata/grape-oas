@@ -61,7 +61,7 @@ module GrapeOAS
         type_source = spec[:type]
         doc_type = doc[:type]
         raw_type = type_source || doc_type
-        nullable = spec[:allow_nil] || spec[:nullable] || doc[:nullable] || false
+        nullable = extract_nullable(spec, doc)
 
         schema = if (type_source == Array || type_source.to_s == "Array") && grape_entity?(doc_type || spec[:elements] || spec[:of])
                    entity_type = resolve_entity_class(extract_entity_type_from_array(spec, raw_type, doc_type))
@@ -100,9 +100,19 @@ module GrapeOAS
         if doc.key?(:unevaluated_properties) && schema.respond_to?(:unevaluated_properties=)
           schema.unevaluated_properties = doc[:unevaluated_properties]
         end
-        defs = doc[:defs] || doc[:$defs]
+        defs = extract_defs(doc)
         schema.defs = defs if defs.is_a?(Hash) && schema.respond_to?(:defs=)
         schema
+      end
+
+      # Extract nullable flag from spec and documentation, supporting multiple key names
+      def extract_nullable(spec, doc)
+        spec[:allow_nil] || spec[:nullable] || doc[:nullable] || false
+      end
+
+      # Extract defs from documentation, supporting multiple key names
+      def extract_defs(doc)
+        doc[:defs] || doc[:$defs]
       end
 
       def grape_entity?(type)

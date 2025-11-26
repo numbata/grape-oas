@@ -145,14 +145,28 @@ module GrapeOAS
       end
 
       def apply_string_meta(schema, meta)
-        schema.min_length = meta[:min_size] || meta[:min_length] if meta[:min_size] || meta[:min_length]
-        schema.max_length = meta[:max_size] || meta[:max_length] if meta[:max_size] || meta[:max_length]
+        min_length = extract_min_constraint(meta)
+        max_length = extract_max_constraint(meta)
+        schema.min_length = min_length if min_length
+        schema.max_length = max_length if max_length
         schema.pattern = meta[:pattern] if meta[:pattern]
       end
 
       def apply_array_meta(schema, meta)
-        schema.min_items = meta[:min_size] || meta[:min_items] if meta[:min_size] || meta[:min_items]
-        schema.max_items = meta[:max_size] || meta[:max_items] if meta[:max_size] || meta[:max_items]
+        min_items = extract_min_constraint(meta, :min_items)
+        max_items = extract_max_constraint(meta, :max_items)
+        schema.min_items = min_items if min_items
+        schema.max_items = max_items if max_items
+      end
+
+      # Extract minimum constraint, supporting multiple key names
+      def extract_min_constraint(meta, specific_key = :min_length)
+        meta[:min_size] || meta[specific_key]
+      end
+
+      # Extract maximum constraint, supporting multiple key names
+      def extract_max_constraint(meta, specific_key = :max_length)
+        meta[:max_size] || meta[specific_key]
       end
 
       def apply_numeric_meta(schema, meta)
