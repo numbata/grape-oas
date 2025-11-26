@@ -29,12 +29,23 @@ module GrapeOAS
           return nil unless media_types
 
           media_types.each_with_object({}) do |mt, h|
+            schema_entry = build_schema_or_ref(mt.schema)
             entry = {
-              "schema" => Schema.new(mt.schema, @ref_tracker, nullable_keyword: @nullable_keyword).build,
+              "schema" => schema_entry,
               "examples" => mt.examples
             }.compact
             entry.merge!(mt.extensions) if mt.extensions&.any?
             h[mt.mime_type] = entry
+          end
+        end
+
+        def build_schema_or_ref(schema)
+          if schema.respond_to?(:canonical_name) && schema.canonical_name
+            @ref_tracker << schema.canonical_name if @ref_tracker
+            ref_name = schema.canonical_name.gsub("::", "_")
+            { "$ref" => "#/components/schemas/#{ref_name}" }
+          else
+            Schema.new(schema, @ref_tracker, nullable_keyword: @nullable_keyword).build
           end
         end
       end
