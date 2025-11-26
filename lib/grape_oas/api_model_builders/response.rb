@@ -87,40 +87,12 @@ module GrapeOAS
         }
       end
 
+      # Build schema for response body
+      # Delegates to EntityIntrospector when entity is present
       def build_schema(entity_class)
-        schema_args = if entity_class
-                        nullable = fetch_nullable_from_entity(entity_class)
-                        { type: "object", canonical_name: entity_class.name, nullable: nullable }
-                      else
-                        { type: "string" }
-                      end
+        return GrapeOAS::ApiModel::Schema.new(type: "string") unless entity_class
 
-        schema = GrapeOAS::ApiModel::Schema.new(**schema_args)
-        if entity_class
-          enrich_schema_with_entity_doc(schema, entity_class)
-          schema = GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
-        end
-        schema
-      end
-
-      def fetch_nullable_from_entity(entity_class)
-        doc = entity_class.respond_to?(:documentation) ? entity_class.documentation : {}
-        doc[:nullable] || doc["nullable"] || false
-      rescue StandardError
-        false
-      end
-
-      def enrich_schema_with_entity_doc(schema, entity_class)
-        return schema unless entity_class.respond_to?(:documentation)
-
-        doc = entity_class.documentation
-        schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
-        schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
-        defs = doc[:defs] || doc[:$defs]
-        schema.defs = defs if defs.is_a?(Hash)
-        schema
-      rescue StandardError
-        schema
+        GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
       end
 
       def build_media_type(mime_type:, schema:)

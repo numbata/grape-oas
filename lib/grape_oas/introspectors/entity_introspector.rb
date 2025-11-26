@@ -16,12 +16,19 @@ module GrapeOAS
       end
 
       def build_schema
+        doc = entity_doc
+
         schema = ApiModel::Schema.new(
           type: "object",
           canonical_name: @entity_class.name,
-          description: extract_description(entity_doc),
+          description: extract_description(doc),
+          nullable: extract_nullable(doc)
         )
-        root_ext = entity_doc.select { |k, _| k.to_s.start_with?("x-") }
+
+        # Apply entity-level schema properties from documentation
+        apply_entity_level_properties(schema, doc)
+
+        root_ext = doc.select { |k, _| k.to_s.start_with?("x-") }
         schema.extensions = root_ext if root_ext.any?
 
         exposures.each do |exposure|
@@ -178,6 +185,22 @@ module GrapeOAS
       # Extract description from hash, supporting multiple key names
       def extract_description(hash)
         hash[:description] || hash[:desc]
+      end
+
+      # Extract nullable flag from documentation
+      def extract_nullable(doc)
+        doc[:nullable] || doc["nullable"] || false
+      end
+
+      # Apply entity-level schema properties (additional_properties, defs, etc.)
+      def apply_entity_level_properties(schema, doc)
+        schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
+        schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
+
+        defs = doc[:defs] || doc[:$defs]
+        schema.defs = defs if defs.is_a?(Hash)
+      rescue StandardError
+        # Silently handle any errors setting properties
       end
 
       # Extract merge flag from multiple sources
