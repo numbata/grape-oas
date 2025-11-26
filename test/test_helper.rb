@@ -1,5 +1,19 @@
 # frozen_string_literal: true
 
+# Start SimpleCov before loading any application code
+require "simplecov"
+SimpleCov.start do
+  add_filter "/test/"
+  add_filter "/vendor/"
+  enable_coverage :branch
+
+  add_group "Builders", "lib/grape_oas/api_model_builders"
+  add_group "Parsers", "lib/grape_oas/api_model_builders/response_parsers"
+  add_group "Introspectors", "lib/grape_oas/introspectors"
+  add_group "Exporters", "lib/grape_oas/exporter"
+  add_group "Models", "lib/grape_oas/api_model"
+end
+
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 
 require "bundler/setup"

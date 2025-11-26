@@ -21,4 +21,7 @@ group :development, :test do
   gem "rubocop-minitest", require: false
 end
 
-gem "json_schemer", "~> 2.4", group: :test
+group :test do
+  gem "json_schemer", "~> 2.4"
+  gem "simplecov", require: false
+end
