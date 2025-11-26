@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
 module GrapeOAS
-  module ApiModelBuilders
+  module Introspectors
     # Extracts an ApiModel schema from a Dry::Schema contract
-    class DrySchemaProcessor
+    class DryIntrospector
       ConstraintSet = Struct.new(
         :enum,
         :nullable,

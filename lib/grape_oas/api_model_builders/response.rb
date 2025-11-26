@@ -145,7 +145,7 @@ module GrapeOAS
         schema = GrapeOAS::ApiModel::Schema.new(**schema_args)
         if entity_class
           enrich_schema_with_entity_doc(schema, entity_class)
-          schema = GrapeOAS::EntityIntrospector.new(entity_class).build_schema
+          schema = GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
         end
         schema
       end

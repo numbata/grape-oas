@@ -65,24 +65,24 @@ module GrapeOAS
 
         schema = if (type_source == Array || type_source.to_s == "Array") && grape_entity?(doc_type || spec[:elements] || spec[:of])
                    entity_type = resolve_entity_class(extract_entity_type_from_array(spec, raw_type, doc_type))
-                   items = GrapeOAS::EntityIntrospector.new(entity_type).build_schema if entity_type
+                   items = GrapeOAS::Introspectors::EntityIntrospector.new(entity_type).build_schema if entity_type
                    items ||= GrapeOAS::ApiModel::Schema.new(type: sanitize_type(extract_entity_type_from_array(spec,
                                                                                                                raw_type,)))
                    GrapeOAS::ApiModel::Schema.new(type: "array", items: items)
                  elsif doc[:is_array] && grape_entity?(doc_type)
                    entity_class = resolve_entity_class(doc_type)
-                   items = GrapeOAS::EntityIntrospector.new(entity_class).build_schema
+                   items = GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
                    GrapeOAS::ApiModel::Schema.new(type: "array", items: items)
                  elsif grape_entity?(doc_type)
                    entity_class = resolve_entity_class(doc_type)
-                   GrapeOAS::EntityIntrospector.new(entity_class).build_schema
+                   GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
                  elsif grape_entity?(raw_type)
                    entity_class = resolve_entity_class(raw_type)
-                   GrapeOAS::EntityIntrospector.new(entity_class).build_schema
+                   GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
                  elsif raw_type == Array && spec[:elements]
                    items_type = spec[:elements]
                    entity = resolve_entity_class(items_type)
-                   items_schema = entity ? GrapeOAS::EntityIntrospector.new(entity).build_schema : GrapeOAS::ApiModel::Schema.new(type: sanitize_type(items_type))
+                   items_schema = entity ? GrapeOAS::Introspectors::EntityIntrospector.new(entity).build_schema : GrapeOAS::ApiModel::Schema.new(type: sanitize_type(items_type))
                    GrapeOAS::ApiModel::Schema.new(type: "array", items: items_schema)
                  else
                    GrapeOAS::ApiModel::Schema.new(

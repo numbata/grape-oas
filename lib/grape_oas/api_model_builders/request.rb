@@ -2,8 +2,6 @@
 
 require "bigdecimal"
 
-require_relative "dry_schema_processor"
-
 module GrapeOAS
   module ApiModelBuilders
     class Request
@@ -74,7 +72,7 @@ module GrapeOAS
                        contract
                      end
 
-        return GrapeOAS::ApiModelBuilders::DrySchemaProcessor.build(schema_obj) if schema_obj.respond_to?(:types)
+        return GrapeOAS::Introspectors::DryIntrospector.build(schema_obj) if schema_obj.respond_to?(:types)
 
         contract_hash = if contract.respond_to?(:to_h)
                           contract.to_h

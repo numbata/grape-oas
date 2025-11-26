@@ -3,10 +3,10 @@
 require "test_helper"
 
 module GrapeOAS
-  module ApiModelBuilders
-    class DrySchemaProcessorTest < Minitest::Test
+  module Introspectors
+    class DryIntrospectorTest < Minitest::Test
       def processor
-        @processor ||= DrySchemaProcessor
+        @processor ||= Introspectors::DryIntrospector
       end
 
       def test_or_branch_intersection_keeps_common_enum
