@@ -22,7 +22,7 @@ module GrapeOAS
           type: "object",
           canonical_name: @entity_class.name,
           description: extract_description(doc),
-          nullable: extract_nullable(doc)
+          nullable: extract_nullable(doc),
         )
 
         # Apply entity-level schema properties from documentation

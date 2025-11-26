@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "response_parsers/documentation_responses_parser"
-require_relative "response_parsers/http_codes_parser"
-require_relative "response_parsers/default_response_parser"
-
 module GrapeOAS
   module ApiModelBuilders
     class Response
