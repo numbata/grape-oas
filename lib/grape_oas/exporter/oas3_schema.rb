@@ -41,7 +41,23 @@ module GrapeOAS
       end
 
       def build_tags
-        tags = Array(@api.tag_defs).map { |tag| tag.is_a?(Hash) ? tag : { "name" => tag.to_s } }
+        tags = Array(@api.tag_defs).map do |tag|
+          if tag.is_a?(Hash)
+            tag
+          elsif tag.respond_to?(:name)
+            h = { "name" => tag.name.to_s }
+            h["description"] = tag.description if tag.respond_to?(:description)
+            h
+          else
+            name = tag.to_s
+            desc = if defined?(ActiveSupport::Inflector)
+                     "Operations about #{ActiveSupport::Inflector.pluralize(name)}"
+                   else
+                     "Operations about #{name}s"
+                   end
+            { "name" => name, "description" => desc }
+          end
+        end
         tags.empty? ? nil : tags
       end
 
@@ -126,20 +142,26 @@ module GrapeOAS
         nil
       end
 
-      def collect_refs(schema, pending)
+      def collect_refs(schema, pending, seen = Set.new)
         return unless schema
 
-        @ref_schemas[schema.canonical_name] ||= schema if schema.respond_to?(:canonical_name) && schema.canonical_name
+        if schema.respond_to?(:canonical_name) && schema.canonical_name
+          return if seen.include?(schema.canonical_name)
+
+          seen << schema.canonical_name
+          @ref_schemas[schema.canonical_name] ||= schema
+        end
+
         if schema.respond_to?(:properties) && schema.properties
           schema.properties.each_value do |prop|
             if prop.respond_to?(:canonical_name) && prop.canonical_name
               pending << prop.canonical_name
               @ref_schemas[prop.canonical_name] ||= prop
             end
-            collect_refs(prop, pending)
+            collect_refs(prop, pending, seen)
           end
         end
-        collect_refs(schema.items, pending) if schema.respond_to?(:items) && schema.items
+        collect_refs(schema.items, pending, seen) if schema.respond_to?(:items) && schema.items
       end
     end
   end

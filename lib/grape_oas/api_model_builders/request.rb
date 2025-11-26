@@ -29,6 +29,25 @@ module GrapeOAS
 
       def append_request_body(body_schema)
         media_ext = media_type_extensions("application/json")
+
+        # Ensure body schema is referenceable (so exporters emit $ref instead of inline)
+        if body_schema.respond_to?(:canonical_name) && body_schema.canonical_name.nil?
+          settings = route.respond_to?(:settings) ? route.settings : {}
+          contract_class = route.options[:contract] || route.options[:schema] || settings[:contract]
+
+          if contract_class.is_a?(Class) && defined?(Menti::Endpoint::Schema) && contract_class < Menti::Endpoint::Schema
+            body_schema.canonical_name = contract_class.name
+          elsif !route.options[:contract] && !settings[:contract]
+            # Only generate an operation-scoped ref when the body is purely inline
+            has_ref_props = body_schema.properties.values.any? do |prop|
+              prop.respond_to?(:canonical_name) && prop.canonical_name
+            end
+            if !has_ref_props && operation.respond_to?(:operation_id) && operation.operation_id
+              body_schema.canonical_name = "#{operation.operation_id}_Request"
+            end
+          end
+        end
+
         media_type = GrapeOAS::ApiModel::MediaType.new(
           mime_type: "application/json",
           schema: body_schema,

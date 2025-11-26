@@ -2,19 +2,27 @@
 
 module GrapeOAS
   module DocumentationExtension
+    # Primary entry for grape-oas documentation
     def add_oas_documentation(**options)
       return if options.delete(:hide_documentation_path)
 
-      default_mount_path = options.delete(:mount_path) || "/swagger_doc.json"
-      default_format = options.delete(:doc_version) || :oas3
+      # Prefer grape-oas namespaced options to avoid clashing with grape-swagger
+      default_mount_path = options.delete(:oas_mount_path) ||
+                           options.delete(:mount_path) ||
+                           "/swagger_doc.json"
+      default_format = options.delete(:oas_doc_version) ||
+                       options.delete(:doc_version) ||
+                       :oas3
       cache_control = options.delete(:cache_control)
       etag_value = options.delete(:etag)
 
       mount_paths = {
         default: default_mount_path,
-        oas2: options.delete(:mount_path_v2),
-        oas3: options.delete(:mount_path_v3)
+        oas2: options.delete(:oas_mount_path_v2) || options.delete(:mount_path_v2),
+        oas3: options.delete(:oas_mount_path_v3) || options.delete(:mount_path_v3)
       }.compact
+
+      api = self
 
       mount_paths.each do |key, path|
         add_route(path) do
@@ -29,19 +37,34 @@ module GrapeOAS
           header("Cache-Control", cache_control) if cache_control
           header("ETag", etag_value) if etag_value
 
-          GrapeOAS.generate(app: self, schema_type: schema_type, **options)
+          GrapeOAS.generate(app: api, schema_type: schema_type, **options)
         end
       end
     end
 
-    alias add_swagger_documentation add_oas_documentation
+    # Compatibility shim for apps calling grape-swagger's add_swagger_documentation.
+    #
+    # If grape-swagger is loaded we defer to its implementation to keep legacy
+    # behaviour untouched. Only when grape-swagger is absent do we fall back to
+    # grape-oas.
+    def add_swagger_documentation(**options)
+      if defined?(::GrapeSwagger)
+        return super
+      end
+
+      options = options.dup
+      options[:oas_doc_version] ||= :oas2
+      options[:oas_mount_path] ||= options[:mount_path] || "/swagger_doc.json"
+      add_oas_documentation(**options)
+    end
 
     private
 
     # Minimal route mounting helper
     def add_route(path, &block)
+      api_class = self
       namespace do
-        get(path) { instance_eval(&block) }
+        get(path) { instance_exec(api_class, &block) }
       end
     end
 

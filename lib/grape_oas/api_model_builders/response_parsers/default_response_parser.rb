@@ -14,7 +14,9 @@ module GrapeOAS
         end
 
         def parse(route)
-          default_code = (route.options[:default_status] || 200).to_s
+          inferred = route.options[:default_status]
+          inferred ||= route.request_method.to_s.upcase == "POST" ? 201 : 200
+          default_code = inferred.to_s
 
           [{
             code: default_code,

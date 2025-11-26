@@ -11,19 +11,39 @@ module GrapeOAS
         "boolean" => "boolean"
       }.freeze
 
-      def initialize(entity_class)
+      def initialize(entity_class, stack: [], registry: {})
         @entity_class = entity_class
+        @stack = stack
+        @registry = registry
       end
 
       def build_schema
-        doc = entity_doc
+        pushed = false
 
-        schema = ApiModel::Schema.new(
+        # Return cached schema (already built) if present
+        built = @registry[@entity_class]
+        return built if built && !built.properties.empty?
+
+        # Build (or reuse placeholder) for this entity
+        schema = (@registry[@entity_class] ||= ApiModel::Schema.new(
           type: "object",
           canonical_name: @entity_class.name,
-          description: extract_description(doc),
-          nullable: extract_nullable(doc),
-        )
+          description: nil,
+          nullable: nil,
+        ))
+
+        if @stack.include?(@entity_class)
+          debug("Cycle detected while introspecting #{@entity_class.name}: #{stack_path(@entity_class)}")
+          schema.description ||= "Cycle detected while introspecting"
+          return schema
+        end
+
+        @stack << @entity_class
+        pushed = true
+        doc = entity_doc
+
+        schema.description ||= extract_description(doc)
+        schema.nullable = extract_nullable(doc) if schema.nullable.nil?
 
         # Apply entity-level schema properties from documentation
         apply_entity_level_properties(schema, doc)
@@ -46,6 +66,7 @@ module GrapeOAS
             next
           end
 
+          debug("Introspecting #{current_entity_name}.#{name}")
           prop_schema = schema_for_exposure(exposure, doc)
           if conditional?(exposure)
             prop_schema.nullable = true if prop_schema.respond_to?(:nullable=) && !prop_schema.nullable
@@ -59,6 +80,8 @@ module GrapeOAS
         end
 
         schema
+      ensure
+        @stack.pop if pushed
       end
 
       private
@@ -135,7 +158,7 @@ module GrapeOAS
           ApiModel::Schema.new(type: "string")
         when Class
           if defined?(Grape::Entity) && type <= Grape::Entity
-            self.class.new(type).build_schema
+            self.class.new(type, stack: @stack, registry: @registry).build_schema
           elsif type == Integer
             ApiModel::Schema.new(type: "integer")
           elsif [Float, BigDecimal].include?(type)
@@ -161,7 +184,7 @@ module GrapeOAS
         using_class = resolve_entity_from_opts(exposure, doc)
         return ApiModel::Schema.new(type: "object") unless using_class
 
-        child = self.class.new(using_class).build_schema
+        child = self.class.new(using_class, stack: @stack, registry: @registry).build_schema
         merged = ApiModel::Schema.new(type: "object")
         child.properties.each do |n, ps|
           merged.add_property(n, ps, required: child.required.include?(n))
@@ -206,6 +229,20 @@ module GrapeOAS
       # Extract merge flag from multiple sources
       def extract_merge_flag(exposure, doc, opts)
         opts[:merge] || doc[:merge] || (exposure.respond_to?(:for_merge) && exposure.for_merge)
+      end
+
+      def debug(message)
+        return unless ENV["GRAPEOAS_DEBUG"]
+
+        warn("[grape-oas] #{message}")
+      end
+
+      def current_entity_name
+        @entity_class&.name || @entity_class.to_s
+      end
+
+      def stack_path(target)
+        (@stack + [target]).map { |cls| cls&.name || cls.to_s }.join(" -> ")
       end
     end
   end

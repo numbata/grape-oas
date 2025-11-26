@@ -62,12 +62,15 @@ module GrapeOAS
         end
 
         def build_body_parameter(request_body)
+          schema = build_body_schema(request_body)
+          canonical = request_body&.media_types&.first&.schema&.canonical_name rescue nil
+          name = canonical ? canonical.gsub("::", "_") : "body"
           {
-            "name" => "body",
+            "name" => name,
             "in" => "body",
             "required" => request_body.required,
             "description" => request_body.description,
-            "schema" => build_body_schema(request_body)
+            "schema" => schema
           }.compact
         end
 

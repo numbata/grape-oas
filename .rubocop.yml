@@ -23,9 +23,22 @@ Style/TrailingCommaInArguments:
 Style/Documentation:
   Enabled: false
 
+Metrics/MethodLength:
+  Max: 15
+
+Metrics/ClassLength:
+  Max: 150
+
 Metrics/AbcSize:
+  Max: 20
   Exclude:
+    - lib/grape_oas/api_model_builders/dry_introspector.rb
     - test/**/*
+
+Metrics/CyclomaticComplexity:
+  Max: 8
+  Exclude:
+    - lib/grape_oas/api_model_builders/dry_introspector.rb
 
 Minitest/MultipleAssertions:
   Enabled: false
