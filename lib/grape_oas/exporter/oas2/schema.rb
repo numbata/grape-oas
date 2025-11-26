@@ -20,9 +20,7 @@ module GrapeOAS
             "items" => @schema.items ? build_schema_or_ref(@schema.items) : nil,
             "enum" => @schema.enum
           }
-          if schema_hash["properties"].nil? || schema_hash["properties"].empty? || @schema.type != "object"
-            schema_hash.delete("properties")
-          end
+          schema_hash.delete("properties") if schema_hash["properties"].nil? || schema_hash["properties"].empty? || @schema.type != "object"
           schema_hash["minLength"] = @schema.min_length if @schema.min_length
           schema_hash["maxLength"] = @schema.max_length if @schema.max_length
           schema_hash["pattern"] = @schema.pattern if @schema.pattern

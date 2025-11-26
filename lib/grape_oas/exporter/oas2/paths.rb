@@ -9,8 +9,8 @@ module GrapeOAS
         private
 
         # Build OAS2-specific operation
-        def build_operation(op)
-          Operation.new(op, @ref_tracker).build
+        def build_operation(operation)
+          Operation.new(operation, @ref_tracker).build
         end
       end
     end

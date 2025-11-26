@@ -82,7 +82,11 @@ module GrapeOAS
                  elsif raw_type == Array && spec[:elements]
                    items_type = spec[:elements]
                    entity = resolve_entity_class(items_type)
-                   items_schema = entity ? GrapeOAS::Introspectors::EntityIntrospector.new(entity).build_schema : GrapeOAS::ApiModel::Schema.new(type: sanitize_type(items_type))
+                   items_schema = if entity
+                                    GrapeOAS::Introspectors::EntityIntrospector.new(entity).build_schema
+                                  else
+                                    GrapeOAS::ApiModel::Schema.new(type: sanitize_type(items_type))
+                                  end
                    GrapeOAS::ApiModel::Schema.new(type: "array", items: items_schema)
                  else
                    GrapeOAS::ApiModel::Schema.new(
@@ -152,7 +156,9 @@ module GrapeOAS
         return nil unless type.is_a?(String) || type.is_a?(Symbol)
 
         const_name = type.to_s
-        if Object.const_defined?(const_name) && Object.const_get(const_name).is_a?(Class) && Object.const_get(const_name) <= (defined?(Grape::Entity) ? Grape::Entity : Object)
+        if Object.const_defined?(const_name) &&
+           Object.const_get(const_name).is_a?(Class) &&
+           Object.const_get(const_name) <= (defined?(Grape::Entity) ? Grape::Entity : Object)
           Object.const_get(const_name)
         end
       rescue NameError

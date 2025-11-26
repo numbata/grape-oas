@@ -4,8 +4,8 @@ module GrapeOAS
   module Exporter
     module OAS3
       class Parameter
-        def initialize(op, ref_tracker = nil, nullable_keyword: true)
-          @op = op
+        def initialize(operation, ref_tracker = nil, nullable_keyword: true)
+          @op = operation
           @ref_tracker = ref_tracker
           @nullable_keyword = nullable_keyword
         end

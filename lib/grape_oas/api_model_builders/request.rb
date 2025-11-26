@@ -238,17 +238,17 @@ module GrapeOAS
         end
       end
 
-      def merge_rule_constraints(schema, rc)
-        return unless rc
+      def merge_rule_constraints(schema, rule_constraints)
+        return unless rule_constraints
 
-        schema.enum ||= rc[:enum]
-        schema.nullable ||= rc[:nullable]
-        schema.min_length ||= rc[:min] if rc[:min]
-        schema.max_length ||= rc[:max] if rc[:max]
-        schema.minimum ||= rc[:minimum] if rc[:minimum]
-        schema.maximum ||= rc[:maximum] if rc[:maximum]
-        schema.exclusive_minimum ||= rc[:exclusive_minimum]
-        schema.exclusive_maximum ||= rc[:exclusive_maximum]
+        schema.enum ||= rule_constraints[:enum]
+        schema.nullable ||= rule_constraints[:nullable]
+        schema.min_length ||= rule_constraints[:min] if rule_constraints[:min]
+        schema.max_length ||= rule_constraints[:max] if rule_constraints[:max]
+        schema.minimum ||= rule_constraints[:minimum] if rule_constraints[:minimum]
+        schema.maximum ||= rule_constraints[:maximum] if rule_constraints[:maximum]
+        schema.exclusive_minimum ||= rule_constraints[:exclusive_minimum]
+        schema.exclusive_maximum ||= rule_constraints[:exclusive_maximum]
       end
 
       # Very small parser for FakeType rule_ast used in tests

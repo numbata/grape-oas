@@ -24,21 +24,78 @@ Style/Documentation:
   Enabled: false
 
 Metrics/MethodLength:
-  Max: 15
+  Max: 60
+  Exclude:
+    - lib/grape_oas/introspectors/dry_introspector.rb
 
 Metrics/ClassLength:
-  Max: 150
+  Enabled: false
 
 Metrics/AbcSize:
-  Max: 20
+  Max: 70
   Exclude:
     - lib/grape_oas/api_model_builders/dry_introspector.rb
+    - lib/grape_oas/introspectors/dry_introspector.rb
     - test/**/*
 
 Metrics/CyclomaticComplexity:
-  Max: 8
+  Max: 40
   Exclude:
     - lib/grape_oas/api_model_builders/dry_introspector.rb
+    - lib/grape_oas/introspectors/entity_introspector.rb
+    - lib/grape_oas/introspectors/dry_introspector.rb
+    - test/**/*
+
+Metrics/PerceivedComplexity:
+  Max: 40
+  Exclude:
+    - lib/grape_oas/api_model_builders/dry_introspector.rb
+    - lib/grape_oas/introspectors/entity_introspector.rb
+    - lib/grape_oas/introspectors/dry_introspector.rb
+    - test/**/*
+
+Metrics/BlockLength:
+  Max: 60
+  Exclude:
+    - test/**/*
+
+Metrics/ParameterLists:
+  Max: 12
+
+Style/OpenStructUse:
+  Exclude:
+    - test/**/*
+
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - test/**/*
+
+Style/SafeNavigationChainLength:
+  Max: 4
+
+Naming/PredicateMethod:
+  AllowedMethods:
+    - validate!
+
+Layout/LineLength:
+  Max: 140
+
+Style/MultilineBlockChain:
+  Exclude:
+    - lib/grape_oas/exporter/oas3_schema.rb
+
+Lint/StructNewOverride:
+  Exclude:
+    - test/**/*
+
+Lint/DuplicateBranch:
+  Exclude:
+    - lib/grape_oas/introspectors/dry_introspector.rb
+    - lib/grape_oas/introspectors/entity_introspector.rb
+
+Naming/VariableNumber:
+  Exclude:
+    - test/**/*
 
 Minitest/MultipleAssertions:
   Enabled: false

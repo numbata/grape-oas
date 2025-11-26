@@ -6,8 +6,8 @@ module GrapeOAS
       # Base class for Operation exporters
       # Contains common logic shared between OAS2 and OAS3
       class Operation
-        def initialize(op, ref_tracker = nil, **options)
-          @op = op
+        def initialize(operation, ref_tracker = nil, **options)
+          @op = operation
           @ref_tracker = ref_tracker
           @options = options
         end

@@ -18,8 +18,8 @@ module GrapeOAS
           "uuid" => { type: "string", format: "uuid" }
         }.freeze
 
-        def initialize(op, ref_tracker = nil)
-          @op = op
+        def initialize(operation, ref_tracker = nil)
+          @op = operation
           @ref_tracker = ref_tracker
         end
 
@@ -63,7 +63,11 @@ module GrapeOAS
 
         def build_body_parameter(request_body)
           schema = build_body_schema(request_body)
-          canonical = request_body&.media_types&.first&.schema&.canonical_name rescue nil
+          canonical = begin
+            request_body&.media_types&.first&.schema&.canonical_name
+          rescue StandardError
+            nil
+          end
           name = canonical ? canonical.gsub("::", "_") : "body"
           {
             "name" => name,

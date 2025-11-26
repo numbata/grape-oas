@@ -124,10 +124,10 @@ module GrapeOAS
         class TestPathsImplementation < Paths
           attr_reader :last_ref_tracker, :last_options
 
-          def build_operation(op)
+          def build_operation(operation)
             @last_ref_tracker = @ref_tracker
             @last_options = @options
-            { operation_id: "test_#{op.http_method}" }
+            { operation_id: "test_#{operation.http_method}" }
           end
         end
       end

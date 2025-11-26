@@ -48,9 +48,7 @@ module GrapeOAS
     # behaviour untouched. Only when grape-swagger is absent do we fall back to
     # grape-oas.
     def add_swagger_documentation(**options)
-      if defined?(::GrapeSwagger)
-        return super
-      end
+      return super if defined?(::GrapeSwagger)
 
       options = options.dup
       options[:oas_doc_version] ||= :oas2

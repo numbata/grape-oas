@@ -36,15 +36,15 @@ module GrapeOAS
 
         def build_path_item(path)
           item = {}
-          path.operations.each do |op|
-            item[op.http_method] = build_operation(op)
+          path.operations.each do |operation|
+            item[operation.http_method] = build_operation(operation)
           end
           item
         end
 
         # Template method - subclasses must implement
         # Returns the version-specific Operation instance
-        def build_operation(op)
+        def build_operation(operation)
           raise NotImplementedError, "#{self.class} must implement #build_operation"
         end
       end

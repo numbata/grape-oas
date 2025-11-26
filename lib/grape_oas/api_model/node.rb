@@ -13,8 +13,8 @@ module GrapeOAS
     class Node
       attr_reader :id
 
-      def initialize(id: nil)
-        @id = id || SecureRandom.uuid
+      def initialize(node_id: nil)
+        @id = node_id || SecureRandom.uuid
       end
 
       def self.attr_rw(*names)

@@ -122,10 +122,7 @@ module GrapeOAS
         if defined?(Dry::Types::Array::Member) && core.respond_to?(:type) && core.type.is_a?(Dry::Types::Array::Member)
           return [Array, core.type.member]
         end
-
-        if core.respond_to?(:member) && core.respond_to?(:primitive) && core.primitive == Array
-          return [Array, core.member]
-        end
+        return [Array, core.member] if core.respond_to?(:member) && core.respond_to?(:primitive) && core.primitive == Array
 
         primitive = core.respond_to?(:primitive) ? core.primitive : nil
         [primitive, nil]
