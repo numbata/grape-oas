@@ -120,20 +120,20 @@ module GrapeOAS
         mimes.empty? ? ["application/json"] : mimes.uniq
       end
 
-      def mime_for_format(fmt)
-        return if fmt.nil?
-        return fmt if fmt.to_s.include?("/")
+      def mime_for_format(format)
+        return if format.nil?
+        return format if format.to_s.include?("/")
 
         return unless defined?(Grape::ContentTypes::CONTENT_TYPES)
 
-        Grape::ContentTypes::CONTENT_TYPES[fmt.to_sym]
+        Grape::ContentTypes::CONTENT_TYPES[format.to_sym]
       end
 
-      def normalize_mime(mime)
-        return nil if mime.nil?
-        return mime if mime.to_s.include?("/")
+      def normalize_mime(mime_or_format)
+        return nil if mime_or_format.nil?
+        return mime_or_format if mime_or_format.to_s.include?("/")
 
-        mime_for_format(mime)
+        mime_for_format(mime_or_format)
       end
     end
   end
