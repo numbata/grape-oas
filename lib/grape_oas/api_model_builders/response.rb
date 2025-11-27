@@ -45,9 +45,11 @@ module GrapeOAS
           )
         end
 
+        description = spec[:message].is_a?(String) ? spec[:message] : spec[:message].to_s
+
         GrapeOAS::ApiModel::Response.new(
           http_status: spec[:code].to_s,
-          description: spec[:message] || "Success",
+          description: description || "Success",
           media_types: media_types,
           headers: normalize_headers(spec[:headers]) || headers_from_route,
           extensions: spec[:extensions] || extensions_from_route,

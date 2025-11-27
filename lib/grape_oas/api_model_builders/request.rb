@@ -28,6 +28,9 @@ module GrapeOAS
       private
 
       def append_request_body(body_schema)
+        # OAS forbids requestBody for GET/HEAD/DELETE; skip unless explicitly allowed
+        return if %w[get head delete].include?(operation.http_method.to_s)
+
         media_ext = media_type_extensions("application/json")
 
         # Ensure body schema is referenceable (so exporters emit $ref instead of inline)

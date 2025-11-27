@@ -21,7 +21,7 @@ module GrapeOAS
           schema_hash["properties"] = props if props
           schema_hash["items"] = @schema.items ? build_schema_or_ref(@schema.items) : nil
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
-          schema_hash["enum"] = @schema.enum if @schema.enum
+          schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"]) if @schema.enum
           schema_hash["example"] = @schema.examples if @schema.examples
           schema_hash.merge!(@schema.extensions) if @schema.extensions
           schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != "object"
@@ -71,6 +71,20 @@ module GrapeOAS
           else
             Schema.new(schema, @ref_tracker, nullable_keyword: @nullable_keyword).build
           end
+        end
+
+        def normalize_enum(enum_vals, type)
+          return unless enum_vals.is_a?(Array)
+
+          coerced = enum_vals.map do |v|
+            case type
+            when "integer" then v.to_i if v.respond_to?(:to_i)
+            when "number" then v.to_f if v.respond_to?(:to_f)
+            else v
+            end
+          end.compact
+
+          coerced.uniq
         end
 
         def apply_numeric_constraints(hash)

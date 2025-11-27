@@ -18,7 +18,7 @@ module GrapeOAS
             "description" => @schema.description,
             "properties" => build_properties(@schema.properties),
             "items" => @schema.items ? build_schema_or_ref(@schema.items) : nil,
-            "enum" => @schema.enum
+            "enum" => normalize_enum(@schema.enum, @schema.type)
           }
           schema_hash.delete("properties") if schema_hash["properties"].nil? || schema_hash["properties"].empty? || @schema.type != "object"
           schema_hash["minLength"] = @schema.min_length if @schema.min_length
@@ -54,6 +54,20 @@ module GrapeOAS
           else
             Schema.new(schema, @ref_tracker).build
           end
+        end
+
+        def normalize_enum(enum_vals, type)
+          return nil unless enum_vals.is_a?(Array)
+
+          coerced = enum_vals.map do |v|
+            case type
+            when "integer" then v.to_i if v.respond_to?(:to_i)
+            when "number" then v.to_f if v.respond_to?(:to_f)
+            else v
+            end
+          end.compact
+
+          coerced.uniq
         end
       end
     end
