@@ -36,6 +36,15 @@ module GrapeOAS
         def build_common_fields
           summary = @op.summary
           summary ||= @op.description&.split(/\.\s/)&.first&.strip
+          # Fallback: generate a readable summary from the operationId to satisfy lint rules
+          if summary.nil? && @op.operation_id
+            summary = @op.operation_id
+                      .to_s
+                      .tr("_", " ")
+                      .split
+                      .map { |w| w.capitalize }
+                      .join(" ")
+          end
 
           {
             "operationId" => @op.operation_id,

@@ -16,11 +16,12 @@ module GrapeOAS
         "falseclass" => "boolean"
       }.freeze
 
-      attr_reader :api, :route
+      attr_reader :api, :route, :path_param_name_map
 
-      def initialize(api:, route:)
+      def initialize(api:, route:, path_param_name_map: nil)
         @api = api
         @route = route
+        @path_param_name_map = path_param_name_map || {}
       end
 
       def build
@@ -33,13 +34,14 @@ module GrapeOAS
           location = route_params.include?(name) ? "path" : extract_location(spec: spec)
           required = spec[:required] || false
           schema = build_schema_for_spec(spec)
+          mapped_name = path_param_name_map.fetch(name, name)
 
           if location == "body"
             body_schema.add_property(name, schema, required: required)
           else
             path_params << GrapeOAS::ApiModel::Parameter.new(
               location: location,
-              name: name,
+              name: mapped_name,
               required: required,
               schema: schema,
               description: spec[:documentation]&.dig(:desc),

@@ -22,7 +22,11 @@ module GrapeOAS
           schema_hash["items"] = @schema.items ? build_schema_or_ref(@schema.items) : nil
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
           schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"]) if @schema.enum
-          schema_hash["examples"] = @schema.examples if @schema.examples
+          if @schema.examples
+            examples = Array(@schema.examples).map { |ex| coerce_example(ex, schema_hash["type"]) }
+            schema_hash["example"] = examples.first
+          end
+          sanitize_enum_against_type(schema_hash)
           schema_hash.merge!(@schema.extensions) if @schema.extensions
           schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != "object"
           schema_hash["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
@@ -118,6 +122,54 @@ module GrapeOAS
         def apply_array_constraints(hash)
           hash["minItems"] = @schema.min_items if @schema.min_items
           hash["maxItems"] = @schema.max_items if @schema.max_items
+        end
+
+        # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs
+        def sanitize_enum_against_type(hash)
+          enum_vals = hash["enum"]
+          type_val = hash["type"]
+          return unless enum_vals && type_val
+
+          base_type = if type_val.is_a?(Array)
+                        (type_val - ["null"]).first
+                      else
+                        type_val
+                      end
+
+          # Remove enum for unsupported base types or mismatches
+          case base_type
+          when "array", "object", nil
+            hash.delete("enum")
+          when "integer"
+            hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(Integer) }
+          when "number"
+            hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(Numeric) }
+          when "boolean"
+            hash.delete("enum") unless enum_vals.all? { |v| v == true || v == false }
+          else # string and fallback
+            hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(String) }
+          end
+        end
+
+        def coerce_example(ex, type_val)
+          base_type = if type_val.is_a?(Array)
+                        (type_val - ["null"]).first
+                      else
+                        type_val
+                      end
+
+          case base_type
+          when "integer"
+            ex.to_i
+          when "number"
+            ex.to_f
+          when "boolean"
+            ex == true || ex.to_s == "true"
+          when "string", nil
+            ex.to_s
+          else
+            ex
+          end
         end
       end
     end

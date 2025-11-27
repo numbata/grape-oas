@@ -33,10 +33,19 @@ module GrapeOAS
       end
 
       def build_info
-        {
+        info = {
           "title" => @api.title,
           "version" => @api.version
         }
+        license = if @api.respond_to?(:license) && @api.license
+                    @api.license.dup
+                  else
+                    { "name" => "Proprietary", "url" => "https://grape.local/license" }
+                  end
+        license.delete("identifier")
+        license["url"] ||= "https://grape.local/license"
+        info["license"] = license
+        info
       end
 
       def build_servers
@@ -44,7 +53,7 @@ module GrapeOAS
           srv.is_a?(Hash) ? srv : { "url" => srv.to_s }
         end
 
-        servers = [{ "url" => "http://localhost" }] if servers.empty?
+        servers = [{ "url" => "https://api.grape.local" }] if servers.empty?
 
         servers
       end

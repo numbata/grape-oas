@@ -5,17 +5,18 @@ require "bigdecimal"
 module GrapeOAS
   module ApiModelBuilders
     class Request
-      attr_reader :api, :route, :operation
+      attr_reader :api, :route, :operation, :path_param_name_map
 
-      def initialize(api:, route:, operation:)
+      def initialize(api:, route:, operation:, path_param_name_map: nil)
         @api = api
         @route = route
         @operation = operation
+        @path_param_name_map = path_param_name_map || {}
       end
 
       def build
         body_schema, route_params = GrapeOAS::ApiModelBuilders::RequestParams
-                                    .new(api: api, route: route)
+                                    .new(api: api, route: route, path_param_name_map: path_param_name_map)
                                     .build
 
         contract_schema = build_contract_schema

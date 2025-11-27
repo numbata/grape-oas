@@ -3,12 +3,14 @@
 module GrapeOAS
   module ApiModelBuilders
     class Operation
-      attr_reader :api, :route, :app
+      attr_reader :api, :route, :app, :path_param_name_map, :template_override
 
-      def initialize(api:, route:, app: nil)
+      def initialize(api:, route:, app: nil, path_param_name_map: nil, template_override: nil)
         @api = api
         @route = route
         @app = app
+        @path_param_name_map = path_param_name_map || {}
+        @template_override = template_override
       end
 
       def build
@@ -167,13 +169,13 @@ module GrapeOAS
 
       def build_request(operation)
         GrapeOAS::ApiModelBuilders::Request
-          .new(api: api, route: route, operation: operation)
+          .new(api: api, route: route, operation: operation, path_param_name_map: path_param_name_map)
           .build
       end
 
       # Ensure every {param} in the path template has a corresponding path parameter.
       def ensure_path_parameters(operation)
-        template = sanitize_route_path(route.path)
+        template = template_override || sanitize_route_path(route.path)
         placeholders = template.scan(/\{([^}]+)\}/).flatten
         existing = Array(operation.parameters).select { |p| p.location == "path" }.map(&:name)
         missing = placeholders - existing
