@@ -81,17 +81,19 @@ module GrapeOAS
       end
 
       def route_content_types
-        content_types = route_content_types_from_route || content_types_from_app_or_api
-
-        mimes = if content_types.is_a?(Hash)
-                  content_types.values
-                elsif content_types.respond_to?(:to_a)
-                  content_types.to_a
-                else
-                  []
-                end
-
         default_format = route_default_format_from_route || default_format_from_app_or_api
+        content_types = route_content_types_from_route
+        content_types ||= content_types_from_app_or_api(default_format)
+
+        mimes = []
+        if content_types.is_a?(Hash)
+          selected = content_types.select { |k, _| k.to_s.start_with?(default_format.to_s) } if default_format
+          selected = content_types if selected.nil? || selected.empty?
+          mimes = selected.values
+        elsif content_types.respond_to?(:to_a) && !content_types.is_a?(String)
+          mimes = content_types.to_a
+        end
+
         mimes << mime_for_format(default_format) if mimes.empty? && default_format
 
         mimes = mimes.map { |m| normalize_mime(m) }.compact
@@ -126,20 +128,30 @@ module GrapeOAS
         route.options[:format]
       end
 
-      def content_types_from_app_or_api
-        return api.content_types if api.respond_to?(:content_types)
-        return app.content_types if app.respond_to?(:content_types)
-
-        api.settings[:content_types] if api.respond_to?(:settings) && api.settings[:content_types]
-      rescue StandardError
-        nil
-      end
-
       def default_format_from_app_or_api
         return api.default_format if api.respond_to?(:default_format)
         return app.default_format if app.respond_to?(:default_format)
 
         api.settings[:default_format] if api.respond_to?(:settings) && api.settings[:default_format]
+      rescue StandardError
+        nil
+      end
+
+      def content_types_from_app_or_api(default_format)
+        source = if api.respond_to?(:content_types)
+                   api.content_types
+                 elsif app.respond_to?(:content_types)
+                   app.content_types
+                 elsif api.respond_to?(:settings)
+                   api.settings[:content_types]
+                 end
+
+        return nil unless source.is_a?(Hash)
+
+        return source unless default_format
+
+        filtered = source.select { |k, _| k.to_s.start_with?(default_format.to_s) }
+        filtered.empty? ? source : filtered
       rescue StandardError
         nil
       end
