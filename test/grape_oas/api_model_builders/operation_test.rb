@@ -138,6 +138,80 @@ module GrapeOAS
 
         assert(operation.parameters.any? { |p| p.name == "id" })
       end
+
+      # Tests for tag derivation from path (like grape-swagger's tag_object)
+      def test_derives_tag_from_namespace_when_no_tags_defined
+        api_class = Class.new(Grape::API) do
+          format :json
+          namespace :participation do
+            get "status" do
+              {}
+            end
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Operation.new(api: @api, route: route)
+        operation = builder.build
+
+        assert_equal ["participation"], operation.tag_names
+      end
+
+      def test_derives_tag_from_nested_namespace
+        api_class = Class.new(Grape::API) do
+          format :json
+          namespace :auth do
+            namespace :saml do
+              get "callback" do
+                {}
+              end
+            end
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Operation.new(api: @api, route: route)
+        operation = builder.build
+
+        # Should use the first segment (like grape-swagger)
+        assert_equal ["auth"], operation.tag_names
+      end
+
+      def test_explicit_tags_take_precedence_over_derived
+        api_class = Class.new(Grape::API) do
+          format :json
+          namespace :participation do
+            desc "Get status", tags: ["custom_tag"]
+            get "status" do
+              {}
+            end
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Operation.new(api: @api, route: route)
+        operation = builder.build
+
+        assert_equal ["custom_tag"], operation.tag_names
+      end
+
+      def test_derives_tag_ignoring_version
+        api_class = Class.new(Grape::API) do
+          format :json
+          version "v1", using: :path
+          namespace :lti do
+            get "launch" do
+              {}
+            end
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Operation.new(api: @api, route: route)
+        operation = builder.build
+
+        assert_equal ["lti"], operation.tag_names
+      end
     end
   end
 end
