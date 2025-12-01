@@ -65,7 +65,7 @@ module GrapeOAS
           schema = build_body_schema(request_body)
           canonical = begin
             request_body&.media_types&.first&.schema&.canonical_name
-          rescue StandardError
+          rescue NoMethodError
             nil
           end
           name = canonical ? canonical.gsub("::", "_") : "body"

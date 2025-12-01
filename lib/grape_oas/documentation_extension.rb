@@ -37,7 +37,16 @@ module GrapeOAS
           header("Cache-Control", cache_control) if cache_control
           header("ETag", etag_value) if etag_value
 
-          GrapeOAS.generate(app: api, schema_type: schema_type, **options)
+          # Resolve runtime options (like grape-swagger's OptionalObject)
+          runtime_options = options.dup
+          runtime_options[:host] = GrapeOAS::DocumentationExtension.resolve_option(
+            runtime_options[:host], request, :host_with_port
+          )
+          runtime_options[:base_path] = GrapeOAS::DocumentationExtension.resolve_option(
+            runtime_options[:base_path], request, :script_name
+          )
+
+          GrapeOAS.generate(app: api, schema_type: schema_type, **runtime_options)
         end
       end
     end
@@ -77,5 +86,18 @@ module GrapeOAS
       end
     end
     module_function :parse_schema_type
+
+    # Resolve option value at request time (like grape-swagger's OptionalObject)
+    # Supports: static values, Proc/lambda (with optional request arg), or fallback to request method
+    def resolve_option(value, request, default_method)
+      if value.is_a?(Proc)
+        value.arity.zero? ? value.call : value.call(request)
+      elsif value
+        value
+      elsif request
+        request.send(default_method)
+      end
+    end
+    module_function :resolve_option
   end
 end

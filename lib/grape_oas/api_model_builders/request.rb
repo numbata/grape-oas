@@ -286,7 +286,7 @@ module GrapeOAS
           end
         end
         constraints
-      rescue StandardError
+      rescue NoMethodError, TypeError
         {}
       end
 
@@ -295,7 +295,7 @@ module GrapeOAS
 
         vals = core.values
         vals if vals.is_a?(Array)
-      rescue StandardError
+      rescue NoMethodError
         nil
       end
     end

@@ -88,7 +88,7 @@ module GrapeOAS
 
       def entity_doc
         @entity_class.respond_to?(:documentation) ? (@entity_class.documentation || {}) : {}
-      rescue StandardError
+      rescue NoMethodError
         {}
       end
 
@@ -98,7 +98,7 @@ module GrapeOAS
         root = @entity_class.root_exposures
         list = root.instance_variable_get(:@exposures) || []
         Array(list)
-      rescue StandardError
+      rescue NoMethodError
         []
       end
 
@@ -141,14 +141,14 @@ module GrapeOAS
 
         # If conditional exposure, keep it but mark nullable to reflect optionality
         true
-      rescue StandardError
+      rescue NoMethodError
         true
       end
 
       def conditional?(exposure)
         conditions = exposure.instance_variable_get(:@conditions) || []
         !conditions.empty?
-      rescue StandardError
+      rescue NoMethodError
         false
       end
 
@@ -222,8 +222,8 @@ module GrapeOAS
 
         defs = doc[:defs] || doc[:$defs]
         schema.defs = defs if defs.is_a?(Hash)
-      rescue StandardError
-        # Silently handle any errors setting properties
+      rescue NoMethodError
+        # Silently handle errors when schema doesn't respond to setters
       end
 
       # Extract merge flag from multiple sources

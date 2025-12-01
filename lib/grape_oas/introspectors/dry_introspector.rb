@@ -246,7 +246,7 @@ module GrapeOAS
 
         vals = dry_type.values
         vals if vals.is_a?(Array)
-      rescue StandardError
+      rescue NoMethodError
         nil
       end
 
@@ -275,7 +275,7 @@ module GrapeOAS
         end
 
         constraints
-      rescue StandardError
+      rescue NoMethodError, TypeError
         {}
       end
 
