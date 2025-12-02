@@ -10,6 +10,7 @@ module GrapeOAS
       include Concerns::NestedParamsBuilder
 
       ROUTE_PARAM_REGEX = /(?<=:)\w+/
+      VALID_CONSTANT_PATTERN = /\A[A-Z][A-Za-z0-9_]*(::[A-Z][A-Za-z0-9_]*)*\z/
 
       attr_reader :api, :route, :path_param_name_map
 
@@ -258,17 +259,16 @@ module GrapeOAS
       end
 
       def resolve_entity_class(type)
-        return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
+        return nil unless defined?(Grape::Entity)
+        return type if type.is_a?(Class) && type <= Grape::Entity
         return nil unless type.is_a?(String) || type.is_a?(Symbol)
 
         const_name = type.to_s
-        if Object.const_defined?(const_name) &&
-           Object.const_get(const_name).is_a?(Class) &&
-           Object.const_get(const_name) <= (defined?(Grape::Entity) ? Grape::Entity : Object)
-          Object.const_get(const_name)
-        end
-      rescue NameError
-        nil
+        return nil unless const_name.match?(VALID_CONSTANT_PATTERN)
+        return nil unless Object.const_defined?(const_name, false)
+
+        klass = Object.const_get(const_name, false)
+        klass if klass.is_a?(Class) && klass <= Grape::Entity
       end
     end
   end

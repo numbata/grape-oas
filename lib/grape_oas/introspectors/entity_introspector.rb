@@ -7,6 +7,8 @@ module GrapeOAS
     class EntityIntrospector
       include GrapeOAS::ApiModelBuilders::Concerns::TypeResolver
 
+      VALID_CONSTANT_PATTERN = /\A[A-Z][A-Za-z0-9_]*(::[A-Z][A-Za-z0-9_]*)*\z/
+
       def initialize(entity_class, stack: [], registry: {})
         @entity_class = entity_class
         @stack = stack
@@ -193,11 +195,11 @@ module GrapeOAS
       # Attempts to resolve a string type name to a Grape::Entity class.
       def resolve_entity_from_string(type_name)
         return nil unless defined?(Grape::Entity)
+        return nil unless type_name.match?(VALID_CONSTANT_PATTERN)
+        return nil unless Object.const_defined?(type_name, false)
 
-        klass = Object.const_get(type_name)
+        klass = Object.const_get(type_name, false)
         klass if klass.is_a?(Class) && klass <= Grape::Entity
-      rescue NameError
-        nil
       end
 
       def schema_for_merge(exposure, doc)
