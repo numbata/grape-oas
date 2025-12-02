@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "securerandom"
-
 module GrapeOAS
   module ApiModel
     # Base class for all DTO (intermediate) nodes used in OpenAPI v2/v3 conversion.
@@ -11,10 +9,24 @@ module GrapeOAS
     # @abstract
     # @see GrapeOAS::ApiModel::Schema, GrapeOAS::ApiModel::Parameter, etc.
     class Node
+      @id_counter = 0
+
+      class << self
+        attr_writer :id_counter
+
+        def id_counter
+          @id_counter ||= 0
+        end
+
+        def next_id
+          self.id_counter += 1
+        end
+      end
+
       attr_reader :id
 
       def initialize(node_id: nil)
-        @id = node_id || SecureRandom.uuid
+        @id = node_id || generate_id
       end
 
       def ref
@@ -23,6 +35,12 @@ module GrapeOAS
 
       def self.bucket
         "#{name.split("::").last.downcase}s"
+      end
+
+      private
+
+      def generate_id
+        "#{self.class.name.split("::").last}_#{self.class.next_id}"
       end
     end
   end
