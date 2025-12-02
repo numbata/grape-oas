@@ -263,6 +263,90 @@ module GrapeOAS
         assert_equal %w[age name].sort, profiles.items.properties.keys.sort
         assert_empty params
       end
+
+      # === Additional type scenarios ===
+
+      def test_typed_array_string_notation
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :tags, type: Array[String], documentation: { param_type: "body" }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        tags = body_schema.properties["tags"]
+
+        assert_equal "array", tags.type
+        assert_equal "string", tags.items.type
+      end
+
+      def test_typed_array_integer_notation
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :ids, type: Array[Integer], documentation: { param_type: "body" }
+          end
+          post "batch" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        ids = body_schema.properties["ids"]
+
+        assert_equal "array", ids.type
+        assert_equal "integer", ids.items.type
+      end
+
+      def test_hash_type_parameter
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :metadata, type: Hash, documentation: { param_type: "body" }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        metadata = body_schema.properties["metadata"]
+
+        assert_equal "object", metadata.type
+      end
+
+      def test_bigdecimal_type_maps_to_number
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :amount, type: BigDecimal
+          end
+          get "prices" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        amount_param = params.find { |p| p.name == "amount" }
+
+        assert_equal "number", amount_param.schema.type
+      end
     end
   end
 end

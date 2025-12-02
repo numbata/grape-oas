@@ -8,8 +8,12 @@ module GrapeOAS
       # Centralizes Ruby type to OpenAPI schema type resolution.
       # Used by request builders and introspectors to avoid duplicated type switching logic.
       module TypeResolver
+        # Regex to match Grape's typed array notation like "[String]", "[Integer]"
+        TYPED_ARRAY_PATTERN = /^\[(\w+)\]$/
+
         # Resolves a Ruby class or type name to its OpenAPI schema type string.
         # Handles both Ruby classes (Integer, Float) and string type names ("integer", "float").
+        # Also handles Grape's "[Type]" notation for typed arrays.
         # Falls back to "string" for unknown types.
         #
         # @param type [Class, String, Symbol, nil] The type to resolve
@@ -20,9 +24,25 @@ module GrapeOAS
           # Handle Ruby classes directly
           return Constants::RUBY_TYPE_MAPPING.fetch(type, Constants::SchemaTypes::STRING) if type.is_a?(Class)
 
+          type_str = type.to_s
+
+          # Handle Grape's typed array notation like "[String]"
+          return Constants::SchemaTypes::ARRAY if type_str.match?(TYPED_ARRAY_PATTERN)
+
           # Handle string/symbol type names
-          type_str = type.to_s.downcase
-          Constants::PRIMITIVE_TYPE_MAPPING.fetch(type_str, Constants::SchemaTypes::STRING)
+          Constants::PRIMITIVE_TYPE_MAPPING.fetch(type_str.downcase, Constants::SchemaTypes::STRING)
+        end
+
+        # Extracts the member type from Grape's "[Type]" notation.
+        # Returns nil if not a typed array.
+        #
+        # @param type [String] The type string to parse
+        # @return [String, nil] The inner type or nil
+        def extract_typed_array_member(type)
+          return nil unless type.is_a?(String)
+
+          match = type.match(TYPED_ARRAY_PATTERN)
+          match ? match[1] : nil
         end
 
         # Builds a basic Schema object for the given Ruby primitive type.

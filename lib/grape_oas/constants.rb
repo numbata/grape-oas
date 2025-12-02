@@ -51,7 +51,9 @@ module GrapeOAS
       "boolean" => SchemaTypes::BOOLEAN,
       "grape::api::boolean" => SchemaTypes::BOOLEAN,
       "trueclass" => SchemaTypes::BOOLEAN,
-      "falseclass" => SchemaTypes::BOOLEAN
+      "falseclass" => SchemaTypes::BOOLEAN,
+      "array" => SchemaTypes::ARRAY,
+      "hash" => SchemaTypes::OBJECT
     }.freeze
 
     # Resolves a primitive type name to its OpenAPI schema type.
