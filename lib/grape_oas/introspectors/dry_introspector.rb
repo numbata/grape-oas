@@ -13,7 +13,7 @@ module GrapeOAS
       MAX_TYPE_UNWRAP_DEPTH = 5
 
       # Re-export ConstraintSet for external use
-      ConstraintSet = DrySupport::ConstraintExtractor::ConstraintSet
+      ConstraintSet = DryIntrospectorSupport::ConstraintExtractor::ConstraintSet
 
       def self.build(contract)
         new(contract).build
@@ -26,7 +26,7 @@ module GrapeOAS
       def build
         return unless contract.respond_to?(:types)
 
-        rule_constraints = DrySupport::ConstraintExtractor.extract(contract)
+        rule_constraints = DryIntrospectorSupport::ConstraintExtractor.extract(contract)
         schema = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
 
         contract.types.each do |name, dry_type|

@@ -2,7 +2,7 @@
 
 module GrapeOAS
   module Introspectors
-    module DrySupport
+    module DryIntrospectorSupport
       # Extracts constraint information from Dry::Schema AST nodes.
       # Handles predicate parsing and constraint merging for schema generation.
       class ConstraintExtractor
