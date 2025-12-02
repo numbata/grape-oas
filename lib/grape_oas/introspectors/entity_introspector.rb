@@ -96,6 +96,7 @@ module GrapeOAS
         []
       end
 
+      # rubocop:disable Metrics/AbcSize
       def schema_for_exposure(exposure, doc)
         opts = exposure.instance_variable_get(:@options) || {}
         type = doc[:type] || doc["type"] || opts[:using]
@@ -126,8 +127,19 @@ module GrapeOAS
         defs = doc[:defs] || doc[:$defs]
         schema.defs = defs if defs.is_a?(Hash)
         schema.extensions = x_ext if x_ext.any? && schema.respond_to?(:extensions=)
+
+        # Apply numeric constraints
+        schema.minimum = doc[:minimum] if doc.key?(:minimum) && schema.respond_to?(:minimum=)
+        schema.maximum = doc[:maximum] if doc.key?(:maximum) && schema.respond_to?(:maximum=)
+
+        # Apply string constraints
+        schema.min_length = doc[:min_length] if doc.key?(:min_length) && schema.respond_to?(:min_length=)
+        schema.max_length = doc[:max_length] if doc.key?(:max_length) && schema.respond_to?(:max_length=)
+        schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
+
         schema
       end
+      # rubocop:enable Metrics/AbcSize
 
       def exposed?(exposure)
         conditions = exposure.instance_variable_get(:@conditions) || []
@@ -157,11 +169,28 @@ module GrapeOAS
             build_schema_for_primitive(type)
           end
         when String, Symbol
-          schema_type = Constants.primitive_type(type) || Constants::SchemaTypes::STRING
-          ApiModel::Schema.new(type: schema_type)
+          # First try to resolve as entity class name
+          entity_class = resolve_entity_from_string(type.to_s)
+          if entity_class
+            self.class.new(entity_class, stack: @stack, registry: @registry).build_schema
+          else
+            # Fall back to primitive type lookup
+            schema_type = Constants.primitive_type(type) || Constants::SchemaTypes::STRING
+            ApiModel::Schema.new(type: schema_type)
+          end
         else
           ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
         end
+      end
+
+      # Attempts to resolve a string type name to a Grape::Entity class.
+      def resolve_entity_from_string(type_name)
+        return nil unless defined?(Grape::Entity)
+
+        klass = Object.const_get(type_name)
+        klass if klass.is_a?(Class) && klass <= Grape::Entity
+      rescue NameError
+        nil
       end
 
       def schema_for_merge(exposure, doc)
