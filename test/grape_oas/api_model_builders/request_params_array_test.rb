@@ -233,6 +233,68 @@ module GrapeOAS
         assert_equal "object", address.type
         assert_includes address.properties.keys, "city"
       end
+
+      # === Collection format ===
+
+      def test_collection_format_from_documentation
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :statuses, type: [String], documentation: { param_type: "query", collectionFormat: "multi" }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        statuses_param = params.find { |p| p.name == "statuses" }
+
+        assert_equal "multi", statuses_param.collection_format
+      end
+
+      def test_collection_format_snake_case
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :tags, type: [String], documentation: { param_type: "query", collection_format: "csv" }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        tags_param = params.find { |p| p.name == "tags" }
+
+        assert_equal "csv", tags_param.collection_format
+      end
+
+      def test_collection_format_nil_by_default
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :ids, type: [Integer], documentation: { param_type: "query" }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        ids_param = params.find { |p| p.name == "ids" }
+
+        assert_nil ids_param.collection_format
+      end
     end
   end
 end

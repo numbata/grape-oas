@@ -39,14 +39,16 @@ module GrapeOAS
 
           if is_primitive && param.location != "body"
             mapping = PRIMITIVE_MAPPINGS[type]
-            {
+            result = {
               "name" => param.name,
               "in" => param.location,
               "required" => param.required,
               "description" => param.description,
               "type" => mapping ? mapping[:type] : type,
               "format" => format || (mapping ? mapping[:format] : nil)
-            }.compact
+            }
+            apply_collection_format(result, param, type)
+            result.compact
           else
             {
               "name" => param.name,
@@ -59,6 +61,14 @@ module GrapeOAS
               h["format"] = format if format
             end.compact
           end
+        end
+
+        def apply_collection_format(result, param, type)
+          return unless type == Constants::SchemaTypes::ARRAY
+          return unless param.collection_format
+
+          valid_formats = %w[csv ssv tsv pipes multi brackets]
+          result["collectionFormat"] = param.collection_format if valid_formats.include?(param.collection_format)
         end
 
         def build_body_parameter(request_body)

@@ -64,6 +64,7 @@ module GrapeOAS
               required: required,
               schema: schema,
               description: spec[:documentation]&.dig(:desc),
+              collection_format: extract_collection_format(spec),
             )
           end
         end
@@ -91,10 +92,15 @@ module GrapeOAS
             required: spec[:required] || false,
             schema: build_schema_for_spec(spec),
             description: spec[:documentation]&.dig(:desc),
+            collection_format: extract_collection_format(spec),
           )
         end
 
         params
+      end
+
+      def extract_collection_format(spec)
+        spec.dig(:documentation, :collectionFormat) || spec.dig(:documentation, :collection_format)
       end
 
       def extract_location(spec:)
