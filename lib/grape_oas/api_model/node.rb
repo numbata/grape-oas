@@ -11,11 +11,29 @@ module GrapeOAS
     # @abstract
     # @see GrapeOAS::ApiModel::Schema, GrapeOAS::ApiModel::Parameter, etc.
     class Node
+      # OpenAPI component bucket names per spec (some are irregular plurals)
+      BUCKET_NAMES = {
+        "Schema" => "schemas",
+        "Parameter" => "parameters",
+        "RequestBody" => "requestBodies",
+        "Response" => "responses",
+        "Header" => "headers",
+        "SecurityScheme" => "securitySchemes",
+        "Link" => "links",
+        "Callback" => "callbacks",
+        "Example" => "examples",
+        "PathItem" => "pathItems"
+      }.freeze
+
       class << self
         # Returns the pluralized bucket name for this class (e.g., "schemas", "parameters").
+        # Uses OpenAPI spec-compliant names for irregular plurals (e.g., "requestBodies").
         # Memoized at the class level to avoid repeated string manipulation.
         def bucket
-          @bucket ||= "#{name.split("::").last.downcase}s"
+          @bucket ||= begin
+            class_name = name.split("::").last
+            BUCKET_NAMES.fetch(class_name, "#{class_name.downcase}s")
+          end
         end
       end
 
