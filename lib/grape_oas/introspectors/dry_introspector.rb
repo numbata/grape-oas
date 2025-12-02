@@ -123,13 +123,13 @@ module GrapeOAS
 
       # Get canonical name only for proper Contract classes (not Dry::Schema objects)
       def contract_canonical_name
-        return contract_class.name if is_validation_contract?
+        return contract_class.name if validation_contract?
 
         nil
       end
 
       # Check if this is a Dry::Validation::Contract (class or instance)
-      def is_validation_contract?
+      def validation_contract?
         return false unless defined?(Dry::Validation::Contract)
 
         if @contract.is_a?(Class)
@@ -205,7 +205,9 @@ module GrapeOAS
 
         return schema unless unwrapped.respond_to?(:keys)
 
+        # rubocop:disable Style/HashEachMethods -- Dry::Types::Schema#keys returns array, not hash
         unwrapped.keys.each do |key|
+          # rubocop:enable Style/HashEachMethods
           key_name = key.respond_to?(:name) ? key.name.to_s : key.to_s
           key_type = key.respond_to?(:type) ? key.type : nil
 
