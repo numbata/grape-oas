@@ -23,13 +23,11 @@ module GrapeOAS
       end
 
       def build
-        return unless contract_schema&.respond_to?(:types)
+        return unless contract_schema.respond_to?(:types)
 
         # Check for inheritance - use allOf for child contracts
         parent_contract = find_parent_contract
-        if parent_contract
-          return build_inherited_schema(parent_contract)
-        end
+        return build_inherited_schema(parent_contract) if parent_contract
 
         # Build flat schema for non-inherited contracts
         build_flat_schema
@@ -42,7 +40,7 @@ module GrapeOAS
         rule_constraints = DryIntrospectorSupport::ConstraintExtractor.extract(contract_schema)
         schema = GrapeOAS::ApiModel::Schema.new(
           type: Constants::SchemaTypes::OBJECT,
-          canonical_name: contract_canonical_name
+          canonical_name: contract_canonical_name,
         )
 
         contract_schema.types.each do |name, dry_type|
@@ -66,7 +64,7 @@ module GrapeOAS
         # Create allOf schema
         schema = GrapeOAS::ApiModel::Schema.new(
           canonical_name: contract_class.name,
-          all_of: [parent_schema, child_schema]
+          all_of: [parent_schema, child_schema],
         )
 
         @registry[contract_class] = schema
@@ -157,9 +155,7 @@ module GrapeOAS
         meta = dry_type.respond_to?(:meta) ? dry_type.meta : {}
 
         # Check for Sum type first (TypeA | TypeB) -> anyOf
-        if DryIntrospectorSupport::TypeUnwrapper.sum_type?(dry_type)
-          return build_any_of_schema(dry_type)
-        end
+        return build_any_of_schema(dry_type) if DryIntrospectorSupport::TypeUnwrapper.sum_type?(dry_type)
 
         primitive, member = DryIntrospectorSupport::TypeUnwrapper.derive_primitive_and_member(dry_type)
         enum_vals = extract_enum_from_type(dry_type)
@@ -187,9 +183,7 @@ module GrapeOAS
       # Build schema for a single member of a Sum type
       def build_schema_for_sum_member(dry_type)
         # Handle Hash schemas (Types::Hash.schema(...))
-        if hash_schema_type?(dry_type)
-          return build_hash_schema(dry_type)
-        end
+        return build_hash_schema(dry_type) if hash_schema_type?(dry_type)
 
         # Fall back to regular type handling
         build_schema_for_type(dry_type)

@@ -10,12 +10,12 @@ class GenerateDryAnyOfTest < Minitest::Test
 
     CatType = Types::Hash.schema(
       meow_volume: Types::Integer,
-      whiskers: Types::String
+      whiskers: Types::String,
     )
 
     DogType = Types::Hash.schema(
       bark_volume: Types::Integer,
-      breed: Types::String
+      breed: Types::String,
     )
 
     AnimalType = CatType | DogType
@@ -47,12 +47,15 @@ class GenerateDryAnyOfTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas3)
 
     pet_schema = schema.dig("components", "schemas", PET_SCHEMA_NAME)
+
     refute_nil pet_schema, "PetContract schema should exist in components"
 
     animal_prop = pet_schema.dig("properties", "animal")
+
     refute_nil animal_prop, "Should have animal property"
 
     any_of = animal_prop["anyOf"]
+
     refute_nil any_of, "animal should have anyOf"
     assert_equal 2, any_of.length
   end
@@ -65,11 +68,13 @@ class GenerateDryAnyOfTest < Minitest::Test
 
     # First item should be cat
     cat_props = any_of[0]["properties"]
+
     assert cat_props.key?("meow_volume")
     assert cat_props.key?("whiskers")
 
     # Second item should be dog
     dog_props = any_of[1]["properties"]
+
     assert dog_props.key?("bark_volume")
     assert dog_props.key?("breed")
   end
@@ -92,9 +97,11 @@ class GenerateDryAnyOfTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas31)
 
     pet_schema = schema.dig("components", "schemas", PET_SCHEMA_NAME)
+
     refute_nil pet_schema
 
     any_of = pet_schema.dig("properties", "animal", "anyOf")
+
     refute_nil any_of, "animal should have anyOf in OAS 3.1"
     assert_equal 2, any_of.length
   end
@@ -142,6 +149,7 @@ class GenerateDryAnyOfTest < Minitest::Test
     schema = GrapeOAS.generate(app: ThreeTypeAPI, schema_type: :oas3)
 
     contract_schema = schema.dig("components", "schemas", THREE_TYPE_SCHEMA_NAME)
+
     refute_nil contract_schema, "ThreeTypeContract schema should exist"
 
     any_of = contract_schema.dig("properties", "animal", "anyOf")
@@ -150,6 +158,7 @@ class GenerateDryAnyOfTest < Minitest::Test
     assert_equal 3, any_of.length
 
     all_props = any_of.flat_map { |item| item["properties"].keys }
+
     assert_includes all_props, "meow"
     assert_includes all_props, "bark"
     assert_includes all_props, "chirp"

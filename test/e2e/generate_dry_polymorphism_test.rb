@@ -55,6 +55,7 @@ class GenerateDryPolymorphismTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas2)
 
     pet_schema = schema.dig("definitions", PET_SCHEMA_NAME)
+
     refute_nil pet_schema, "Pet schema should exist"
 
     # Parent should have flat properties, no allOf
@@ -68,9 +69,11 @@ class GenerateDryPolymorphismTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas2)
 
     cat_schema = schema.dig("definitions", CAT_SCHEMA_NAME)
+
     refute_nil cat_schema, "Cat schema should exist"
 
     all_of = cat_schema["allOf"]
+
     refute_nil all_of, "Cat should use allOf"
     assert_equal 2, all_of.length
 
@@ -79,6 +82,7 @@ class GenerateDryPolymorphismTest < Minitest::Test
 
     # Second should have child-specific properties
     child_props = all_of[1]["properties"]
+
     refute_nil child_props
     assert child_props.key?("hunting_skill")
     refute child_props.key?("pet_type")
@@ -89,12 +93,15 @@ class GenerateDryPolymorphismTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas2)
 
     dog_schema = schema.dig("definitions", DOG_SCHEMA_NAME)
+
     refute_nil dog_schema
 
     all_of = dog_schema["allOf"]
+
     refute_nil all_of
 
     child_props = all_of[1]["properties"]
+
     assert child_props.key?("breed")
     assert child_props.key?("pack_size")
   end
@@ -105,6 +112,7 @@ class GenerateDryPolymorphismTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas3)
 
     pet_schema = schema.dig("components", "schemas", PET_SCHEMA_NAME)
+
     refute_nil pet_schema, "Pet schema should exist"
 
     assert_nil pet_schema["allOf"]
@@ -115,9 +123,11 @@ class GenerateDryPolymorphismTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas3)
 
     cat_schema = schema.dig("components", "schemas", CAT_SCHEMA_NAME)
+
     refute_nil cat_schema
 
     all_of = cat_schema["allOf"]
+
     refute_nil all_of
     assert_equal 2, all_of.length
 
@@ -132,6 +142,7 @@ class GenerateDryPolymorphismTest < Minitest::Test
     all_of = dog_schema["allOf"]
 
     child_props = all_of[1]["properties"]
+
     assert child_props.key?("breed")
     assert child_props.key?("pack_size")
     assert_equal "integer", child_props["pack_size"]["type"]
@@ -143,6 +154,7 @@ class GenerateDryPolymorphismTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas31)
 
     pet_schema = schema.dig("components", "schemas", PET_SCHEMA_NAME)
+
     refute_nil pet_schema
 
     assert_nil pet_schema["allOf"]
@@ -152,9 +164,11 @@ class GenerateDryPolymorphismTest < Minitest::Test
     schema = GrapeOAS.generate(app: TestAPI, schema_type: :oas31)
 
     cat_schema = schema.dig("components", "schemas", CAT_SCHEMA_NAME)
+
     refute_nil cat_schema
 
     all_of = cat_schema["allOf"]
+
     refute_nil all_of
     assert_equal "#/components/schemas/#{PET_SCHEMA_NAME}", all_of[0]["$ref"]
   end
