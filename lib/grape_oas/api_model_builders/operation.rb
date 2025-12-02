@@ -20,6 +20,7 @@ module GrapeOAS
           http_method: http_method,
           operation_id: operation_id,
           summary: route.options[:description],
+          description: build_description,
           tag_names: tag_names,
           extensions: operation_extensions,
           consumes: consumes,
@@ -108,6 +109,11 @@ module GrapeOAS
         route.options[:deprecated] ||
           route.options.dig(:documentation, :deprecated) ||
           false
+      end
+
+      def build_description
+        route.options[:detail] ||
+          route.options.dig(:documentation, :desc)
       end
 
       def consumes
