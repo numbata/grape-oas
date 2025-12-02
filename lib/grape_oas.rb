@@ -20,18 +20,57 @@ loader.inflector.inflect(
 loader.ignore("#{__dir__}/grape-oas.rb")
 loader.setup
 
+# GrapeOAS generates OpenAPI specifications from Grape APIs.
+#
+# @example Basic usage
+#   schema = GrapeOAS.generate(app: MyAPI)
+#   puts JSON.pretty_generate(schema)
+#
+# @example Generate OpenAPI 2.0 (Swagger)
+#   schema = GrapeOAS.generate(app: MyAPI, schema_type: :oas2)
+#
+# @example Generate OpenAPI 3.1
+#   schema = GrapeOAS.generate(app: MyAPI, schema_type: :oas31)
+#
 module GrapeOAS
-  # Provides the version of the GrapeOAS gem
-  # @return [String] the version of the GrapeOAS gem
+  # Returns the version of the GrapeOAS gem.
+  #
+  # @return [String] the semantic version string
   def version
     OAS::VERSION
   end
   module_function :version
 
-  # Generates an OpenAPI schema from a Grape application
-  # @param app [Grape::API] the Grape application to generate the schema from
-  # @param schema_type [Symbol] the type of OpenAPI schema to generate, either :oas3 or :oas2
-  # @return [Hash] the generated OpenAPI schema
+  # Generates an OpenAPI specification from a Grape API application.
+  #
+  # Introspects the Grape API routes, parameters, entities, and contracts
+  # to produce a complete OpenAPI specification document.
+  #
+  # @param app [Class<Grape::API>] The Grape API class to document
+  # @param schema_type [Symbol] The OpenAPI version to generate
+  #   - `:oas2` - OpenAPI 2.0 (Swagger)
+  #   - `:oas3` - OpenAPI 3.0 (default)
+  #   - `:oas31` - OpenAPI 3.1
+  # @param options [Hash] Additional options passed to the API model builder
+  # @option options [String] :title API title for the info section
+  # @option options [String] :version API version string
+  # @option options [Array<String>] :servers Server URLs (OAS3 only)
+  # @option options [Hash] :license License information
+  # @option options [Hash] :security_definitions Security scheme definitions
+  #
+  # @return [Hash] The OpenAPI specification as a Hash (JSON-serializable)
+  #
+  # @example Basic generation
+  #   schema = GrapeOAS.generate(app: MyAPI)
+  #
+  # @example With custom metadata
+  #   schema = GrapeOAS.generate(
+  #     app: MyAPI,
+  #     schema_type: :oas3,
+  #     title: "My API",
+  #     version: "1.0.0"
+  #   )
+  #
   def generate(app:, schema_type: :oas3, **options)
     api_model = GrapeOAS::ApiModelBuilder.new(options)
     api_model.add_app(app)
