@@ -45,6 +45,8 @@ module GrapeOAS
       end
 
       def empty?
+        return false if @all_of&.any? || @one_of&.any? || @any_of&.any?
+
         @properties.nil? || @properties.empty?
       end
 
