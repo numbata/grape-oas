@@ -194,6 +194,17 @@ module GrapeOAS
           end
         end
         collect_refs(schema.items, pending, seen) if schema.respond_to?(:items) && schema.items
+
+        # Handle allOf composition (for inheritance)
+        if schema.respond_to?(:all_of) && schema.all_of
+          schema.all_of.each do |sub_schema|
+            if sub_schema.respond_to?(:canonical_name) && sub_schema.canonical_name
+              pending << sub_schema.canonical_name
+              @ref_schemas[sub_schema.canonical_name] ||= sub_schema
+            end
+            collect_refs(sub_schema, pending, seen)
+          end
+        end
       end
     end
   end

@@ -13,6 +13,21 @@ module GrapeOAS
         def build
           return {} unless @schema
 
+          # Handle allOf composition (for inheritance)
+          if @schema.all_of && !@schema.all_of.empty?
+            return build_all_of_schema
+          end
+
+          # Handle oneOf composition
+          if @schema.one_of && !@schema.one_of.empty?
+            return build_one_of_schema
+          end
+
+          # Handle anyOf composition
+          if @schema.any_of && !@schema.any_of.empty?
+            return build_any_of_schema
+          end
+
           schema_hash = {}
           schema_hash["type"] = nullable_type
           schema_hash["format"] = @schema.format
@@ -34,6 +49,10 @@ module GrapeOAS
             schema_hash["unevaluatedProperties"] = @schema.unevaluated_properties
           end
           schema_hash["$defs"] = @schema.defs if !@nullable_keyword && @schema.defs && !@schema.defs.empty?
+
+          # OAS3 discriminator is an object with propertyName (and optional mapping)
+          schema_hash["discriminator"] = build_discriminator if @schema.discriminator
+
           apply_numeric_constraints(schema_hash)
           apply_string_constraints(schema_hash)
           apply_array_constraints(schema_hash)
@@ -41,6 +60,57 @@ module GrapeOAS
         end
 
         private
+
+        # Build allOf schema for inheritance
+        def build_all_of_schema
+          all_of_items = @schema.all_of.map do |item|
+            build_schema_or_ref(item)
+          end
+
+          result = { "allOf" => all_of_items }
+          result["description"] = @schema.description.to_s if @schema.description
+          result
+        end
+
+        # Build oneOf schema for polymorphism
+        def build_one_of_schema
+          one_of_items = @schema.one_of.map do |item|
+            build_schema_or_ref(item)
+          end
+
+          result = { "oneOf" => one_of_items }
+          result["description"] = @schema.description.to_s if @schema.description
+          result["discriminator"] = build_discriminator if @schema.discriminator
+          result
+        end
+
+        # Build anyOf schema for polymorphism
+        def build_any_of_schema
+          any_of_items = @schema.any_of.map do |item|
+            build_schema_or_ref(item)
+          end
+
+          result = { "anyOf" => any_of_items }
+          result["description"] = @schema.description.to_s if @schema.description
+          result["discriminator"] = build_discriminator if @schema.discriminator
+          result
+        end
+
+        # Build OAS3 discriminator object
+        def build_discriminator
+          return nil unless @schema.discriminator
+
+          if @schema.discriminator.is_a?(Hash)
+            # Already in object format with propertyName and optional mapping
+            disc = { "propertyName" => @schema.discriminator[:property_name] || @schema.discriminator["propertyName"] }
+            mapping = @schema.discriminator[:mapping] || @schema.discriminator["mapping"]
+            disc["mapping"] = mapping if mapping && !mapping.empty?
+            disc
+          else
+            # Simple string - convert to object format
+            { "propertyName" => @schema.discriminator.to_s }
+          end
+        end
 
         def nullable_type
           return @schema.type unless @schema.respond_to?(:nullable) && @schema.nullable

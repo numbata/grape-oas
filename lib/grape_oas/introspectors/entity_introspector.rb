@@ -20,6 +20,12 @@ module GrapeOAS
         built = @registry[@entity_class]
         return built if built && !built.properties.empty?
 
+        # Check for inheritance with discriminator - use allOf for polymorphism
+        parent_entity = find_parent_entity
+        if parent_entity && parent_has_discriminator?(parent_entity)
+          return build_inherited_schema(parent_entity)
+        end
+
         # Build (or reuse placeholder) for this entity
         schema = (@registry[@entity_class] ||= ApiModel::Schema.new(
           type: Constants::SchemaTypes::OBJECT,
@@ -45,6 +51,10 @@ module GrapeOAS
 
         root_ext = doc.select { |k, _| k.to_s.start_with?("x-") }
         schema.extensions = root_ext if root_ext.any?
+
+        # Check for discriminator field
+        discriminator_field = find_discriminator_field
+        schema.discriminator = discriminator_field if discriminator_field
 
         exposures.each do |exposure|
           next unless exposed?(exposure)
@@ -242,6 +252,100 @@ module GrapeOAS
       # Extract merge flag from multiple sources
       def extract_merge_flag(exposure, doc, opts)
         opts[:merge] || doc[:merge] || (exposure.respond_to?(:for_merge) && exposure.for_merge)
+      end
+
+      # Find parent entity class if this entity inherits from another Grape::Entity
+      def find_parent_entity
+        return nil unless defined?(Grape::Entity)
+
+        parent = @entity_class.superclass
+        return nil unless parent && parent < Grape::Entity && parent != Grape::Entity
+
+        parent
+      end
+
+      # Build schema for inherited entity using allOf composition
+      def build_inherited_schema(parent_entity)
+        # First, ensure parent schema is built
+        parent_schema = self.class.new(parent_entity, stack: @stack, registry: @registry).build_schema
+
+        # Build child-specific properties (excluding inherited ones)
+        child_schema = build_child_only_schema(parent_entity)
+
+        # Create allOf schema with ref to parent + child properties
+        schema = ApiModel::Schema.new(
+          canonical_name: @entity_class.name,
+          all_of: [parent_schema, child_schema]
+        )
+
+        @registry[@entity_class] = schema
+        schema
+      end
+
+      # Build schema containing only this entity's own properties (not inherited)
+      def build_child_only_schema(parent_entity)
+        child_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+
+        # Get parent's exposure keys to exclude
+        parent_keys = parent_exposures(parent_entity).map { |e| e.key.to_s }
+
+        exposures.each do |exposure|
+          next unless exposed?(exposure)
+
+          name = exposure.key.to_s
+          # Skip if this is an inherited property
+          next if parent_keys.include?(name)
+
+          doc = exposure.documentation || {}
+          opts = exposure.instance_variable_get(:@options) || {}
+
+          next if merge_exposure?(exposure, doc, opts)
+
+          prop_schema = schema_for_exposure(exposure, doc)
+          if conditional?(exposure)
+            prop_schema.nullable = true if prop_schema.respond_to?(:nullable=) && !prop_schema.nullable
+            doc = doc.merge(required: false)
+          end
+          is_array = doc[:is_array] || doc["is_array"]
+          prop_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema) if is_array
+
+          child_schema.add_property(name, prop_schema, required: doc[:required])
+        end
+
+        child_schema
+      end
+
+      # Get exposures from parent entity
+      def parent_exposures(parent_entity)
+        return [] unless parent_entity.respond_to?(:root_exposures)
+
+        root = parent_entity.root_exposures
+        list = root.instance_variable_get(:@exposures) || []
+        Array(list)
+      rescue NoMethodError
+        []
+      end
+
+      # Find field marked with is_discriminator: true
+      def find_discriminator_field
+        exposures.each do |exposure|
+          doc = exposure.documentation || {}
+          is_discriminator = doc[:is_discriminator] || doc["is_discriminator"]
+          return exposure.key.to_s if is_discriminator
+        end
+        nil
+      end
+
+      # Check if parent entity has a discriminator field
+      def parent_has_discriminator?(parent_entity)
+        return false unless parent_entity.respond_to?(:root_exposures)
+
+        parent_exposures(parent_entity).any? do |exposure|
+          doc = exposure.documentation || {}
+          doc[:is_discriminator] || doc["is_discriminator"]
+        end
+      rescue NoMethodError
+        false
       end
     end
   end

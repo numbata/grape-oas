@@ -12,6 +12,11 @@ module GrapeOAS
         def build
           return {} unless @schema
 
+          # Handle allOf composition (for inheritance)
+          if @schema.all_of && !@schema.all_of.empty?
+            return build_all_of_schema
+          end
+
           schema_hash = {
             "type" => @schema.type,
             "format" => @schema.format,
@@ -34,10 +39,25 @@ module GrapeOAS
           schema_hash["maxItems"] = @schema.max_items if @schema.max_items
           schema_hash["example"] = @schema.examples if @schema.examples
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
+
+          # OAS2 discriminator is a simple string (field name)
+          schema_hash["discriminator"] = @schema.discriminator if @schema.discriminator
+
           schema_hash.compact
         end
 
         private
+
+        # Build allOf schema for inheritance
+        def build_all_of_schema
+          all_of_items = @schema.all_of.map do |item|
+            build_schema_or_ref(item)
+          end
+
+          result = { "allOf" => all_of_items }
+          result["description"] = @schema.description.to_s if @schema.description
+          result
+        end
 
         def build_properties(properties)
           return nil unless properties

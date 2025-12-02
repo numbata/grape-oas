@@ -15,6 +15,7 @@ module GrapeOAS
         min_length max_length pattern
         minimum maximum exclusive_minimum exclusive_maximum
         min_items max_items
+        discriminator all_of one_of any_of
       ].freeze
 
       attr_accessor(*VALID_ATTRIBUTES)
@@ -29,6 +30,10 @@ module GrapeOAS
         @additional_properties = nil
         @unevaluated_properties = nil
         @defs = {}
+        @discriminator = nil
+        @all_of = nil
+        @one_of = nil
+        @any_of = nil
 
         attrs.each do |k, v|
           unless VALID_ATTRIBUTES.include?(k)
