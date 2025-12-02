@@ -8,13 +8,21 @@ module GrapeOAS
       # Centralizes Ruby type to OpenAPI schema type resolution.
       # Used by request builders and introspectors to avoid duplicated type switching logic.
       module TypeResolver
-        # Resolves a Ruby class to its OpenAPI schema type string.
+        # Resolves a Ruby class or type name to its OpenAPI schema type string.
+        # Handles both Ruby classes (Integer, Float) and string type names ("integer", "float").
         # Falls back to "string" for unknown types.
         #
-        # @param ruby_class [Class, nil] The Ruby class to resolve
+        # @param type [Class, String, Symbol, nil] The type to resolve
         # @return [String] The OpenAPI schema type
-        def resolve_schema_type(ruby_class)
-          Constants::RUBY_TYPE_MAPPING.fetch(ruby_class, Constants::SchemaTypes::STRING)
+        def resolve_schema_type(type)
+          return Constants::SchemaTypes::STRING if type.nil?
+
+          # Handle Ruby classes directly
+          return Constants::RUBY_TYPE_MAPPING.fetch(type, Constants::SchemaTypes::STRING) if type.is_a?(Class)
+
+          # Handle string/symbol type names
+          type_str = type.to_s.downcase
+          Constants::PRIMITIVE_TYPE_MAPPING.fetch(type_str, Constants::SchemaTypes::STRING)
         end
 
         # Builds a basic Schema object for the given Ruby primitive type.

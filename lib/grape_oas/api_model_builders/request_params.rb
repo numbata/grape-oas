@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
+require_relative "concerns/type_resolver"
+
 module GrapeOAS
   module ApiModelBuilders
     class RequestParams
-      ROUTE_PARAM_REGEX = /(?<=:)\w+/
+      include Concerns::TypeResolver
 
-      PRIMITIVE_TYPE_MAPPING = Constants::PRIMITIVE_TYPE_MAPPING
+      ROUTE_PARAM_REGEX = /(?<=:)\w+/
 
       attr_reader :api, :route, :path_param_name_map
 
@@ -127,21 +129,7 @@ module GrapeOAS
       def sanitize_type(type)
         return Constants::SchemaTypes::OBJECT if grape_entity?(type)
 
-        type = type.to_s if type.is_a?(Symbol)
-        case type
-        when Integer
-          Constants::SchemaTypes::INTEGER
-        when Float, BigDecimal
-          Constants::SchemaTypes::NUMBER
-        when TrueClass, FalseClass
-          Constants::SchemaTypes::BOOLEAN
-        when Array
-          Constants::SchemaTypes::ARRAY
-        when Hash
-          Constants::SchemaTypes::OBJECT
-        else
-          PRIMITIVE_TYPE_MAPPING.fetch(type.to_s.downcase, Constants::SchemaTypes::STRING)
-        end
+        resolve_schema_type(type)
       end
 
       def resolve_entity_class(type)
