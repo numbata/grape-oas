@@ -35,7 +35,7 @@ module GrapeOAS
         # OAS forbids requestBody for GET/HEAD/DELETE; skip unless explicitly allowed
         return if %w[get head delete].include?(operation.http_method.to_s)
 
-        media_ext = media_type_extensions(GrapeOAS::Constants::MimeTypes::JSON)
+        media_ext = media_type_extensions(Constants::MimeTypes::JSON)
 
         # Ensure body schema is referenceable (so exporters emit $ref instead of inline)
         return unless body_schema.respond_to?(:canonical_name)
@@ -54,7 +54,7 @@ module GrapeOAS
           body_schema.canonical_name = "#{operation.operation_id}_Request"
         end
 
-        media_types = Array(operation.consumes.presence || [GrapeOAS::Constants::MimeTypes::JSON]).map do |mime|
+        media_types = Array(operation.consumes.presence || [Constants::MimeTypes::JSON]).map do |mime|
           GrapeOAS::ApiModel::MediaType.new(
             mime_type: mime,
             schema: body_schema,

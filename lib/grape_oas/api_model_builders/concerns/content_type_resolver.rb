@@ -25,7 +25,7 @@ module GrapeOAS
           mimes << mime_for_format(default_format) if mimes.empty? && default_format
 
           mimes = mimes.map { |m| normalize_mime(m) }.compact
-          mimes.empty? ? [GrapeOAS::Constants::MimeTypes::JSON] : mimes.uniq
+          mimes.empty? ? [Constants::MimeTypes::JSON] : mimes.uniq
         end
 
         def mime_for_format(format)

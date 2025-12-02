@@ -5,7 +5,7 @@ module GrapeOAS
     class RequestParams
       ROUTE_PARAM_REGEX = /(?<=:)\w+/
 
-      PRIMITIVE_TYPE_MAPPING = GrapeOAS::Constants::PRIMITIVE_TYPE_MAPPING
+      PRIMITIVE_TYPE_MAPPING = Constants::PRIMITIVE_TYPE_MAPPING
 
       attr_reader :api, :route, :path_param_name_map
 

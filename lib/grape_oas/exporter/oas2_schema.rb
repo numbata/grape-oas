@@ -49,12 +49,12 @@ module GrapeOAS
 
       def build_consumes
         # TODO: Derive from request bodies/media types
-        [GrapeOAS::Constants::MimeTypes::JSON]
+        [Constants::MimeTypes::JSON]
       end
 
       def build_produces
         # TODO: Derive from responses/media types
-        [GrapeOAS::Constants::MimeTypes::JSON]
+        [Constants::MimeTypes::JSON]
       end
 
       def build_tags
