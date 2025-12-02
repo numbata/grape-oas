@@ -36,7 +36,7 @@ module GrapeOAS
         return unless contract.respond_to?(:types)
 
         rule_constraints = extract_rule_constraints(contract)
-        schema = GrapeOAS::ApiModel::Schema.new(type: "object")
+        schema = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
 
         contract.types.each do |name, dry_type|
           constraints = rule_constraints[name]
@@ -72,18 +72,22 @@ module GrapeOAS
         enum_vals = extract_enum_from_type(dry_type)
 
         schema = if primitive == Array
-                   items_schema = member ? build_schema_for_type(member) : GrapeOAS::ApiModel::Schema.new(type: "string")
-                   GrapeOAS::ApiModel::Schema.new(type: "array", items: items_schema)
+                   items_schema = if member
+                                    build_schema_for_type(member)
+                                  else
+                                    GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+                                  end
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
                  elsif primitive == Hash
-                   GrapeOAS::ApiModel::Schema.new(type: "object")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
                  elsif primitive == Integer
-                   GrapeOAS::ApiModel::Schema.new(type: "integer")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
                  elsif [Float, BigDecimal].include?(primitive)
-                   GrapeOAS::ApiModel::Schema.new(type: "number")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
                  elsif [TrueClass, FalseClass].include?(primitive)
-                   GrapeOAS::ApiModel::Schema.new(type: "boolean")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::BOOLEAN)
                  else
-                   GrapeOAS::ApiModel::Schema.new(type: "string")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
                  end
 
         # Nullability
@@ -94,9 +98,9 @@ module GrapeOAS
         schema.enum = constraints.enum if constraints.enum && schema.enum.nil?
 
         # Meta-driven constraints
-        apply_string_meta(schema, meta) if schema.type == "string"
-        apply_numeric_meta(schema, meta) if %w[integer number].include?(schema.type)
-        apply_array_meta(schema, meta) if schema.type == "array"
+        apply_string_meta(schema, meta) if schema.type == Constants::SchemaTypes::STRING
+        apply_numeric_meta(schema, meta) if [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].include?(schema.type)
+        apply_array_meta(schema, meta) if schema.type == Constants::SchemaTypes::ARRAY
 
         # Rule/AST-driven constraints
         apply_rule_constraints(schema, constraints)
@@ -186,16 +190,16 @@ module GrapeOAS
         return unless constraints
 
         case schema.type
-        when "string"
+        when Constants::SchemaTypes::STRING
           schema.min_length ||= constraints.min_size if constraints.min_size
           schema.max_length ||= constraints.max_size if constraints.max_size
           schema.pattern ||= constraints.pattern if constraints.pattern
-        when "array"
+        when Constants::SchemaTypes::ARRAY
           schema.min_items ||= constraints.min_size if constraints.min_size
           schema.max_items ||= constraints.max_size if constraints.max_size
         end
 
-        if %w[integer number].include?(schema.type)
+        if [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].include?(schema.type)
           numeric_min = constraints.minimum || constraints.min_size
           numeric_max = constraints.maximum || constraints.max_size
           schema.minimum ||= numeric_min if numeric_min

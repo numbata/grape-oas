@@ -137,7 +137,7 @@ module GrapeOAS
               location: "path",
               name: name,
               required: true,
-              schema: GrapeOAS::ApiModel::Schema.new(type: "string"),
+              schema: GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING),
             ),
           )
         end

@@ -28,7 +28,7 @@ module GrapeOAS
           end
           sanitize_enum_against_type(schema_hash)
           schema_hash.merge!(@schema.extensions) if @schema.extensions
-          schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != "object"
+          schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != Constants::SchemaTypes::OBJECT
           schema_hash["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
           if !@nullable_keyword && !@schema.unevaluated_properties.nil?
             schema_hash["unevaluatedProperties"] = @schema.unevaluated_properties
@@ -53,7 +53,7 @@ module GrapeOAS
 
             type_hash["type"]
           else
-            base = Array(@schema.type || "string")
+            base = Array(@schema.type || Constants::SchemaTypes::STRING)
             (base | ["null"])
           end
         end
@@ -82,8 +82,8 @@ module GrapeOAS
 
           coerced = enum_vals.map do |v|
             case type
-            when "integer" then v.to_i if v.respond_to?(:to_i)
-            when "number" then v.to_f if v.respond_to?(:to_f)
+            when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
+            when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
             else v
             end
           end.compact
@@ -138,20 +138,20 @@ module GrapeOAS
 
           # Remove enum for unsupported base types or mismatches
           case base_type
-          when "array", "object", nil
+          when Constants::SchemaTypes::ARRAY, Constants::SchemaTypes::OBJECT, nil
             hash.delete("enum")
-          when "integer"
+          when Constants::SchemaTypes::INTEGER
             hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(Integer) }
-          when "number"
+          when Constants::SchemaTypes::NUMBER
             hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(Numeric) }
-          when "boolean"
-            hash.delete("enum") unless enum_vals.all? { |v| v == true || v == false }
+          when Constants::SchemaTypes::BOOLEAN
+            hash.delete("enum") unless enum_vals.all? { |v| [true, false].include?(v) }
           else # string and fallback
             hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(String) }
           end
         end
 
-        def coerce_example(ex, type_val)
+        def coerce_example(example, type_val)
           base_type = if type_val.is_a?(Array)
                         (type_val - ["null"]).first
                       else
@@ -159,16 +159,16 @@ module GrapeOAS
                       end
 
           case base_type
-          when "integer"
-            ex.to_i
-          when "number"
-            ex.to_f
-          when "boolean"
-            ex == true || ex.to_s == "true"
-          when "string", nil
-            ex.to_s
+          when Constants::SchemaTypes::INTEGER
+            example.to_i
+          when Constants::SchemaTypes::NUMBER
+            example.to_f
+          when Constants::SchemaTypes::BOOLEAN
+            example == true || example.to_s == "true"
+          when Constants::SchemaTypes::STRING, nil
+            example.to_s
           else
-            ex
+            example
           end
         end
       end

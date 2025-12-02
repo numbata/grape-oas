@@ -3,13 +3,7 @@
 module GrapeOAS
   module Introspectors
     class EntityIntrospector
-      PRIMITIVE_MAPPING = {
-        "integer" => "integer",
-        "float" => "number",
-        "bigdecimal" => "number",
-        "string" => "string",
-        "boolean" => "boolean"
-      }.freeze
+      PRIMITIVE_MAPPING = GrapeOAS::Constants::PRIMITIVE_TYPE_MAPPING
 
       def initialize(entity_class, stack: [], registry: {})
         @entity_class = entity_class
@@ -26,7 +20,7 @@ module GrapeOAS
 
         # Build (or reuse placeholder) for this entity
         schema = (@registry[@entity_class] ||= ApiModel::Schema.new(
-          type: "object",
+          type: Constants::SchemaTypes::OBJECT,
           canonical_name: @entity_class.name,
           description: nil,
           nullable: nil,
@@ -74,7 +68,7 @@ module GrapeOAS
           end
           is_array = doc[:is_array] || doc["is_array"]
 
-          prop_schema = ApiModel::Schema.new(type: "array", items: prop_schema) if is_array
+          prop_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema) if is_array
 
           schema.add_property(name, prop_schema, required: doc[:required])
         end
@@ -115,13 +109,13 @@ module GrapeOAS
         schema = case type
                  when Array
                    inner = schema_for_type(type.first)
-                   ApiModel::Schema.new(type: "array", items: inner)
+                   ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: inner)
                  when Hash
-                   ApiModel::Schema.new(type: "object")
+                   ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
                  else
                    schema_for_type(type)
                  end
-        schema ||= ApiModel::Schema.new(type: "string")
+        schema ||= ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
         schema.nullable = nullable
         schema.enum = enum if enum
         schema.description = desc if desc
@@ -155,37 +149,37 @@ module GrapeOAS
       def schema_for_type(type)
         case type
         when nil
-          ApiModel::Schema.new(type: "string")
+          ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
         when Class
           if defined?(Grape::Entity) && type <= Grape::Entity
             self.class.new(type, stack: @stack, registry: @registry).build_schema
           elsif type == Integer
-            ApiModel::Schema.new(type: "integer")
+            ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
           elsif [Float, BigDecimal].include?(type)
-            ApiModel::Schema.new(type: "number")
+            ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
           elsif [TrueClass, FalseClass].include?(type)
-            ApiModel::Schema.new(type: "boolean")
+            ApiModel::Schema.new(type: Constants::SchemaTypes::BOOLEAN)
           elsif type == Array
-            ApiModel::Schema.new(type: "array")
+            ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY)
           elsif type == Hash
-            ApiModel::Schema.new(type: "object")
+            ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           else
-            ApiModel::Schema.new(type: "string")
+            ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
           end
         when String, Symbol
-          t = PRIMITIVE_MAPPING[type.to_s.downcase] || "string"
+          t = PRIMITIVE_MAPPING[type.to_s.downcase] || Constants::SchemaTypes::STRING
           ApiModel::Schema.new(type: t)
         else
-          ApiModel::Schema.new(type: "string")
+          ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
         end
       end
 
       def schema_for_merge(exposure, doc)
         using_class = resolve_entity_from_opts(exposure, doc)
-        return ApiModel::Schema.new(type: "object") unless using_class
+        return ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT) unless using_class
 
         child = self.class.new(using_class, stack: @stack, registry: @registry).build_schema
-        merged = ApiModel::Schema.new(type: "object")
+        merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
         child.properties.each do |n, ps|
           merged.add_property(n, ps, required: child.required.include?(n))
         end

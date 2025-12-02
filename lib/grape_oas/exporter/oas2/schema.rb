@@ -20,7 +20,9 @@ module GrapeOAS
             "items" => (@schema.items ? build_schema_or_ref(@schema.items) : nil),
             "enum" => normalize_enum(@schema.enum, @schema.type)
           }
-          schema_hash.delete("properties") if schema_hash["properties"].nil? || schema_hash["properties"].empty? || @schema.type != "object"
+          if schema_hash["properties"].nil? || schema_hash["properties"].empty? || @schema.type != Constants::SchemaTypes::OBJECT
+            schema_hash.delete("properties")
+          end
           schema_hash["minLength"] = @schema.min_length if @schema.min_length
           schema_hash["maxLength"] = @schema.max_length if @schema.max_length
           schema_hash["pattern"] = @schema.pattern if @schema.pattern
@@ -61,8 +63,8 @@ module GrapeOAS
 
           coerced = enum_vals.map do |v|
             case type
-            when "integer" then v.to_i if v.respond_to?(:to_i)
-            when "number" then v.to_f if v.respond_to?(:to_f)
+            when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
+            when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
             else v
             end
           end.compact

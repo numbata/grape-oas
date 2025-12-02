@@ -31,7 +31,7 @@ module GrapeOAS
             name = hdr[:name] || hdr["name"] || hdr[:key] || hdr["key"]
             next unless name
 
-            h[name] = (hdr[:schema] || hdr["schema"] || { "schema" => { "type" => "string" } })
+            h[name] = (hdr[:schema] || hdr["schema"] || { "schema" => { "type" => Constants::SchemaTypes::STRING } })
           end
         end
 

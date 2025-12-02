@@ -32,7 +32,7 @@ module GrapeOAS
         # OAS forbids requestBody for GET/HEAD/DELETE; skip unless explicitly allowed
         return if %w[get head delete].include?(operation.http_method.to_s)
 
-        media_ext = media_type_extensions("application/json")
+        media_ext = media_type_extensions(GrapeOAS::Constants::MimeTypes::JSON)
 
         # Ensure body schema is referenceable (so exporters emit $ref instead of inline)
         return unless body_schema.respond_to?(:canonical_name)
@@ -51,7 +51,7 @@ module GrapeOAS
           body_schema.canonical_name = "#{operation.operation_id}_Request"
         end
 
-        media_types = Array(operation.consumes.presence || ["application/json"]).map do |mime|
+        media_types = Array(operation.consumes.presence || [GrapeOAS::Constants::MimeTypes::JSON]).map do |mime|
           GrapeOAS::ApiModel::MediaType.new(
             mime_type: mime,
             schema: body_schema,
@@ -109,14 +109,18 @@ module GrapeOAS
       end
 
       def hash_to_schema(obj)
-        schema = GrapeOAS::ApiModel::Schema.new(type: "object")
+        schema = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
         obj.each do |key, value|
           case value
           when Hash
             schema.add_property(key, hash_to_schema(value))
           when Array
-            item_schema = value.first.is_a?(Hash) ? hash_to_schema(value.first) : GrapeOAS::ApiModel::Schema.new(type: "string")
-            schema.add_property(key, GrapeOAS::ApiModel::Schema.new(type: "array", items: item_schema))
+            item_schema = if value.first.is_a?(Hash)
+                            hash_to_schema(value.first)
+                          else
+                            GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+                          end
+            schema.add_property(key, GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: item_schema))
           else
             prop_schema = GrapeOAS::ApiModel::Schema.new(type: map_type(value))
             prop_schema.nullable = true if value.nil?
@@ -128,17 +132,17 @@ module GrapeOAS
 
       def map_type(value)
         return value.primitive.to_s.downcase if value.respond_to?(:primitive)
-        return "integer" if value == Integer
-        return "number" if [Float, BigDecimal].include?(value)
-        return "boolean" if [TrueClass, FalseClass].include?(value)
-        return "array" if value == Array
-        return "object" if value == Hash
+        return Constants::SchemaTypes::INTEGER if value == Integer
+        return Constants::SchemaTypes::NUMBER if [Float, BigDecimal].include?(value)
+        return Constants::SchemaTypes::BOOLEAN if [TrueClass, FalseClass].include?(value)
+        return Constants::SchemaTypes::ARRAY if value == Array
+        return Constants::SchemaTypes::OBJECT if value == Hash
 
-        "string"
+        Constants::SchemaTypes::STRING
       end
 
       def schema_from_types(types_hash, rule_constraints)
-        schema = GrapeOAS::ApiModel::Schema.new(type: "object")
+        schema = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
         types_hash.each do |name, dry_type|
           prop_schema = schema_for_type(dry_type)
           merge_rule_constraints(prop_schema, rule_constraints[name]) if rule_constraints[name]
@@ -153,7 +157,7 @@ module GrapeOAS
       def schema_for_type(dry_type)
         if dry_type.respond_to?(:primitive) && dry_type.primitive == Array && dry_type.respond_to?(:member)
           items_schema = schema_for_type(dry_type.member)
-          schema = GrapeOAS::ApiModel::Schema.new(type: "array", items: items_schema)
+          schema = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
           apply_array_meta_constraints(schema, dry_type.respond_to?(:meta) ? dry_type.meta : {})
           return schema
         end
@@ -169,20 +173,20 @@ module GrapeOAS
 
         schema = case primitive
                  when Array
-                   items_schema = member ? schema_for_type(member) : GrapeOAS::ApiModel::Schema.new(type: "string")
-                   s = GrapeOAS::ApiModel::Schema.new(type: "array", items: items_schema)
+                   items_schema = member ? schema_for_type(member) : GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+                   s = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
                    apply_array_meta_constraints(s, meta)
                    s
                  when Hash
-                   GrapeOAS::ApiModel::Schema.new(type: "object")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
                  when Integer
-                   GrapeOAS::ApiModel::Schema.new(type: "integer")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
                  when Float, BigDecimal
-                   GrapeOAS::ApiModel::Schema.new(type: "number")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
                  when TrueClass, FalseClass
-                   GrapeOAS::ApiModel::Schema.new(type: "boolean")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::BOOLEAN)
                  else
-                   GrapeOAS::ApiModel::Schema.new(type: "string")
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
                  end
 
         schema.nullable = nullable

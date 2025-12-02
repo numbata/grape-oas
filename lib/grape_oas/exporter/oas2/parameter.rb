@@ -5,17 +5,17 @@ module GrapeOAS
     module OAS2
       class Parameter
         PRIMITIVE_MAPPINGS = {
-          "integer" => { type: "integer", format: "int32" },
-          "long" => { type: "integer", format: "int64" },
-          "float" => { type: "number", format: "float" },
-          "double" => { type: "number", format: "double" },
-          "byte" => { type: "string",  format: "byte" },
-          "date" => { type: "string",  format: "date" },
-          "dateTime" => { type: "string", format: "date-time" },
-          "binary" => { type: "string", format: "binary" },
-          "password" => { type: "string", format: "password" },
-          "email" => { type: "string", format: "email" },
-          "uuid" => { type: "string", format: "uuid" }
+          Constants::SchemaTypes::INTEGER => { type: Constants::SchemaTypes::INTEGER, format: "int32" },
+          "long" => { type: Constants::SchemaTypes::INTEGER, format: "int64" },
+          "float" => { type: Constants::SchemaTypes::NUMBER, format: "float" },
+          "double" => { type: Constants::SchemaTypes::NUMBER, format: "double" },
+          "byte" => { type: Constants::SchemaTypes::STRING, format: "byte" },
+          "date" => { type: Constants::SchemaTypes::STRING, format: "date" },
+          "dateTime" => { type: Constants::SchemaTypes::STRING, format: "date-time" },
+          "binary" => { type: Constants::SchemaTypes::STRING, format: "binary" },
+          "password" => { type: Constants::SchemaTypes::STRING, format: "password" },
+          "email" => { type: Constants::SchemaTypes::STRING, format: "email" },
+          "uuid" => { type: Constants::SchemaTypes::STRING, format: "uuid" }
         }.freeze
 
         def initialize(operation, ref_tracker = nil)

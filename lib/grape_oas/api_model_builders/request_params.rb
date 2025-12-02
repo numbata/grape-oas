@@ -5,16 +5,7 @@ module GrapeOAS
     class RequestParams
       ROUTE_PARAM_REGEX = /(?<=:)\w+/
 
-      PRIMITIVE_TYPE_MAPPING = {
-        "float" => "number",
-        "bigdecimal" => "number",
-        "string" => "string",
-        "integer" => "integer",
-        "boolean" => "boolean",
-        "grape::api::boolean" => "boolean",
-        "trueclass" => "boolean",
-        "falseclass" => "boolean"
-      }.freeze
+      PRIMITIVE_TYPE_MAPPING = GrapeOAS::Constants::PRIMITIVE_TYPE_MAPPING
 
       attr_reader :api, :route, :path_param_name_map
 
@@ -27,7 +18,7 @@ module GrapeOAS
       def build
         route_params = route.path.scan(ROUTE_PARAM_REGEX)
 
-        body_schema = GrapeOAS::ApiModel::Schema.new(type: "object")
+        body_schema = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
         path_params = []
 
         (route.options[:params] || {}).each do |name, spec|
@@ -70,11 +61,11 @@ module GrapeOAS
                    items = GrapeOAS::Introspectors::EntityIntrospector.new(entity_type).build_schema if entity_type
                    items ||= GrapeOAS::ApiModel::Schema.new(type: sanitize_type(extract_entity_type_from_array(spec,
                                                                                                                raw_type,)))
-                   GrapeOAS::ApiModel::Schema.new(type: "array", items: items)
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items)
                  elsif doc[:is_array] && grape_entity?(doc_type)
                    entity_class = resolve_entity_class(doc_type)
                    items = GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
-                   GrapeOAS::ApiModel::Schema.new(type: "array", items: items)
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items)
                  elsif grape_entity?(doc_type)
                    entity_class = resolve_entity_class(doc_type)
                    GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
@@ -89,7 +80,7 @@ module GrapeOAS
                                   else
                                     GrapeOAS::ApiModel::Schema.new(type: sanitize_type(items_type))
                                   end
-                   GrapeOAS::ApiModel::Schema.new(type: "array", items: items_schema)
+                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
                  else
                    GrapeOAS::ApiModel::Schema.new(
                      type: sanitize_type(raw_type),
@@ -134,22 +125,22 @@ module GrapeOAS
       end
 
       def sanitize_type(type)
-        return "object" if grape_entity?(type)
+        return Constants::SchemaTypes::OBJECT if grape_entity?(type)
 
         type = type.to_s if type.is_a?(Symbol)
         case type
         when Integer
-          "integer"
+          Constants::SchemaTypes::INTEGER
         when Float, BigDecimal
-          "number"
+          Constants::SchemaTypes::NUMBER
         when TrueClass, FalseClass
-          "boolean"
+          Constants::SchemaTypes::BOOLEAN
         when Array
-          "array"
+          Constants::SchemaTypes::ARRAY
         when Hash
-          "object"
+          Constants::SchemaTypes::OBJECT
         else
-          PRIMITIVE_TYPE_MAPPING.fetch(type.to_s.downcase, "string")
+          PRIMITIVE_TYPE_MAPPING.fetch(type.to_s.downcase, Constants::SchemaTypes::STRING)
         end
       end
 

@@ -98,7 +98,7 @@ module GrapeOAS
         {
           name: name,
           schema: {
-            "type" => header_spec[:type] || header_spec["type"] || "string",
+            "type" => header_spec[:type] || header_spec["type"] || Constants::SchemaTypes::STRING,
             "description" => header_spec[:description] || header_spec[:desc]
           }.compact
         }
@@ -107,7 +107,7 @@ module GrapeOAS
       # Build schema for response body
       # Delegates to EntityIntrospector when entity is present
       def build_schema(entity_class)
-        return GrapeOAS::ApiModel::Schema.new(type: "string") unless entity_class
+        return GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING) unless entity_class
 
         GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
       end

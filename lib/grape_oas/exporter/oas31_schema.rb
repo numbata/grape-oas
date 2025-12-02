@@ -14,7 +14,8 @@ module GrapeOAS
         license = if @api.respond_to?(:license) && @api.license
                     @api.license
                   else
-                    { "name" => "Proprietary", "identifier" => "UNLICENSED", "url" => "https://grape.local/license" }
+                    # OAS 3.1 requires exactly one of 'identifier' OR 'url' (not both)
+                    { "name" => "Proprietary", "identifier" => "UNLICENSED" }
                   end
         info["license"] = license
         info

@@ -19,11 +19,11 @@ module GrapeOAS
         end
 
         def consumes
-          Array(@op.consumes.presence || ["application/json"])
+          Array(@op.consumes.presence || [GrapeOAS::Constants::MimeTypes::JSON])
         end
 
         def produces
-          Array(@op.produces.presence || ["application/json"])
+          Array(@op.produces.presence || [GrapeOAS::Constants::MimeTypes::JSON])
         end
       end
     end

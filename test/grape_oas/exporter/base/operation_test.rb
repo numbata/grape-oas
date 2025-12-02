@@ -77,6 +77,7 @@ module GrapeOAS
 
         def test_build_compacts_nil_values
           op = mock_operation(
+            operation_id: nil,
             summary: nil,
             description: nil,
             deprecated: nil,
@@ -85,6 +86,7 @@ module GrapeOAS
 
           result = operation.build
 
+          refute result.key?("operationId")
           refute result.key?("summary")
           refute result.key?("description")
           refute result.key?("deprecated")
