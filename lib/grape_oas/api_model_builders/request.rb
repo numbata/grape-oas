@@ -1,10 +1,13 @@
 # frozen_string_literal: true
 
 require "bigdecimal"
+require_relative "concerns/type_resolver"
 
 module GrapeOAS
   module ApiModelBuilders
     class Request
+      include Concerns::TypeResolver
+
       attr_reader :api, :route, :operation, :path_param_name_map
 
       def initialize(api:, route:, operation:, path_param_name_map: nil)
@@ -166,22 +169,13 @@ module GrapeOAS
         nullable = dry_type.respond_to?(:optional?) && dry_type.optional?
         enum_vals = dry_type.respond_to?(:values) ? dry_type.values : nil
 
-        schema = case primitive
-                 when Array
-                   items_schema = member ? schema_for_type(member) : GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+        schema = if primitive == Array
+                   items_schema = member ? schema_for_type(member) : default_string_schema
                    s = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
                    apply_array_meta_constraints(s, meta)
                    s
-                 when Hash
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-                 when Integer
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
-                 when Float, BigDecimal
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
-                 when TrueClass, FalseClass
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::BOOLEAN)
                  else
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+                   build_schema_for_primitive(primitive)
                  end
 
         schema.nullable = nullable

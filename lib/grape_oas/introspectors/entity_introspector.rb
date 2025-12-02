@@ -1,9 +1,11 @@
 # frozen_string_literal: true
 
+require_relative "../api_model_builders/concerns/type_resolver"
+
 module GrapeOAS
   module Introspectors
     class EntityIntrospector
-      PRIMITIVE_MAPPING = GrapeOAS::Constants::PRIMITIVE_TYPE_MAPPING
+      include GrapeOAS::ApiModelBuilders::Concerns::TypeResolver
 
       def initialize(entity_class, stack: [], registry: {})
         @entity_class = entity_class
@@ -153,22 +155,12 @@ module GrapeOAS
         when Class
           if defined?(Grape::Entity) && type <= Grape::Entity
             self.class.new(type, stack: @stack, registry: @registry).build_schema
-          elsif type == Integer
-            ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
-          elsif [Float, BigDecimal].include?(type)
-            ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
-          elsif [TrueClass, FalseClass].include?(type)
-            ApiModel::Schema.new(type: Constants::SchemaTypes::BOOLEAN)
-          elsif type == Array
-            ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY)
-          elsif type == Hash
-            ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           else
-            ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+            build_schema_for_primitive(type)
           end
         when String, Symbol
-          t = PRIMITIVE_MAPPING[type.to_s.downcase] || Constants::SchemaTypes::STRING
-          ApiModel::Schema.new(type: t)
+          schema_type = Constants.primitive_type(type) || Constants::SchemaTypes::STRING
+          ApiModel::Schema.new(type: schema_type)
         else
           ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
         end

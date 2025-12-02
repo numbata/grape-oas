@@ -1,9 +1,12 @@
 # frozen_string_literal: true
 
+require_relative "../api_model_builders/concerns/type_resolver"
+
 module GrapeOAS
   module Introspectors
     # Extracts an ApiModel schema from a Dry::Schema contract
     class DryIntrospector
+      include GrapeOAS::ApiModelBuilders::Concerns::TypeResolver
       ConstraintSet = Struct.new(
         :enum,
         :nullable,
@@ -72,22 +75,10 @@ module GrapeOAS
         enum_vals = extract_enum_from_type(dry_type)
 
         schema = if primitive == Array
-                   items_schema = if member
-                                    build_schema_for_type(member)
-                                  else
-                                    GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
-                                  end
+                   items_schema = member ? build_schema_for_type(member) : default_string_schema
                    GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
-                 elsif primitive == Hash
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-                 elsif primitive == Integer
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
-                 elsif [Float, BigDecimal].include?(primitive)
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
-                 elsif [TrueClass, FalseClass].include?(primitive)
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::BOOLEAN)
                  else
-                   GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+                   build_schema_for_primitive(primitive)
                  end
 
         # Nullability
