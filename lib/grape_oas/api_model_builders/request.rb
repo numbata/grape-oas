@@ -132,13 +132,8 @@ module GrapeOAS
 
       def map_type(value)
         return value.primitive.to_s.downcase if value.respond_to?(:primitive)
-        return Constants::SchemaTypes::INTEGER if value == Integer
-        return Constants::SchemaTypes::NUMBER if [Float, BigDecimal].include?(value)
-        return Constants::SchemaTypes::BOOLEAN if [TrueClass, FalseClass].include?(value)
-        return Constants::SchemaTypes::ARRAY if value == Array
-        return Constants::SchemaTypes::OBJECT if value == Hash
 
-        Constants::SchemaTypes::STRING
+        Constants::RUBY_TYPE_MAPPING.fetch(value, Constants::SchemaTypes::STRING)
       end
 
       def schema_from_types(types_hash, rule_constraints)
