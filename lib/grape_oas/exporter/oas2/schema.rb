@@ -15,6 +15,13 @@ module GrapeOAS
           # Handle allOf composition (for inheritance)
           return build_all_of_schema if @schema.all_of && !@schema.all_of.empty?
 
+          schema_hash = build_base_hash
+          apply_constraints(schema_hash)
+          apply_extensions(schema_hash)
+          schema_hash.compact
+        end
+
+        def build_base_hash
           schema_hash = {
             "type" => @schema.type,
             "format" => @schema.format,
@@ -26,6 +33,13 @@ module GrapeOAS
           if schema_hash["properties"].nil? || schema_hash["properties"].empty? || @schema.type != Constants::SchemaTypes::OBJECT
             schema_hash.delete("properties")
           end
+          schema_hash["example"] = @schema.examples if @schema.examples
+          schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
+          schema_hash["discriminator"] = @schema.discriminator if @schema.discriminator
+          schema_hash
+        end
+
+        def apply_constraints(schema_hash)
           schema_hash["minLength"] = @schema.min_length if @schema.min_length
           schema_hash["maxLength"] = @schema.max_length if @schema.max_length
           schema_hash["pattern"] = @schema.pattern if @schema.pattern
@@ -35,13 +49,10 @@ module GrapeOAS
           schema_hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
           schema_hash["minItems"] = @schema.min_items if @schema.min_items
           schema_hash["maxItems"] = @schema.max_items if @schema.max_items
-          schema_hash["example"] = @schema.examples if @schema.examples
-          schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
+        end
 
-          # OAS2 discriminator is a simple string (field name)
-          schema_hash["discriminator"] = @schema.discriminator if @schema.discriminator
-
-          schema_hash.compact
+        def apply_extensions(schema_hash)
+          schema_hash.merge!(@schema.extensions) if @schema.extensions
         end
 
         private
