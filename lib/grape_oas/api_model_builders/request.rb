@@ -37,21 +37,20 @@ module GrapeOAS
 
         media_ext = media_type_extensions(Constants::MimeTypes::JSON)
 
-        # Ensure body schema is referenceable (so exporters emit $ref instead of inline)
-        return unless body_schema.respond_to?(:canonical_name)
-        return unless body_schema.canonical_name.nil?
+        # Set canonical_name if not already set (e.g., DryIntrospector may have set it for polymorphism)
+        if body_schema.respond_to?(:canonical_name) && body_schema.canonical_name.nil?
+          settings = route.respond_to?(:settings) ? route.settings : {}
+          contract_class = route.options[:contract] || route.options[:schema] || settings[:contract]
 
-        settings = route.respond_to?(:settings) ? route.settings : {}
-        contract_class = route.options[:contract] || route.options[:schema] || settings[:contract]
-
-        if contract_class.is_a?(Class) && defined?(Menti::Endpoint::Schema) && contract_class < Menti::Endpoint::Schema
-          body_schema.canonical_name = contract_class.name
-        elsif contract_class # some other contract (e.g., Dry); keep inline
-          # no-op
-        elsif body_schema.properties.values.any? { |prop| prop.respond_to?(:canonical_name) && prop.canonical_name }
-          # keep entity/property refs intact; don't override
-        elsif operation.respond_to?(:operation_id) && operation.operation_id
-          body_schema.canonical_name = "#{operation.operation_id}_Request"
+          if contract_class.is_a?(Class) && defined?(Menti::Endpoint::Schema) && contract_class < Menti::Endpoint::Schema
+            body_schema.canonical_name = contract_class.name
+          elsif contract_class # some other contract (e.g., Dry); keep inline
+            # no-op
+          elsif body_schema.properties.values.any? { |prop| prop.respond_to?(:canonical_name) && prop.canonical_name }
+            # keep entity/property refs intact; don't override
+          elsif operation.respond_to?(:operation_id) && operation.operation_id
+            body_schema.canonical_name = "#{operation.operation_id}_Request"
+          end
         end
 
         media_types = Array(operation.consumes.presence || [Constants::MimeTypes::JSON]).map do |mime|
@@ -99,7 +98,8 @@ module GrapeOAS
                        contract
                      end
 
-        return GrapeOAS::Introspectors::DryIntrospector.build(schema_obj) if schema_obj.respond_to?(:types)
+        # Pass the contract class (not schema_obj) so DryIntrospector can detect inheritance
+      return GrapeOAS::Introspectors::DryIntrospector.build(contract) if schema_obj.respond_to?(:types)
 
         contract_hash = if contract.respond_to?(:to_h)
                           contract.to_h
