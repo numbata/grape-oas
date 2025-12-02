@@ -8,12 +8,16 @@ module GrapeOAS
     # @see https://swagger.io/specification/
     # @see GrapeOAS::ApiModel::Parameter, GrapeOAS::ApiModel::RequestBody
     class Schema < Node
-      attr_accessor :canonical_name, :type, :format, :properties, :items, :description,
-                    :required, :nullable, :enum, :additional_properties, :unevaluated_properties, :defs,
-                    :examples, :extensions,
-                    :min_length, :max_length, :pattern,
-                    :minimum, :maximum, :exclusive_minimum, :exclusive_maximum,
-                    :min_items, :max_items
+      VALID_ATTRIBUTES = %i[
+        canonical_name type format properties items description
+        required nullable enum additional_properties unevaluated_properties defs
+        examples extensions
+        min_length max_length pattern
+        minimum maximum exclusive_minimum exclusive_maximum
+        min_items max_items
+      ].freeze
+
+      attr_accessor(*VALID_ATTRIBUTES)
 
       def initialize(**attrs)
         super()
@@ -25,7 +29,14 @@ module GrapeOAS
         @additional_properties = nil
         @unevaluated_properties = nil
         @defs = {}
-        attrs.each { |k, v| public_send("#{k}=", v) }
+
+        attrs.each do |k, v|
+          unless VALID_ATTRIBUTES.include?(k)
+            raise ArgumentError, "Unknown Schema attribute: #{k}. Valid attributes: #{VALID_ATTRIBUTES.join(", ")}"
+          end
+
+          public_send("#{k}=", v)
+        end
       end
 
       def empty?
