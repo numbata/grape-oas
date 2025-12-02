@@ -7,6 +7,10 @@ module GrapeOAS
     # Extracts an ApiModel schema from a Dry::Schema contract
     class DryIntrospector
       include GrapeOAS::ApiModelBuilders::Concerns::TypeResolver
+
+      # Maximum depth for unwrapping nested Dry::Types (prevents infinite loops)
+      MAX_TYPE_UNWRAP_DEPTH = 5
+
       ConstraintSet = Struct.new(
         :enum,
         :nullable,
@@ -125,13 +129,13 @@ module GrapeOAS
 
       def unwrap_type(dry_type)
         current = dry_type
-        seen = 0
-        while current.respond_to?(:type) && seen < 5
+        depth = 0
+        while current.respond_to?(:type) && depth < MAX_TYPE_UNWRAP_DEPTH
           inner = current.type
           break if inner.equal?(current)
 
           current = inner
-          seen += 1
+          depth += 1
         end
         current
       end
