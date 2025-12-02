@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require_relative "../api_model_builders/concerns/type_resolver"
-require_relative "constraint_extractor"
 
 module GrapeOAS
   module Introspectors
@@ -14,7 +13,7 @@ module GrapeOAS
       MAX_TYPE_UNWRAP_DEPTH = 5
 
       # Re-export ConstraintSet for external use
-      ConstraintSet = ConstraintExtractor::ConstraintSet
+      ConstraintSet = DrySupport::ConstraintExtractor::ConstraintSet
 
       def self.build(contract)
         new(contract).build
@@ -27,7 +26,7 @@ module GrapeOAS
       def build
         return unless contract.respond_to?(:types)
 
-        rule_constraints = ConstraintExtractor.extract(contract)
+        rule_constraints = DrySupport::ConstraintExtractor.extract(contract)
         schema = GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
 
         contract.types.each do |name, dry_type|

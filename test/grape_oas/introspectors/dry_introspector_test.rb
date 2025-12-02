@@ -10,7 +10,7 @@ module GrapeOAS
       end
 
       def constraint_extractor
-        @constraint_extractor ||= Introspectors::ConstraintExtractor
+        @constraint_extractor ||= Introspectors::DrySupport::ConstraintExtractor
       end
 
       def test_or_branch_intersection_keeps_common_enum
