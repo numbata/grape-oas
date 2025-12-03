@@ -32,8 +32,14 @@ module GrapeOAS
       private
 
       def append_request_body(body_schema)
-        # OAS forbids requestBody for GET/HEAD/DELETE; skip unless explicitly allowed
-        return if %w[get head delete].include?(operation.http_method.to_s)
+        # OAS spec says GET/HEAD/DELETE "MAY ignore" request bodies
+        # Skip by default unless explicitly allowed via documentation option
+        http_method = operation.http_method.to_s.downcase
+        if %w[get head delete].include?(http_method)
+          allow_body = route.options.dig(:documentation, :request_body) ||
+                       route.options[:request_body]
+          return unless allow_body
+        end
 
         media_ext = media_type_extensions(Constants::MimeTypes::JSON)
 

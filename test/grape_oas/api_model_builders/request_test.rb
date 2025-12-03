@@ -269,6 +269,54 @@ module GrapeOAS
         assert_equal "object", schema.type
         assert_includes schema.properties.keys, "name"
       end
+
+      def test_no_request_body_for_get_by_default
+        contract = Struct.new(:to_h).new({ query: String })
+        route = DummyRoute.new({ contract: contract, params: {} }, "/search", {})
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :get)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        assert_nil operation.request_body, "GET should not have request body by default"
+      end
+
+      def test_no_request_body_for_delete_by_default
+        contract = Struct.new(:to_h).new({ id: Integer })
+        route = DummyRoute.new({ contract: contract, params: {} }, "/items/:id", {})
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :delete)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        assert_nil operation.request_body, "DELETE should not have request body by default"
+      end
+
+      def test_request_body_for_get_when_explicitly_allowed
+        contract = Struct.new(:to_h).new({ query: String })
+        route = DummyRoute.new(
+          { contract: contract, params: {}, documentation: { request_body: true } },
+          "/search",
+          {},
+        )
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :get)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        refute_nil operation.request_body, "GET should have request body when explicitly allowed"
+      end
+
+      def test_request_body_for_delete_when_explicitly_allowed_via_option
+        contract = Struct.new(:to_h).new({ ids: Array })
+        route = DummyRoute.new(
+          { contract: contract, params: {}, request_body: true },
+          "/items/bulk",
+          {},
+        )
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :delete)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        refute_nil operation.request_body, "DELETE should have request body when explicitly allowed"
+      end
     end
   end
 end
