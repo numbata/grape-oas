@@ -416,6 +416,37 @@ desc 'Get user' do
 end
 ```
 
+### Multiple Present Responses
+
+When presenting multiple models in a single response, use the `as:` key to combine them:
+
+```ruby
+# Works in both - multiple present with `as:` keys
+desc 'Get user with posts'
+get ':id' do
+  user = User.find(params[:id])
+  posts = user.posts.recent
+
+  present :user, user, with: Entities::User
+  present :posts, posts, with: Entities::Post
+end
+```
+
+grape-oas will generate a combined response schema:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "user": { "$ref": "#/components/schemas/Entities_User" },
+    "posts": {
+      "type": "array",
+      "items": { "$ref": "#/components/schemas/Entities_Post" }
+    }
+  }
+}
+```
+
 ### Default Error Response
 
 grape-oas automatically adds a 400 response for endpoints with validations. To disable:
@@ -636,16 +667,13 @@ These grape-swagger features are not currently available in grape-oas:
 2. **Custom Model Parsers** (`GrapeSwagger.model_parsers.register`)
    - grape-oas uses built-in introspection for entities and contracts
 
-3. **Multiple Present Responses** (`as:` key for combining multiple models)
-   - Workaround: Create a combined entity
-
-4. **Root Element Wrapping** (`route_setting :swagger, root:`)
+3. **Root Element Wrapping** (`route_setting :swagger, root:`)
    - Workaround: Create a wrapper entity
 
-5. **Nested Namespace as Standalone** (`swagger: { nested: false }`)
+4. **Nested Namespace as Standalone** (`swagger: { nested: false }`)
    - All namespaces follow standard Grape routing
 
-6. **Custom operationId** (`nickname:`)
+5. **Custom operationId** (`nickname:`)
    - operationId is auto-generated from method and path
 
 
