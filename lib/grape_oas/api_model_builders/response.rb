@@ -126,7 +126,8 @@ module GrapeOAS
       end
 
       def build_response_from_spec(spec)
-        schema = build_schema(spec[:entity])
+        entity_schema = build_schema(spec[:entity])
+        schema = wrap_with_root(entity_schema, spec[:entity], is_array: spec[:is_array])
         media_types = Array(response_content_types).map do |mime|
           build_media_type(
             mime_type: mime,
@@ -183,6 +184,59 @@ module GrapeOAS
         return GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING) unless entity_class
 
         GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
+      end
+
+      # Wraps schema with root element if configured via route_setting :swagger, root: true/'name'
+      def wrap_with_root(schema, entity_class, is_array: false)
+        root_setting = route.settings.dig(:swagger, :root)
+        return schema unless root_setting
+
+        root_key = derive_root_key(root_setting, entity_class, is_array)
+        GrapeOAS::ApiModel::Schema.new(
+          type: Constants::SchemaTypes::OBJECT,
+          properties: { root_key => schema },
+        )
+      end
+
+      # Derives the root key name based on the setting
+      def derive_root_key(root_setting, entity_class, is_array)
+        case root_setting
+        when true
+          key = entity_name_to_key(entity_class)
+          is_array ? pluralize_key(key) : key
+        when String, Symbol
+          root_setting.to_s
+        else
+          entity_name_to_key(entity_class)
+        end
+      end
+
+      # Converts entity class name to underscored key
+      def entity_name_to_key(entity_class)
+        return "data" unless entity_class
+
+        name = entity_class.is_a?(Class) ? entity_class.name : entity_class.to_s
+        # Remove common suffixes like Entity, Serializer
+        name = name.split("::").last || name
+        name = name.sub(/Entity$/, "").sub(/Serializer$/, "")
+        underscore(name)
+      end
+
+      # Simple underscore implementation (avoids ActiveSupport dependency)
+      def underscore(str)
+        str.gsub("::", "/")
+           .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
+           .gsub(/([a-z\d])([A-Z])/, '\1_\2')
+           .tr("-", "_")
+           .downcase
+      end
+
+      # Simple pluralize (basic English rules)
+      def pluralize_key(key)
+        return "#{key}es" if key.end_with?("s", "x", "z", "ch", "sh")
+        return "#{key[0..-2]}ies" if key.end_with?("y") && !%w[a e i o u].include?(key[-2])
+
+        "#{key}s"
       end
 
       def build_media_type(mime_type:, schema:)

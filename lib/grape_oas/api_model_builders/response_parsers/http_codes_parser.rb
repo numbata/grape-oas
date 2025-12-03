@@ -52,7 +52,7 @@ module GrapeOAS
             headers: entry[:headers],
             examples: entry[:examples],
             as: entry[:as],
-            is_array: entry[:is_array],
+            is_array: entry[:is_array] || route.options[:is_array],
             required: entry[:required]
           }
         end
