@@ -30,7 +30,7 @@ module GrapeOAS
         status_param = params.find { |p| p.name == "status" }
 
         refute_nil status_param
-        # Enum handling depends on implementation
+        assert_equal %w[pending active completed], status_param.schema.enum
       end
 
       # === Symbol values ===
@@ -100,7 +100,9 @@ module GrapeOAS
 
         refute_nil rating_param
         assert_equal "integer", rating_param.schema.type
-        # Range should ideally convert to minimum/maximum constraints
+        # Range converts to minimum/maximum constraints
+        assert_equal 1, rating_param.schema.minimum
+        assert_equal 5, rating_param.schema.maximum
       end
 
       # === Range values (negative) ===
@@ -124,6 +126,8 @@ module GrapeOAS
 
         refute_nil offset_param
         assert_equal "integer", offset_param.schema.type
+        assert_equal(-10, offset_param.schema.minimum)
+        assert_equal 10, offset_param.schema.maximum
       end
 
       # === Float range values ===
@@ -147,6 +151,33 @@ module GrapeOAS
 
         refute_nil temp_param
         assert_equal "number", temp_param.schema.type
+        assert_in_delta(-40.0, temp_param.schema.minimum)
+        assert_in_delta(50.0, temp_param.schema.maximum)
+      end
+
+      # === String range values ===
+
+      def test_string_range_values
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :letter, type: String, values: "a".."e"
+          end
+          get "letters" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        letter_param = params.find { |p| p.name == "letter" }
+
+        refute_nil letter_param
+        assert_equal "string", letter_param.schema.type
+        # String range expands to enum array
+        assert_equal %w[a b c d e], letter_param.schema.enum
       end
 
       # === Proc values ===
@@ -170,6 +201,8 @@ module GrapeOAS
 
         refute_nil dynamic_param
         assert_equal "string", dynamic_param.schema.type
+        # Proc is evaluated and result is used as enum
+        assert_equal %w[a b c], dynamic_param.schema.enum
       end
 
       # === Empty values array ===

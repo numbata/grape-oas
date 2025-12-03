@@ -19,6 +19,7 @@ module GrapeOAS
           apply_additional_properties(schema, doc)
           apply_format_and_example(schema, doc)
           apply_constraints(schema, doc)
+          apply_values(schema, spec)
         end
 
         # Extracts nullable flag from spec and documentation.
@@ -55,6 +56,38 @@ module GrapeOAS
             schema.min_length = doc[:min_length] if doc.key?(:min_length) && schema.respond_to?(:min_length=)
             schema.max_length = doc[:max_length] if doc.key?(:max_length) && schema.respond_to?(:max_length=)
             schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
+          end
+
+          # Applies values from spec[:values] - converts Range to min/max,
+          # evaluates Proc, and sets enum for arrays.
+          def apply_values(schema, spec)
+            values = spec[:values]
+            return unless values
+
+            # Evaluate Proc if provided
+            values = values.call if values.respond_to?(:call)
+
+            if values.is_a?(Range)
+              apply_range_values(schema, values)
+            elsif values.is_a?(Array) && values.any?
+              schema.enum = values if schema.respond_to?(:enum=)
+            end
+          end
+
+          # Converts a Range to minimum/maximum constraints.
+          # For numeric ranges (Integer, Float), uses min/max.
+          # For other ranges (e.g., 'a'..'z'), expands to enum array.
+          def apply_range_values(schema, range)
+            first_val = range.first
+            last_val = range.last
+
+            if first_val.is_a?(Numeric)
+              schema.minimum = first_val if schema.respond_to?(:minimum=)
+              schema.maximum = last_val if schema.respond_to?(:maximum=)
+            elsif schema.respond_to?(:enum=)
+              # Non-numeric range (e.g., 'a'..'z') - expand to enum
+              schema.enum = range.to_a
+            end
           end
 
           def extract_defs(doc)
