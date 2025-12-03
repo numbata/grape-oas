@@ -27,6 +27,7 @@ module GrapeOAS
           produces: produces,
           deprecated: build_deprecated,
         )
+        operation.suppress_default_error_response = build_suppress_default_error_response
 
         api.add_tags(*tag_names) if tag_names.any?
 
@@ -108,6 +109,12 @@ module GrapeOAS
       def build_deprecated
         route.options[:deprecated] ||
           route.options.dig(:documentation, :deprecated) ||
+          false
+      end
+
+      def build_suppress_default_error_response
+        route.options[:suppress_default_error_response] ||
+          route.options.dig(:documentation, :suppress_default_error_response) ||
           false
       end
 

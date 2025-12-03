@@ -12,7 +12,7 @@ module GrapeOAS
       attr_accessor :http_method, :operation_id, :summary, :description,
                     :deprecated, :parameters, :request_body,
                     :responses, :tag_names, :security, :extensions,
-                    :consumes, :produces
+                    :consumes, :produces, :suppress_default_error_response
 
       def initialize(http_method:, operation_id: nil, summary: nil, description: nil,
                      deprecated: false, parameters: [], request_body: nil,
@@ -32,6 +32,7 @@ module GrapeOAS
         @extensions    = extensions
         @consumes      = Array(consumes)
         @produces      = Array(produces)
+        @suppress_default_error_response = false
       end
 
       def add_parameter(parameter)

@@ -212,6 +212,54 @@ module GrapeOAS
 
         assert_equal ["lti"], operation.tag_names
       end
+
+      def test_suppress_default_error_response_from_documentation
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get users",
+               documentation: { suppress_default_error_response: true }
+          get "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Operation.new(api: @api, route: route)
+        operation = builder.build
+
+        assert operation.suppress_default_error_response
+      end
+
+      def test_suppress_default_error_response_from_route_option
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get users", suppress_default_error_response: true
+          get "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Operation.new(api: @api, route: route)
+        operation = builder.build
+
+        assert operation.suppress_default_error_response
+      end
+
+      def test_suppress_default_error_response_defaults_to_false
+        api_class = Class.new(Grape::API) do
+          format :json
+          get "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Operation.new(api: @api, route: route)
+        operation = builder.build
+
+        refute operation.suppress_default_error_response
+      end
     end
   end
 end

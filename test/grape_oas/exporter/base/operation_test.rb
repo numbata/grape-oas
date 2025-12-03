@@ -122,6 +122,42 @@ module GrapeOAS
           assert_match(/must implement #build_version_specific_fields/, error.message)
         end
 
+        def test_injects_400_response_when_no_4xx_exists
+          op = mock_operation
+          operation = TestOperationWithResponses.new(op, nil, responses: {
+                                                       "200" => { "description" => "OK" }
+                                                     },)
+
+          result = operation.build
+
+          assert result["responses"].key?("400")
+          assert_equal "Bad Request", result["responses"]["400"]["description"]
+        end
+
+        def test_does_not_inject_400_when_4xx_exists
+          op = mock_operation
+          operation = TestOperationWithResponses.new(op, nil, responses: {
+                                                       "200" => { "description" => "OK" },
+                                                       "404" => { "description" => "Not Found" }
+                                                     },)
+
+          result = operation.build
+
+          refute result["responses"].key?("400")
+          assert result["responses"].key?("404")
+        end
+
+        def test_suppress_default_error_response_prevents_400_injection
+          op = mock_operation(suppress_default_error_response: true)
+          operation = TestOperationWithResponses.new(op, nil, responses: {
+                                                       "200" => { "description" => "OK" }
+                                                     },)
+
+          result = operation.build
+
+          refute result["responses"].key?("400"), "Should not inject 400 when suppress flag is set"
+        end
+
         private
 
         def mock_operation(overrides = {})
@@ -145,6 +181,13 @@ module GrapeOAS
             @last_ref_tracker = @ref_tracker
             @last_options = @options
             { "customField" => "version_specific_value" }
+          end
+        end
+
+        # Test implementation with configurable responses
+        class TestOperationWithResponses < Operation
+          def build_version_specific_fields
+            { "responses" => @options[:responses] || {} }
           end
         end
       end
