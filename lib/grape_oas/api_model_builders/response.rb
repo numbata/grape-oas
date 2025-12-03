@@ -4,6 +4,7 @@ module GrapeOAS
   module ApiModelBuilders
     class Response
       include Concerns::ContentTypeResolver
+      include Concerns::OasUtilities
 
       # Default response parsers in priority order
       # DocumentationResponsesParser has highest priority (most comprehensive)
@@ -148,8 +149,7 @@ module GrapeOAS
       end
 
       def extensions_from_route
-        ext = route.options[:documentation]&.select { |k, _| k.to_s.start_with?("x-") }
-        ext unless ext.nil? || ext.empty?
+        extract_extensions(route.options[:documentation])
       end
 
       def normalize_headers(hdrs)
@@ -222,21 +222,8 @@ module GrapeOAS
         underscore(name)
       end
 
-      # Simple underscore implementation (avoids ActiveSupport dependency)
-      def underscore(str)
-        str.gsub("::", "/")
-           .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
-           .gsub(/([a-z\d])([A-Z])/, '\1_\2')
-           .tr("-", "_")
-           .downcase
-      end
-
-      # Simple pluralize (basic English rules)
       def pluralize_key(key)
-        return "#{key}es" if key.end_with?("s", "x", "z", "ch", "sh")
-        return "#{key[0..-2]}ies" if key.end_with?("y") && !%w[a e i o u].include?(key[-2])
-
-        "#{key}s"
+        pluralize(key)
       end
 
       def build_media_type(mime_type:, schema:)

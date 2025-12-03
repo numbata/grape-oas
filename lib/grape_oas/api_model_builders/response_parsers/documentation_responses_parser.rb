@@ -7,6 +7,7 @@ module GrapeOAS
       # This is the most comprehensive format and aligns with OpenAPI specification
       class DocumentationResponsesParser
         include Base
+        include Concerns::OasUtilities
 
         def applicable?(route)
           route.options.dig(:documentation, :responses).is_a?(Hash)
@@ -27,12 +28,6 @@ module GrapeOAS
               examples: doc[:examples]
             }
           end
-        end
-
-        private
-
-        def extract_extensions(doc)
-          doc.select { |k, _| k.to_s.start_with?("x-") }
         end
       end
     end

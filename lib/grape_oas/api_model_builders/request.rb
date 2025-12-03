@@ -7,6 +7,7 @@ module GrapeOAS
   module ApiModelBuilders
     class Request
       include Concerns::TypeResolver
+      include Concerns::OasUtilities
 
       attr_reader :api, :route, :operation, :path_param_name_map
 
@@ -79,8 +80,7 @@ module GrapeOAS
       end
 
       def request_body_extensions
-        ext = documentation_options.select { |k, _| k.to_s.start_with?("x-") }
-        ext unless ext.empty?
+        extract_extensions(documentation_options)
       end
 
       def media_type_extensions(mime)
@@ -88,10 +88,7 @@ module GrapeOAS
         return nil unless content.is_a?(Hash)
 
         mt = content[mime] || content[mime.to_sym]
-        return nil unless mt.is_a?(Hash)
-
-        ext = mt.select { |k, _| k.to_s.start_with?("x-") }
-        ext unless ext.empty?
+        extract_extensions(mt)
       end
 
       def build_contract_schema

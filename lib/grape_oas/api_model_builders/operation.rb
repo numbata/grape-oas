@@ -4,6 +4,7 @@ module GrapeOAS
   module ApiModelBuilders
     class Operation
       include Concerns::ContentTypeResolver
+      include Concerns::OasUtilities
 
       attr_reader :api, :route, :app, :path_param_name_map, :template_override
 
@@ -132,11 +133,7 @@ module GrapeOAS
       end
 
       def operation_extensions
-        doc = route.options[:documentation]
-        return nil unless doc.is_a?(Hash)
-
-        ext = doc.select { |k, _| k.to_s.start_with?("x-") }
-        ext unless ext.empty?
+        extract_extensions(route.options[:documentation])
       end
 
       def build_request(operation)

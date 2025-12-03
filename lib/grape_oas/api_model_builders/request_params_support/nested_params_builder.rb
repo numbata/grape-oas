@@ -2,19 +2,24 @@
 
 module GrapeOAS
   module ApiModelBuilders
-    module Concerns
+    module RequestParamsSupport
       # Reconstructs nested parameter structures from Grape's flat bracket notation.
       # Grape exposes nested params as flat keys like "address[street]", "address[city]".
-      # This module converts them back to proper nested schemas.
-      module NestedParamsBuilder
+      # This class converts them back to proper nested schemas.
+      class NestedParamsBuilder
         BRACKET_PATTERN = /\[([^\]]+)\]/
         MAX_NESTING_DEPTH = 10
 
+        def initialize(schema_builder:)
+          @schema_builder = schema_builder
+        end
+
         # Builds a nested schema from flat bracket-notation params.
-        # @param flat_params [Hash] The flat params from Grape route (name => spec)
-        # @param path_params [Array<String>] Names of path parameters to exclude
-        # @return [ApiModel::Schema] The reconstructed nested schema
-        def build_nested_schema(flat_params, path_params: [])
+        #
+        # @param flat_params [Hash] the flat params from Grape route (name => spec)
+        # @param path_params [Array<String>] names of path parameters to exclude
+        # @return [ApiModel::Schema] the reconstructed nested schema
+        def build(flat_params, path_params: [])
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
 
           # Separate top-level params from nested bracket params
@@ -24,17 +29,14 @@ module GrapeOAS
           nested_groups = group_nested_params(nested)
 
           top_level.each do |name, spec|
-            # Skip path params and explicitly non-body params
             next if path_params.include?(name)
-            next if explicit_non_body_param?(spec)
-            # Skip hidden params
-            next if hidden_parameter?(spec)
+            next if ParamLocationResolver.explicit_non_body_param?(spec)
+            next if ParamLocationResolver.hidden_parameter?(spec)
 
-            child_schema = build_schema_for_spec(spec)
+            child_schema = @schema_builder.build(spec)
 
             # Check if this param has nested children
             if nested_groups.key?(name)
-              # It's a container (Hash or Array) with children
               nested_children = nested_groups[name]
               child_schema = build_nested_children(spec, nested_children, depth: 0)
             end
@@ -130,7 +132,7 @@ module GrapeOAS
             child_schema = if nested_groups.key?(name)
                              build_nested_children(spec, nested_groups[name], depth: depth + 1)
                            else
-                             build_schema_for_spec(spec)
+                             @schema_builder.build(spec)
                            end
             schema.add_property(name, child_schema, required: spec[:required] || false)
           end
@@ -146,17 +148,6 @@ module GrapeOAS
           schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
           schema.format = doc[:format] if doc[:format]
           schema.examples = doc[:example] if doc[:example]
-        end
-
-        # Checks if a param is explicitly marked as NOT a body param (e.g., query, header).
-        def explicit_non_body_param?(spec)
-          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
-          param_type && %w[query header path].include?(param_type)
-        end
-
-        # Checks if a param should be in the body.
-        def body_param?(spec)
-          spec.dig(:documentation, :param_type) == "body" || [Hash, "Hash"].include?(spec[:type])
         end
       end
     end
