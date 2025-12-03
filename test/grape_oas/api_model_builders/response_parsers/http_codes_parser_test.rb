@@ -184,6 +184,42 @@ module GrapeOAS
           assert_equal "204", specs[0][:code]
         end
 
+        def test_parses_examples_from_hash_entry
+          route = mock_route(
+            http_codes: [
+              { code: 200, examples: { "application/json" => { id: 1, name: "John" } } }
+            ],
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal({ "application/json" => { id: 1, name: "John" } }, specs[0][:examples])
+        end
+
+        def test_parses_examples_from_array_entry
+          route = mock_route(
+            http_codes: [
+              [404, "Not Found", nil, { "application/json" => { code: 404 } }]
+            ],
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal({ "application/json" => { code: 404 } }, specs[0][:examples])
+        end
+
+        def test_parses_examples_from_failure_hash
+          route = mock_route(
+            failure: [
+              { code: 400, message: "Bad Request", examples: { "application/json" => { error: "invalid" } } }
+            ],
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal({ "application/json" => { error: "invalid" } }, specs[0][:examples])
+        end
+
         private
 
         def mock_route(options = {})

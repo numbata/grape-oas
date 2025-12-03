@@ -49,19 +49,21 @@ module GrapeOAS
             code: extract_status_code(entry, default_code),
             message: extract_description(entry),
             entity: extract_entity(entry, route.options[:entity]),
-            headers: entry[:headers]
+            headers: entry[:headers],
+            examples: entry[:examples]
           }
         end
 
         def normalize_array_entry(entry, route)
           return normalize_plain_entry(nil, route) if entry.empty?
 
-          code, message, entity = entry
+          code, message, entity, examples = entry
           {
             code: code,
             message: message,
             entity: entity || route.options[:entity],
-            headers: nil
+            headers: nil,
+            examples: examples
           }
         end
 
