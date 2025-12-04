@@ -11,6 +11,9 @@ module GrapeOAS
         # Regex to match Grape's typed array notation like "[String]", "[Integer]"
         TYPED_ARRAY_PATTERN = /^\[(\w+)\]$/
 
+        # Regex to match Grape's multi-type notation like "[String, Integer]", "[String, Float]"
+        MULTI_TYPE_PATTERN = /^\[(\w+(?:::\w+)*(?:,\s*\w+(?:::\w+)*)+)\]$/
+
         # Resolves a Ruby class or type name to its OpenAPI schema type string.
         # Handles both Ruby classes (Integer, Float) and string type names ("integer", "float").
         # Also handles Grape's "[Type]" notation for typed arrays.
@@ -58,6 +61,30 @@ module GrapeOAS
 
           match = type.match(TYPED_ARRAY_PATTERN)
           match ? match[1] : nil
+        end
+
+        # Checks if type is a multi-type notation like "[String, Integer]"
+        #
+        # @param type [String] The type string to check
+        # @return [Boolean] true if multi-type notation
+        def multi_type?(type)
+          return false unless type.is_a?(String)
+
+          type.match?(MULTI_TYPE_PATTERN)
+        end
+
+        # Extracts individual types from Grape's multi-type notation "[String, Integer]"
+        # Returns nil if not a multi-type notation.
+        #
+        # @param type [String] The type string to parse
+        # @return [Array<String>, nil] Array of type names or nil
+        def extract_multi_types(type)
+          return nil unless type.is_a?(String)
+
+          match = type.match(MULTI_TYPE_PATTERN)
+          return nil unless match
+
+          match[1].split(/,\s*/)
         end
 
         # Builds a basic Schema object for the given Ruby primitive type.

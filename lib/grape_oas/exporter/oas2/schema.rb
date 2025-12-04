@@ -15,6 +15,10 @@ module GrapeOAS
           # Handle allOf composition (for inheritance)
           return build_all_of_schema if @schema.all_of && !@schema.all_of.empty?
 
+          # Handle oneOf/anyOf by using first type (OAS2 doesn't support oneOf/anyOf)
+          return build_first_of_schema(:one_of) if @schema.one_of && !@schema.one_of.empty?
+          return build_first_of_schema(:any_of) if @schema.any_of && !@schema.any_of.empty?
+
           schema_hash = build_base_hash
           apply_constraints(schema_hash)
           apply_extensions(schema_hash)
@@ -56,6 +60,18 @@ module GrapeOAS
         end
 
         private
+
+        # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
+        def build_first_of_schema(composition_type)
+          schemas = @schema.send(composition_type)
+          first_schema = schemas.first
+          return {} unless first_schema
+
+          # Build the first schema as the fallback
+          result = build_schema_or_ref(first_schema)
+          result["description"] = @schema.description.to_s if @schema.description
+          result
+        end
 
         # Build allOf schema for inheritance
         def build_all_of_schema

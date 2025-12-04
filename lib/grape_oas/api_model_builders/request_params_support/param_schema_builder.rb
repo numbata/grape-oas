@@ -36,6 +36,7 @@ module GrapeOAS
           return build_entity_schema(doc_type) if grape_entity?(doc_type)
           return build_entity_schema(raw_type) if grape_entity?(raw_type)
           return build_elements_array_schema(spec) if array_with_elements?(raw_type, spec)
+          return build_multi_type_schema(raw_type) if multi_type?(raw_type)
           return build_typed_array_schema(raw_type) if typed_array?(raw_type)
           return build_simple_array_schema if simple_array?(raw_type)
 
@@ -85,6 +86,15 @@ module GrapeOAS
             type: Constants::SchemaTypes::ARRAY,
             items: ApiModel::Schema.new(type: Constants::SchemaTypes::STRING),
           )
+        end
+
+        # Builds oneOf schema for Grape's multi-type notation like "[String, Integer]"
+        def build_multi_type_schema(type)
+          type_names = extract_multi_types(type)
+          schemas = type_names.map do |type_name|
+            ApiModel::Schema.new(type: resolve_schema_type(type_name))
+          end
+          ApiModel::Schema.new(one_of: schemas)
         end
 
         def build_primitive_schema(raw_type, doc)

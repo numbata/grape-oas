@@ -94,6 +94,62 @@ module GrapeOAS
         assert_equal Array, primitive
         refute_nil member
       end
+
+      # multi_type? tests
+
+      def test_multi_type_with_two_types
+        assert resolver.multi_type?("[String, Integer]")
+        assert resolver.multi_type?("[String,Integer]")
+        assert resolver.multi_type?("[String, Float]")
+      end
+
+      def test_multi_type_with_three_types
+        assert resolver.multi_type?("[String, Integer, Float]")
+      end
+
+      def test_multi_type_with_namespaced_types
+        assert resolver.multi_type?("[String, Grape::API::Boolean]")
+      end
+
+      def test_multi_type_false_for_single_type_array
+        refute resolver.multi_type?("[String]")
+        refute resolver.multi_type?("[Integer]")
+      end
+
+      def test_multi_type_false_for_non_array_string
+        refute resolver.multi_type?("String")
+        refute resolver.multi_type?("Integer")
+        refute resolver.multi_type?(nil)
+      end
+
+      # extract_multi_types tests
+
+      def test_extract_multi_types_with_two_types
+        result = resolver.extract_multi_types("[String, Integer]")
+
+        assert_equal %w[String Integer], result
+      end
+
+      def test_extract_multi_types_with_three_types
+        result = resolver.extract_multi_types("[String, Integer, Float]")
+
+        assert_equal %w[String Integer Float], result
+      end
+
+      def test_extract_multi_types_with_namespaced_type
+        result = resolver.extract_multi_types("[String, Grape::API::Boolean]")
+
+        assert_equal ["String", "Grape::API::Boolean"], result
+      end
+
+      def test_extract_multi_types_nil_for_single_type
+        assert_nil resolver.extract_multi_types("[String]")
+      end
+
+      def test_extract_multi_types_nil_for_non_array
+        assert_nil resolver.extract_multi_types("String")
+        assert_nil resolver.extract_multi_types(nil)
+      end
     end
   end
 end
