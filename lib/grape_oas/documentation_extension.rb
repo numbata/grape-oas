@@ -9,7 +9,7 @@ module GrapeOAS
       # Prefer grape-oas namespaced options to avoid clashing with grape-swagger
       default_mount_path = options.delete(:oas_mount_path) ||
                            options.delete(:mount_path) ||
-                           "/swagger_doc.json"
+                           "/swagger_doc"
       default_format = options.delete(:oas_doc_version) ||
                        options.delete(:doc_version) ||
                        :oas3
@@ -25,30 +25,51 @@ module GrapeOAS
       api = self
 
       mount_paths.each do |key, path|
-        add_route(path) do
-          schema_type = if key == :oas2
-                          :oas2
-                        elsif key == :oas3
-                          :oas3
-                        else
-                          GrapeOAS::DocumentationExtension.parse_schema_type(params[:oas]) || default_format
-                        end
-
-          header("Cache-Control", cache_control) if cache_control
-          header("ETag", etag_value) if etag_value
-
-          # Resolve runtime options (like grape-swagger's OptionalObject)
-          runtime_options = options.dup
-          runtime_options[:host] = GrapeOAS::DocumentationExtension.resolve_option(
-            runtime_options[:host], request, :host_with_port,
-          )
-          runtime_options[:base_path] = GrapeOAS::DocumentationExtension.resolve_option(
-            runtime_options[:base_path], request, :script_name,
-          )
-
-          GrapeOAS.generate(app: api, schema_type: schema_type, **runtime_options)
-        end
+        add_documentation_routes(path, key, default_format, cache_control, etag_value, options, api)
       end
+    end
+
+    def add_documentation_routes(path, key, default_format, cache_control, etag_value, options, api)
+      # Main route without namespace filter
+      add_route(path) do
+        GrapeOAS::DocumentationExtension.generate_documentation(
+          self, api, key, default_format, cache_control, etag_value, options, nil,
+        )
+      end
+
+      # Route with namespace filter: /swagger_doc/:namespace
+      # Supports nested namespaces via *namespace (catches slashes)
+      add_route("#{path}/*namespace") do
+        namespace_filter = params[:namespace]&.sub(/\.json$/, "")
+        GrapeOAS::DocumentationExtension.generate_documentation(
+          self, api, key, default_format, cache_control, etag_value, options, namespace_filter,
+        )
+      end
+    end
+
+    def self.generate_documentation(endpoint, api, key, default_format, cache_control, etag_value, options, namespace_filter)
+      schema_type = if key == :oas2
+                      :oas2
+                    elsif key == :oas3
+                      :oas3
+                    else
+                      parse_schema_type(endpoint.params[:oas]) || default_format
+                    end
+
+      endpoint.header("Cache-Control", cache_control) if cache_control
+      endpoint.header("ETag", etag_value) if etag_value
+
+      # Resolve runtime options (like grape-swagger's OptionalObject)
+      runtime_options = options.dup
+      runtime_options[:host] = resolve_option(
+        runtime_options[:host], endpoint.request, :host_with_port,
+      )
+      runtime_options[:base_path] = resolve_option(
+        runtime_options[:base_path], endpoint.request, :script_name,
+      )
+      runtime_options[:namespace] = namespace_filter if namespace_filter
+
+      GrapeOAS.generate(app: api, schema_type: schema_type, **runtime_options)
     end
 
     # Compatibility shim for apps calling grape-swagger's add_swagger_documentation.

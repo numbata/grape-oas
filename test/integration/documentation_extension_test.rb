@@ -210,4 +210,111 @@ class DocumentationExtensionTest < Minitest::Test
 
     assert_equal "static-from-lambda.example.com", body["host"]
   end
+
+  # Namespace filtering via URL tests
+  class NamespaceFilterAPI < Grape::API
+    format :json
+
+    namespace :users do
+      desc "List users"
+      get do
+        []
+      end
+
+      desc "Get user"
+      get ":id" do
+        {}
+      end
+
+      namespace :posts do
+        desc "Get user posts"
+        get do
+          []
+        end
+      end
+    end
+
+    namespace :posts do
+      desc "List posts"
+      get do
+        []
+      end
+
+      desc "Get post"
+      get ":id" do
+        {}
+      end
+    end
+
+    desc "Root endpoint"
+    get do
+      {}
+    end
+
+    add_oas_documentation
+  end
+
+  def test_namespace_filter_via_url
+    resp = Rack::MockRequest.new(NamespaceFilterAPI).get("/swagger_doc/users")
+
+    assert_equal 200, resp.status
+    body = JSON.parse(resp.body)
+    paths = body["paths"].keys
+
+    assert_includes paths, "/users"
+    assert_includes paths, "/users/{id}"
+    assert_includes paths, "/users/posts"
+    refute_includes paths, "/posts"
+    refute_includes paths, "/posts/{id}"
+    refute_includes paths, "/"
+  end
+
+  def test_namespace_filter_via_url_with_json_extension
+    resp = Rack::MockRequest.new(NamespaceFilterAPI).get("/swagger_doc/users.json")
+
+    assert_equal 200, resp.status
+    body = JSON.parse(resp.body)
+    paths = body["paths"].keys
+
+    assert_includes paths, "/users"
+    assert_includes paths, "/users/{id}"
+    refute_includes paths, "/posts"
+  end
+
+  def test_namespace_filter_nested_via_url
+    resp = Rack::MockRequest.new(NamespaceFilterAPI).get("/swagger_doc/users/posts")
+
+    assert_equal 200, resp.status
+    body = JSON.parse(resp.body)
+    paths = body["paths"].keys
+
+    assert_includes paths, "/users/posts"
+    refute_includes paths, "/users"
+    refute_includes paths, "/users/{id}"
+    refute_includes paths, "/posts"
+  end
+
+  def test_no_namespace_filter_returns_all_paths
+    resp = Rack::MockRequest.new(NamespaceFilterAPI).get("/swagger_doc")
+
+    assert_equal 200, resp.status
+    body = JSON.parse(resp.body)
+    paths = body["paths"].keys
+
+    assert_includes paths, "/"
+    assert_includes paths, "/users"
+    assert_includes paths, "/users/{id}"
+    assert_includes paths, "/users/posts"
+    assert_includes paths, "/posts"
+    assert_includes paths, "/posts/{id}"
+  end
+
+  def test_default_mount_path_without_json_extension
+    resp = Rack::MockRequest.new(NamespaceFilterAPI).get("/swagger_doc")
+
+    assert_equal 200, resp.status
+    body = JSON.parse(resp.body)
+
+    assert_equal "3.0.0", body["openapi"]
+  end
 end

@@ -141,9 +141,15 @@ end
 
 The documentation will be available at `/swagger_doc` by default. Switch between OpenAPI versions using the `oas` query parameter:
 
-- `/swagger_doc` or `/swagger_doc?oas=2` - OpenAPI 2.0 (Swagger)
-- `/swagger_doc?oas=3` - OpenAPI 3.0
+- `/swagger_doc` - OpenAPI 3.0 (default)
+- `/swagger_doc?oas=2` - OpenAPI 2.0 (Swagger)
 - `/swagger_doc?oas=3.1` - OpenAPI 3.1
+
+Filter to specific namespaces by appending the namespace to the path:
+
+- `/swagger_doc/users` - Only `/users` routes
+- `/swagger_doc/users/posts` - Only `/users/posts` routes
+- `/swagger_doc/users.json` - Also works with `.json` extension
 
 ### Manual Generation
 
