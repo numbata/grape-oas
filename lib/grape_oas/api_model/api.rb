@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module GrapeOAS
   module ApiModel
     # Represents the root API object in the DTO model for OpenAPI v2/v3.
