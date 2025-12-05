@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require_relative "base"
 require_relative "../api_model_builders/concerns/type_resolver"
 require_relative "entity_introspector_support/cycle_tracker"
 require_relative "entity_introspector_support/discriminator_handler"
@@ -9,9 +10,61 @@ require_relative "entity_introspector_support/exposure_processor"
 
 module GrapeOAS
   module Introspectors
+    # Introspector for Grape::Entity classes.
+    # Extracts schema information from entity exposures and documentation.
     class EntityIntrospector
+      extend Base
       include GrapeOAS::ApiModelBuilders::Concerns::TypeResolver
       include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
+
+      # Checks if the subject is a Grape::Entity class.
+      #
+      # @param subject [Object] The object to check
+      # @return [Boolean] true if subject is a Grape::Entity class
+      def self.handles?(subject)
+        return false unless defined?(Grape::Entity)
+        return subject <= Grape::Entity if subject.is_a?(Class)
+        return false unless subject.is_a?(String) || subject.is_a?(Symbol)
+
+        const_name = subject.to_s
+        return false unless const_name.match?(/\A[A-Z]/)
+        return false unless Object.const_defined?(const_name, false)
+
+        klass = Object.const_get(const_name, false)
+        klass.is_a?(Class) && klass <= Grape::Entity
+      rescue NameError
+        false
+      end
+
+      # Builds a schema from a Grape::Entity class.
+      #
+      # @param subject [Class, String, Symbol] Entity class or its name
+      # @param stack [Array] Recursion stack for cycle detection
+      # @param registry [Hash] Schema registry for caching
+      # @return [ApiModel::Schema] The built schema
+      def self.build_schema(subject, stack: [], registry: {})
+        entity_class = resolve_entity_class(subject)
+        return nil unless entity_class
+
+        new(entity_class, stack: stack, registry: registry).build_schema
+      end
+
+      # Resolves a subject to an entity class.
+      #
+      # @param subject [Class, String, Symbol] Entity class or its name
+      # @return [Class, nil] The resolved entity class
+      def self.resolve_entity_class(subject)
+        return subject if subject.is_a?(Class) && defined?(Grape::Entity) && subject <= Grape::Entity
+        return nil unless subject.is_a?(String) || subject.is_a?(Symbol)
+
+        const_name = subject.to_s
+        return nil unless Object.const_defined?(const_name, false)
+
+        klass = Object.const_get(const_name, false)
+        klass if klass.is_a?(Class) && defined?(Grape::Entity) && klass <= Grape::Entity
+      rescue NameError
+        nil
+      end
 
       def initialize(entity_class, stack: [], registry: {})
         @entity_class = entity_class

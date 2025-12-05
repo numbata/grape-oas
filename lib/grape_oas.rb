@@ -41,6 +41,34 @@ module GrapeOAS
   end
   module_function :version
 
+  # Returns the global introspector registry.
+  #
+  # The registry manages introspectors that build schemas from various sources
+  # (e.g., Grape::Entity, Dry contracts). Third-party gems can register custom
+  # introspectors to support new schema definition formats.
+  #
+  # @return [Introspectors::Registry] the global introspector registry
+  #
+  # @example Registering a custom introspector
+  #   GrapeOAS.introspectors.register(MyCustomIntrospector)
+  #
+  # @example Inserting before an existing introspector
+  #   GrapeOAS.introspectors.register(
+  #     HighPriorityIntrospector,
+  #     before: GrapeOAS::Introspectors::EntityIntrospector
+  #   )
+  #
+  def introspectors
+    @introspectors ||= begin
+      registry = Introspectors::Registry.new
+      # Register built-in introspectors in order of precedence
+      registry.register(Introspectors::EntityIntrospector)
+      registry.register(Introspectors::DryIntrospector)
+      registry
+    end
+  end
+  module_function :introspectors
+
   # Generates an OpenAPI specification from a Grape API application.
   #
   # Introspects the Grape API routes, parameters, entities, and contracts
