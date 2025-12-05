@@ -10,9 +10,9 @@ gem "grape", case ENV.fetch("GRAPE_VERSION", nil)
              when "HEAD"
                { git: "https://github.com/ruby-grape/grape" }
              when nil
-               ENV.key?("GRAPE_PATH") ? { path: ENV["GRAPE_PATH"] } : ">= 3.0"
+               ENV.key?("GRAPE_PATH") ? { path: ENV.fetch("GRAPE_PATH") } : ">= 3.0"
              else
-               ENV["GRAPE_VERSION"]
+               ENV.fetch("GRAPE_VERSION")
              end
 
 gem "dry-schema"

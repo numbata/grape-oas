@@ -6,6 +6,11 @@ AllCops:
   UseCache: true
   NewCops: enable
   SuggestExtensions: false
+  Include:
+    - "**/*.rb"
+    - "**/*.gemspec"
+    - "**/Gemfile"
+    - "**/Rakefile"
 
 Naming/FileName:
   Exclude:
