@@ -35,6 +35,9 @@ OpenAPI Specification (OAS) documentation generator for [Grape](https://github.c
   - [OpenAPI 2.0 (Swagger)](#openapi-20-swagger)
   - [OpenAPI 3.0](#openapi-30)
   - [OpenAPI 3.1](#openapi-31)
+- [Extensibility](#extensibility)
+  - [Custom Introspectors](#custom-introspectors)
+  - [Custom Exporters](#custom-exporters)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -618,6 +621,74 @@ Notes for OpenAPI 3.1:
 - `$defs` are emitted in the schema output
 - `examples` uses array format per JSON Schema 2020-12
 - Operations without `summary` fall back to first sentence of `description`, then humanized `operationId`
+
+## Extensibility
+
+Grape::OAS provides registries for extending its functionality with custom introspectors and exporters.
+
+### Custom Introspectors
+
+Introspectors extract OpenAPI schemas from Ruby classes. Register custom introspectors to support new schema definition formats:
+
+```ruby
+class MyModelIntrospector
+  extend GrapeOAS::Introspectors::Base
+
+  def self.handles?(subject)
+    subject.is_a?(Class) && subject < MyBaseModel
+  end
+
+  def self.build_schema(subject, stack: [], registry: {})
+    GrapeOAS::ApiModel::Schema.new(
+      type: "object",
+      canonical_name: subject.name
+    )
+  end
+end
+
+# Register at the end (lowest priority)
+GrapeOAS.introspectors.register(MyModelIntrospector)
+
+# Register before EntityIntrospector (higher priority)
+GrapeOAS.introspectors.register(
+  MyModelIntrospector,
+  before: GrapeOAS::Introspectors::EntityIntrospector
+)
+```
+
+See [docs/INTROSPECTORS.md](docs/INTROSPECTORS.md) for detailed documentation.
+
+### Custom Exporters
+
+Exporters convert the internal API model to OpenAPI JSON. Register custom exporters for new output formats:
+
+```ruby
+class MyCustomExporter
+  def initialize(api_model:)
+    @api = api_model
+  end
+
+  def generate
+    { "my_format_version" => "1.0", "title" => @api.title }
+  end
+end
+
+# Register with aliases
+GrapeOAS.exporters.register(MyCustomExporter, as: :custom)
+GrapeOAS.exporters.register(MyCustomExporter, as: %i[custom custom_v1])
+
+# Use it
+schema = GrapeOAS.generate(app: MyAPI, schema_type: :custom)
+```
+
+See [docs/EXPORTERS.md](docs/EXPORTERS.md) for detailed documentation.
+
+### Additional Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System architecture overview
+- [docs/API_MODEL.md](docs/API_MODEL.md) - Internal API model reference
+- [docs/INTROSPECTORS.md](docs/INTROSPECTORS.md) - Introspector system
+- [docs/EXPORTERS.md](docs/EXPORTERS.md) - Exporter system
 
 ## Development
 

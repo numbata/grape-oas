@@ -648,7 +648,7 @@ get ':id' do; end
 | Feature | grape-swagger | grape-oas | Notes |
 |---------|---------------|-----------|-------|
 | OAuth middleware integration | ✅ | ❌ | Use standard Grape auth |
-| Custom model parsers | ✅ | ❌ | Built-in introspection only |
+| Custom model parsers | ✅ | ✅ | Use introspector registry |
 | Multiple present (`as:`) | ✅ | ✅ | Fully supported |
 | Root wrapping | ✅ | ❌ | Not implemented |
 | Nested namespace standalone | ✅ | ❌ | Not implemented |
@@ -665,7 +665,8 @@ These grape-swagger features are not currently available in grape-oas:
    - Use standard Grape authentication instead
 
 2. **Custom Model Parsers** (`GrapeSwagger.model_parsers.register`)
-   - grape-oas uses built-in introspection for entities and contracts
+   - grape-oas has its own introspector registry: `GrapeOAS.introspectors.register(MyIntrospector)`
+   - See [INTROSPECTORS.md](INTROSPECTORS.md) for details
 
 3. **Root Element Wrapping** (`route_setting :swagger, root:`)
    - Workaround: Create a wrapper entity
@@ -751,6 +752,36 @@ end
 get :search do; end
 ```
 
+### 7. Custom Introspector Registry
+
+Register custom introspectors to support new schema definition formats:
+
+```ruby
+GrapeOAS.introspectors.register(MyModelIntrospector)
+
+# With priority control
+GrapeOAS.introspectors.register(
+  MyModelIntrospector,
+  before: GrapeOAS::Introspectors::EntityIntrospector
+)
+```
+
+See [INTROSPECTORS.md](INTROSPECTORS.md) for details.
+
+### 8. Custom Exporter Registry
+
+Register custom exporters for new output formats:
+
+```ruby
+GrapeOAS.exporters.register(MyCustomExporter, as: :custom)
+GrapeOAS.exporters.register(MyCustomExporter, as: %i[custom custom_v1])
+
+# Use it
+schema = GrapeOAS.generate(app: MyAPI, schema_type: :custom)
+```
+
+See [EXPORTERS.md](EXPORTERS.md) for details.
+
 ---
 
 ## Migration Checklist
@@ -763,7 +794,7 @@ get :search do; end
 - [ ] Remove any `endpoint_auth_wrapper`/`swagger_endpoint_guard`/`token_owner` options
 - [ ] Test generated output against your existing schema
 - [ ] Update any code that depends on `nickname` (operationId is now auto-generated)
-- [ ] Review any `as:` multiple present responses (not supported - create combined entity)
+- [ ] Migrate custom model parsers to introspector registry (see [INTROSPECTORS.md](INTROSPECTORS.md))
 - [ ] Review any root element wrapping (not supported - create wrapper entity)
 
 ---
@@ -772,4 +803,8 @@ get :search do; end
 
 - [grape-oas GitHub Issues](https://github.com/numbata/grape-oas/issues)
 - [grape-oas README](../README.md)
+- [Architecture Overview](ARCHITECTURE.md)
+- [Introspectors Documentation](INTROSPECTORS.md)
+- [Exporters Documentation](EXPORTERS.md)
+- [API Model Reference](API_MODEL.md)
 - [OpenAPI Specification](https://spec.openapis.org/oas/latest.html)
