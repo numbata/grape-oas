@@ -83,18 +83,21 @@ module GrapeOAS
           return if processor.merge_exposure?(exposure, doc, opts)
 
           prop_schema = processor.schema_for_exposure(exposure, doc)
-          doc = apply_conditional_modifiers(prop_schema, doc, exposure, processor)
+          required = determine_required(doc, exposure, processor)
           prop_schema = wrap_in_array_if_needed(prop_schema, doc)
 
-          child_schema.add_property(exposure.key.to_s, prop_schema, required: doc[:required])
+          child_schema.add_property(exposure.key.to_s, prop_schema, required: required)
         end
 
-        def apply_conditional_modifiers(_prop_schema, doc, exposure, processor)
-          return doc unless processor.conditional?(exposure)
+        def determine_required(doc, exposure, processor)
+          # If explicitly set in documentation, use that value
+          return doc[:required] unless doc[:required].nil?
 
-          # Conditional exposures are not required (may be absent from output),
-          # but they are NOT nullable - when present, the value is not null.
-          doc.merge(required: false)
+          # Conditional exposures are not required (may be absent from output)
+          return false if processor.conditional?(exposure)
+
+          # Unconditional exposures are required by default (always present in output)
+          true
         end
 
         def wrap_in_array_if_needed(prop_schema, doc)

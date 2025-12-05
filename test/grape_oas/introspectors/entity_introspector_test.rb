@@ -109,9 +109,16 @@ module GrapeOAS
         assert_includes items.properties.keys, "id"
       end
 
-      # === Conditional exposure and merge tests ===
+      # === Required field behavior tests ===
 
-      def test_conditions_mark_not_required
+      def test_unconditional_exposures_are_required_by_default
+        schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
+
+        # Unconditional exposures are required by default (always present in output)
+        assert_includes schema.required, "mandatory"
+      end
+
+      def test_conditional_exposures_are_not_required
         schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
 
         # Conditional exposures are NOT required (may be absent from output)
@@ -119,6 +126,29 @@ module GrapeOAS
         # But they are NOT nullable - when present, the value is not null
         refute schema.properties["maybe"].nullable
         assert_equal "yes", schema.properties["maybe"].extensions["x-maybe"]
+      end
+
+      def test_explicit_required_false_is_respected
+        entity_class = Class.new(Grape::Entity) do
+          expose :always, documentation: { type: String }
+          expose :optional, documentation: { type: String, required: false }
+        end
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+
+        assert_includes schema.required, "always"
+        refute_includes schema.required, "optional"
+      end
+
+      def test_explicit_required_true_on_conditional_is_respected
+        entity_class = Class.new(Grape::Entity) do
+          # Even though conditional, explicit required: true takes precedence
+          expose :forced, documentation: { type: String, required: true }, if: ->(_o, _opts) { true }
+        end
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+
+        assert_includes schema.required, "forced"
       end
 
       def test_merge_flattens_properties
