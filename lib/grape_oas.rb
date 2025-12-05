@@ -69,6 +69,32 @@ module GrapeOAS
   end
   module_function :introspectors
 
+  # Returns the global exporter registry.
+  #
+  # The registry manages exporters that generate OpenAPI specifications
+  # in different versions (OAS 2.0, 3.0, 3.1). Third-party gems can register
+  # custom exporters for new output formats.
+  #
+  # @return [Exporter::Registry] the global exporter registry
+  #
+  # @example Registering a custom exporter
+  #   GrapeOAS.exporters.register(:custom, MyCustomExporter)
+  #
+  # @example Using a custom exporter
+  #   schema = GrapeOAS.generate(app: MyAPI, schema_type: :custom)
+  #
+  def exporters
+    @exporters ||= begin
+      registry = Exporter::Registry.new
+      # Register built-in exporters
+      registry.register(Exporter::OAS2Schema, as: :oas2)
+      registry.register(Exporter::OAS30Schema, as: %i[oas3 oas30])
+      registry.register(Exporter::OAS31Schema, as: :oas31)
+      registry
+    end
+  end
+  module_function :exporters
+
   # Generates an OpenAPI specification from a Grape API application.
   #
   # Introspects the Grape API routes, parameters, entities, and contracts

@@ -2,20 +2,14 @@
 
 module GrapeOAS
   module Exporter
-    # Factory method to return the appropriate exporter class based on the schema type.
-    # @param schema_type [Symbol] The type of schema (:oas3 or :oas2).
-    # @return [Class] The exporter class for the specified schema type.
+    # Returns the exporter class for the given schema type.
+    # Delegates to the global exporter registry.
+    #
+    # @param schema_type [Symbol] The type of schema (:oas2, :oas3, :oas30, :oas31)
+    # @return [Class] The exporter class for the specified schema type
+    # @raise [ArgumentError] if no exporter is registered for the type
     def for(schema_type)
-      case schema_type
-      when :oas2
-        GrapeOAS::Exporter::OAS2Schema
-      when :oas3, :oas30
-        GrapeOAS::Exporter::OAS30Schema
-      when :oas31
-        GrapeOAS::Exporter::OAS31Schema
-      else
-        raise ArgumentError, "Unsupported schema type: #{schema_type}"
-      end
+      GrapeOAS.exporters.for(schema_type)
     end
     module_function :for
   end
