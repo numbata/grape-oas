@@ -1,0 +1,27 @@
+# frozen_string_literal: true
+
+name: Security
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  bundler-audit:
+    name: Vulnerability Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+      - name: Install bundler-audit
+        run: gem install bundler-audit
+      - name: Update vulnerability database
+        run: bundle audit update
+      - name: Check for vulnerabilities
+        run: bundle audit check

@@ -1,0 +1,27 @@
+# frozen_string_literal: true
+
+name: Quality
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  bundler-leak:
+    name: Memory Leak Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+      - name: Install bundler-leak
+        run: gem install bundler-leak
+      - name: Update leak database
+        run: bundle leak update
+      - name: Check for memory leaks
+        run: bundle leak check
