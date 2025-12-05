@@ -26,6 +26,9 @@ module GrapeOAS
           # Check for Sum type first (TypeA | TypeB) -> anyOf
           return build_any_of_schema(dry_type) if TypeUnwrapper.sum_type?(dry_type)
 
+          # Check for Hash schema type (nested schemas like .hash(SomeSchema))
+          return build_hash_schema(dry_type) if hash_schema_type?(dry_type)
+
           primitive, member = TypeUnwrapper.derive_primitive_and_member(dry_type)
           enum_vals = extract_enum_from_type(dry_type)
 

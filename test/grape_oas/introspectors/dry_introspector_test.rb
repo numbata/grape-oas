@@ -584,6 +584,111 @@ module GrapeOAS
         refute_includes result.required, "description"
       end
 
+      # Tests for nested hash schemas (.hash(SomeSchema))
+
+      def test_nested_hash_schema_builds_object_with_properties
+        # Define a nested schema
+        nested_schema = Dry::Schema.JSON do
+          required(:x).filled(:integer)
+          required(:y).filled(:integer)
+        end
+
+        # Define a parent schema that uses .hash() to reference the nested schema
+        parent_schema = Dry::Schema.JSON do
+          required(:name).filled(:string)
+          required(:position).hash(nested_schema)
+        end
+
+        result = processor.build_schema(parent_schema)
+
+        assert_equal "object", result.type
+        assert result.properties.key?("name")
+        assert result.properties.key?("position")
+
+        # The nested position property should be an object with x and y properties
+        position_schema = result.properties["position"]
+
+        assert_equal "object", position_schema.type
+        assert position_schema.properties.key?("x")
+        assert position_schema.properties.key?("y")
+        assert_equal "integer", position_schema.properties["x"].type
+        assert_equal "integer", position_schema.properties["y"].type
+      end
+
+      def test_nested_hash_schema_with_optional_field
+        # NOTE: When using .hash(nested_schema), Dry::Types::Schema keys
+        # don't preserve the required/optional distinction from the original schema.
+        # The key.required? method returns the key's options[:required] which is
+        # set to false for all keys in this context.
+        # This is a limitation of Dry::Types, not grape-oas.
+        nested_schema = Dry::Schema.JSON do
+          required(:width).filled(:integer)
+          optional(:height).filled(:integer)
+        end
+
+        parent_schema = Dry::Schema.JSON do
+          required(:dimensions).hash(nested_schema)
+        end
+
+        result = processor.build_schema(parent_schema)
+        dimensions = result.properties["dimensions"]
+
+        assert_equal "object", dimensions.type
+        assert dimensions.properties.key?("width")
+        assert dimensions.properties.key?("height")
+        # NOTE: Due to Dry::Types limitation, nested hash keys all report as not required
+        # The required array will be empty because key.required? returns false for all
+        assert_empty dimensions.required,
+                     "Nested hash schema keys report as not required due to Dry::Types limitation"
+      end
+
+      def test_deeply_nested_hash_schemas
+        innermost = Dry::Schema.JSON do
+          required(:value).filled(:string)
+        end
+
+        middle = Dry::Schema.JSON do
+          required(:inner).hash(innermost)
+        end
+
+        outer = Dry::Schema.JSON do
+          required(:middle).hash(middle)
+        end
+
+        result = processor.build_schema(outer)
+
+        middle_schema = result.properties["middle"]
+
+        assert_equal "object", middle_schema.type
+
+        inner_schema = middle_schema.properties["inner"]
+
+        assert_equal "object", inner_schema.type
+        assert inner_schema.properties.key?("value")
+        assert_equal "string", inner_schema.properties["value"].type
+      end
+
+      def test_optional_nested_hash_schema
+        nested_schema = Dry::Schema.JSON do
+          required(:field).filled(:string)
+        end
+
+        parent_schema = Dry::Schema.JSON do
+          required(:name).filled(:string)
+          optional(:config).hash(nested_schema)
+        end
+
+        result = processor.build_schema(parent_schema)
+
+        assert result.properties.key?("config")
+        refute_includes result.required, "config"
+
+        config_schema = result.properties["config"]
+
+        assert_equal "object", config_schema.type
+        assert config_schema.properties.key?("field")
+      end
+
       private
 
       def constraint_set_class
