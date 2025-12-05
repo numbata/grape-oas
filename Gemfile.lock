@@ -95,6 +95,7 @@ GEM
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
+    memory_profiler (1.1.0)
     minitest (5.26.2)
     multi_json (1.15.0)
     mustermann (3.0.4)
@@ -174,6 +175,7 @@ DEPENDENCIES
   grape-entity
   grape-oas!
   json_schemer (~> 2.4)
+  memory_profiler
   rack
   rack-test
   rake
