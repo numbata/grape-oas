@@ -16,8 +16,9 @@ module GrapeOAS
           return build_all_of_schema if @schema.all_of && !@schema.all_of.empty?
 
           # Handle oneOf/anyOf by using first type (OAS2 doesn't support oneOf/anyOf)
-          return build_first_of_schema(:one_of) if @schema.one_of && !@schema.one_of.empty?
-          return build_first_of_schema(:any_of) if @schema.any_of && !@schema.any_of.empty?
+          # Skip if schema has explicit type - use type with extensions instead
+          return build_first_of_schema(:one_of) if @schema.one_of && !@schema.one_of.empty? && !@schema.type
+          return build_first_of_schema(:any_of) if @schema.any_of && !@schema.any_of.empty? && !@schema.type
 
           schema_hash = build_base_hash
           apply_constraints(schema_hash)
@@ -62,6 +63,7 @@ module GrapeOAS
         private
 
         # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
+        # Extensions are merged to allow x-anyOf/x-oneOf for consumers that support them
         def build_first_of_schema(composition_type)
           schemas = @schema.send(composition_type)
           first_schema = schemas.first
@@ -70,6 +72,7 @@ module GrapeOAS
           # Build the first schema as the fallback
           result = build_schema_or_ref(first_schema)
           result["description"] = @schema.description.to_s if @schema.description
+          apply_extensions(result)
           result
         end
 

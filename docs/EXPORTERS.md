@@ -30,6 +30,7 @@ schema = GrapeOAS.generate(app: MyAPI, schema_type: :oas31)
 - Request body via `in: body` parameters
 - `definitions` for schema references
 - `host`, `basePath`, `schemes` for server info
+- **Composition types**: Not all composition types are natively supported. The exporter uses a fallback type while preserving schema extensions for downstream consumers
 
 #### OpenAPI 3.0
 - Uses `openapi: "3.0.0"` version field
@@ -37,6 +38,7 @@ schema = GrapeOAS.generate(app: MyAPI, schema_type: :oas31)
 - `components/schemas` for schema references
 - `servers` array for server info
 - `nullable: true` for nullable types
+- **Composition types**: Native support for `oneOf`, `anyOf`, `allOf`
 
 #### OpenAPI 3.1
 - Uses `openapi: "3.1.0"` version field

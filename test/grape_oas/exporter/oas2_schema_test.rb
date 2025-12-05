@@ -40,6 +40,46 @@ module GrapeOAS
         assert_equal "integer", result["type"]
         refute result.key?("x-nullable")
       end
+
+      def test_composition_with_type_preserves_type_and_extensions
+        # When schema has both type and composition (e.g., any_of), prefer type with extensions
+        # This allows patterns like type: "object" + x-anyOf extension
+        ref_schema1 = ApiModel::Schema.new(canonical_name: "TypeA")
+        ref_schema2 = ApiModel::Schema.new(canonical_name: "TypeB")
+
+        schema = ApiModel::Schema.new(
+          type: "object",
+          any_of: [ref_schema1, ref_schema2],
+          extensions: {
+            "x-anyOf" => [
+              { "$ref" => "#/definitions/TypeA" },
+              { "$ref" => "#/definitions/TypeB" }
+            ]
+          },
+        )
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal "object", result["type"]
+        assert_equal 2, result["x-anyOf"].size
+        assert_equal({ "$ref" => "#/definitions/TypeA" }, result["x-anyOf"][0])
+        assert_equal({ "$ref" => "#/definitions/TypeB" }, result["x-anyOf"][1])
+      end
+
+      def test_composition_without_type_uses_first_ref
+        # When schema has composition but no type, fall back to first ref
+        ref_schema1 = ApiModel::Schema.new(canonical_name: "TypeA")
+        ref_schema2 = ApiModel::Schema.new(canonical_name: "TypeB")
+
+        schema = ApiModel::Schema.new(
+          any_of: [ref_schema1, ref_schema2],
+        )
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal "#/definitions/TypeA", result["$ref"]
+        refute result.key?("type")
+      end
     end
   end
 end
