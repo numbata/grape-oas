@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   rubocop:
@@ -42,3 +43,9 @@ jobs:
           bundler-cache: true
       - name: Run tests
         run: bundle exec rake test
+      - name: Annotate uncovered lines
+        uses: ggilder/codecoverage@v1
+        if: github.event_name == 'pull_request' && matrix.ruby == '3.4'
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERAGE_FILE_PATH: coverage/lcov.info
