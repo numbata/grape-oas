@@ -111,11 +111,13 @@ module GrapeOAS
 
       # === Conditional exposure and merge tests ===
 
-      def test_conditions_mark_nullable
+      def test_conditions_mark_not_required
         schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
 
+        # Conditional exposures are NOT required (may be absent from output)
         refute_includes schema.required, "maybe"
-        assert schema.properties["maybe"].nullable
+        # But they are NOT nullable - when present, the value is not null
+        refute schema.properties["maybe"].nullable
         assert_equal "yes", schema.properties["maybe"].extensions["x-maybe"]
       end
 

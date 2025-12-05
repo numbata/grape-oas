@@ -127,10 +127,11 @@ module GrapeOAS
           schema.add_property(exposure.key.to_s, prop_schema, required: doc[:required])
         end
 
-        def apply_conditional_modifiers(prop_schema, doc, exposure)
+        def apply_conditional_modifiers(_prop_schema, doc, exposure)
           return doc unless conditional?(exposure)
 
-          prop_schema.nullable = true if prop_schema.respond_to?(:nullable=) && !prop_schema.nullable
+          # Conditional exposures are not required (may be absent from output),
+          # but they are NOT nullable - when present, the value is not null.
           doc.merge(required: false)
         end
 

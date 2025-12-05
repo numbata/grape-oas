@@ -82,15 +82,16 @@ module GrapeOAS
         expose :never, documentation: { type: String }, unless: ->(_obj, _opts) { true }
       end
 
-      def test_conditional_exposures_marked_nullable
+      def test_conditional_exposures_not_required_but_not_nullable
         schema = EntityIntrospector.new(ConditionalExposureEntity).build_schema
 
-        # Conditional exposures should be nullable or not required
+        # Conditional exposures are NOT required (may be absent from output)
+        # but they are NOT nullable - when present, the value is not null
         sometimes = schema.properties["sometimes"]
         never = schema.properties["never"]
 
-        assert sometimes.nullable, "Conditional 'if' exposure should be nullable"
-        assert never.nullable, "Conditional 'unless' exposure should be nullable"
+        refute sometimes.nullable, "Conditional 'if' exposure should NOT be nullable"
+        refute never.nullable, "Conditional 'unless' exposure should NOT be nullable"
 
         refute_includes schema.required, "sometimes"
         refute_includes schema.required, "never"
