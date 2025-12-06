@@ -122,6 +122,8 @@ namespace :release do
     # Ensure CHANGELOG has Unreleased section (idempotent)
     changelog_content = File.read(changelog_file)
 
+    unreleased_section = "## [Unreleased]\n\n* Your contribution here\n"
+
     if changelog_content.match?(/^## \[Unreleased\]/)
       puts "✓ CHANGELOG already has Unreleased section"
     else
@@ -129,7 +131,7 @@ namespace :release do
       lines = changelog_content.lines
       header_end_index = lines.index { |line| line.match?(/^## \[\d/) } || 8
 
-      lines.insert(header_end_index, "\n## [Unreleased]\n\n")
+      lines.insert(header_end_index, "\n#{unreleased_section}\n")
       File.write(changelog_file, lines.join)
       puts "✓ Added Unreleased section to #{changelog_file}"
     end
