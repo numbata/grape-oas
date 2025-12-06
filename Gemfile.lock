@@ -1,15 +1,4 @@
 PATH
-  remote: ../grape
-  specs:
-    grape (3.1.0)
-      activesupport (>= 7.0)
-      dry-configurable
-      dry-types (>= 1.1)
-      mustermann-grape (~> 1.1.0)
-      rack (>= 2)
-      zeitwerk
-
-PATH
   remote: .
   specs:
     grape-oas (0.1.0)
@@ -36,7 +25,7 @@ GEM
     base64 (0.3.0)
     bigdecimal (3.3.1)
     concurrent-ruby (1.3.5)
-    connection_pool (2.5.4)
+    connection_pool (3.0.2)
     date (3.4.1)
     debug (1.10.0)
       irb (~> 1.10)
@@ -79,6 +68,13 @@ GEM
       dry-schema (~> 1.14)
       zeitwerk (~> 2.6)
     erb (5.0.1)
+    grape (3.0.1)
+      activesupport (>= 7.0)
+      dry-configurable
+      dry-types (>= 1.1)
+      mustermann-grape (~> 1.1.0)
+      rack (>= 2)
+      zeitwerk
     grape-entity (1.0.1)
       activesupport (>= 3.0.0)
       multi_json (>= 1.3.2)
@@ -90,7 +86,7 @@ GEM
       pp (>= 0.6.0)
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
-    json (2.12.2)
+    json (2.17.1)
     json_schemer (2.4.0)
       bigdecimal
       hana (~> 1.3)
@@ -99,6 +95,7 @@ GEM
     language_server-protocol (3.17.0.5)
     lint_roller (1.1.0)
     logger (1.7.0)
+    memory_profiler (1.1.0)
     minitest (5.26.2)
     multi_json (1.15.0)
     mustermann (3.0.4)
@@ -154,6 +151,7 @@ GEM
       simplecov-html (~> 0.11)
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.13.2)
+    simplecov-lcov (0.9.0)
     simplecov_json_formatter (0.1.4)
     simpleidn (0.2.3)
     stringio (3.1.7)
@@ -174,16 +172,18 @@ DEPENDENCIES
   debug
   dry-schema
   dry-validation
-  grape!
+  grape (>= 3.0)
   grape-entity
   grape-oas!
   json_schemer (~> 2.4)
+  memory_profiler
   rack
   rack-test
   rake
   rubocop
   rubocop-minitest
   simplecov
+  simplecov-lcov
 
 BUNDLED WITH
    2.6.8

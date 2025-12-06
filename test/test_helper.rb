@@ -2,6 +2,13 @@
 
 # Start SimpleCov before loading any application code
 require "simplecov"
+require "simplecov-lcov"
+
+SimpleCov::Formatter::LcovFormatter.config do |c|
+  c.report_with_single_file = true
+  c.single_report_path = "coverage/lcov.info"
+end
+
 SimpleCov.start do
   add_filter "/test/"
   add_filter "/vendor/"
@@ -12,6 +19,11 @@ SimpleCov.start do
   add_group "Introspectors", "lib/grape_oas/introspectors"
   add_group "Exporters", "lib/grape_oas/exporter"
   add_group "Models", "lib/grape_oas/api_model"
+
+  formatter SimpleCov::Formatter::MultiFormatter.new([
+                                                       SimpleCov::Formatter::HTMLFormatter,
+                                                       SimpleCov::Formatter::LcovFormatter
+                                                     ])
 end
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
