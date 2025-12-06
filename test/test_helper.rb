@@ -21,9 +21,9 @@ SimpleCov.start do
   add_group "Models", "lib/grape_oas/api_model"
 
   formatter SimpleCov::Formatter::MultiFormatter.new([
-    SimpleCov::Formatter::HTMLFormatter,
-    SimpleCov::Formatter::LcovFormatter,
-  ])
+                                                       SimpleCov::Formatter::HTMLFormatter,
+                                                       SimpleCov::Formatter::LcovFormatter
+                                                     ])
 end
 
 $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
