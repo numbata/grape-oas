@@ -174,13 +174,13 @@ module GrapeOAS
 
       def test_pattern_from_format_predicate
         contract = Dry::Schema.Params do
-          required(:slug).filled(:string, format?: /\A[a-z0-9\-]+\z/)
+          required(:slug).filled(:string, format?: /\A[a-z0-9-]+\z/)
         end
 
         schema = processor.build(contract)
         slug = schema.properties["slug"]
 
-        assert_equal "\\A[a-z0-9\\-]+\\z", slug.pattern
+        assert_equal "\\A[a-z0-9-]+\\z", slug.pattern
       end
 
       # Additional tests for branch coverage

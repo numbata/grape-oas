@@ -54,7 +54,7 @@ module GrapeOAS
     # Contract with string constraints
     StringConstraintsContract = Dry::Schema.Params do
       required(:username).filled(:string, min_size?: 3, max_size?: 20)
-      required(:email).filled(:string, format?: /\A[\w+\-.]+@[a-z\d\-]+(\.[a-z\d\-]+)*\.[a-z]+\z/i)
+      required(:email).filled(:string, format?: /\A[\w+\-.]+@[a-z\d-]+(\.[a-z\d-]+)*\.[a-z]+\z/i)
       optional(:bio).maybe(:string, max_size?: 500)
     end
 
