@@ -80,7 +80,7 @@ git push origin main
 
 This task will:
 - Bump the patch version in `lib/grape_oas/version.rb`
-- Ensure CHANGELOG.md has an "Unreleased" section
+- Ensure CHANGELOG.md has an "Unreleased" section with "* Your contribution here" placeholder
 - Commit the changes with message "Prepare for next development iteration"
 
 **Note**: The task is idempotent - safe to run multiple times without duplicating work.
@@ -89,7 +89,7 @@ This task will:
 <summary>Manual Post-Release Steps (if needed)</summary>
 
 1. **Prepare for next development cycle**:
-   - Add "Unreleased" section to CHANGELOG.md
+   - Add "Unreleased" section to CHANGELOG.md with "* Your contribution here" placeholder
    - Bump version in `lib/grape_oas/version.rb`
 
 2. **Commit post-release changes**:
