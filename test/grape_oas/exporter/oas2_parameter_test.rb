@@ -144,6 +144,96 @@ module GrapeOAS
 
         refute values_param.key?("collectionFormat")
       end
+
+      # === Schema constraints tests ===
+
+      def test_integer_parameter_includes_minimum_and_maximum
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.minimum = 1
+        schema.maximum = 50
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "count",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        count_param = result.find { |p| p["name"] == "count" }
+
+        assert_equal 1, count_param["minimum"]
+        assert_equal 50, count_param["maximum"]
+      end
+
+      def test_string_parameter_includes_enum
+        schema = ApiModel::Schema.new(type: "string")
+        schema.enum = %w[small medium large]
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "size",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        size_param = result.find { |p| p["name"] == "size" }
+
+        assert_equal %w[small medium large], size_param["enum"]
+      end
+
+      def test_string_parameter_includes_min_max_length
+        schema = ApiModel::Schema.new(type: "string")
+        schema.min_length = 3
+        schema.max_length = 100
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "name",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        name_param = result.find { |p| p["name"] == "name" }
+
+        assert_equal 3, name_param["minLength"]
+        assert_equal 100, name_param["maxLength"]
+      end
+
+      def test_string_parameter_includes_pattern
+        schema = ApiModel::Schema.new(type: "string")
+        schema.pattern = "^[A-Z]{2}[0-9]{4}$"
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "code",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        code_param = result.find { |p| p["name"] == "code" }
+
+        assert_equal "^[A-Z]{2}[0-9]{4}$", code_param["pattern"]
+      end
     end
   end
 end

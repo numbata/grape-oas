@@ -47,6 +47,7 @@ module GrapeOAS
               "type" => mapping ? mapping[:type] : type,
               "format" => format || (mapping ? mapping[:format] : nil)
             }
+            apply_schema_constraints(result, param.schema)
             apply_collection_format(result, param, type)
             result.compact
           else
@@ -61,6 +62,17 @@ module GrapeOAS
               h["format"] = format if format
             end.compact
           end
+        end
+
+        def apply_schema_constraints(result, schema)
+          return unless schema
+
+          result["minimum"] = schema.minimum if schema.respond_to?(:minimum) && schema.minimum
+          result["maximum"] = schema.maximum if schema.respond_to?(:maximum) && schema.maximum
+          result["minLength"] = schema.min_length if schema.respond_to?(:min_length) && schema.min_length
+          result["maxLength"] = schema.max_length if schema.respond_to?(:max_length) && schema.max_length
+          result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
+          result["enum"] = schema.enum if schema.respond_to?(:enum) && schema.enum
         end
 
         def apply_collection_format(result, param, type)
