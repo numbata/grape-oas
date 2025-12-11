@@ -36,7 +36,7 @@ module GrapeOAS
         # OAS spec says GET/HEAD/DELETE "MAY ignore" request bodies
         # Skip by default unless explicitly allowed via documentation option
         http_method = operation.http_method.to_s.downcase
-        if %w[get head delete].include?(http_method)
+        if Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
           allow_body = route.options.dig(:documentation, :request_body) ||
                        route.options[:request_body]
           return unless allow_body
