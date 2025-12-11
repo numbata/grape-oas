@@ -142,7 +142,7 @@ module GrapeOAS
           name: name,
           required: required,
           schema: schema,
-          description: spec[:documentation]&.dig(:desc),
+          description: spec[:documentation]&.dig(:desc) || spec[:desc],
           collection_format: extract_collection_format(spec),
         )
       end

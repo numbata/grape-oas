@@ -10,6 +10,68 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
+      # === Description fallback from spec[:desc] ===
+
+      def test_description_from_documentation_desc
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :name, type: String, documentation: { desc: "The user name" }
+          end
+          get "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        name_param = params.find { |p| p.name == "name" }
+
+        assert_equal "The user name", name_param.description
+      end
+
+      def test_description_from_spec_desc_fallback
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :email, type: String, desc: "The email address"
+          end
+          get "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        email_param = params.find { |p| p.name == "email" }
+
+        assert_equal "The email address", email_param.description
+      end
+
+      def test_documentation_desc_takes_priority_over_spec_desc
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :phone, type: String, desc: "Fallback desc", documentation: { desc: "Priority desc" }
+          end
+          get "contacts" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        phone_param = params.find { |p| p.name == "phone" }
+
+        assert_equal "Priority desc", phone_param.description
+      end
+
       # === Custom format on parameters (grape-swagger issue #784) ===
 
       def test_custom_format_on_string_parameter
