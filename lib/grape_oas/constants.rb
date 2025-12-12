@@ -16,6 +16,15 @@ module GrapeOAS
       ALL = [STRING, INTEGER, NUMBER, BOOLEAN, OBJECT, ARRAY, FILE].freeze
     end
 
+    # HTTP method-related constants
+    module HttpMethods
+      # HTTP methods that typically don't have request bodies.
+      # Per RFC 7231, GET/HEAD/DELETE semantics don't define body behavior,
+      # but many implementations ignore them. These are treated specially
+      # when generating OpenAPI specs.
+      BODYLESS_HTTP_METHODS = %w[get head delete].freeze
+    end
+
     # Common MIME types
     module MimeTypes
       JSON = "application/json"

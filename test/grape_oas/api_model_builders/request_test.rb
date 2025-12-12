@@ -290,6 +290,16 @@ module GrapeOAS
         assert_nil operation.request_body, "DELETE should not have request body by default"
       end
 
+      def test_no_request_body_for_head_by_default
+        contract = Struct.new(:to_h).new({ query: String })
+        route = DummyRoute.new({ contract: contract, params: {} }, "/status", {})
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :head)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        assert_nil operation.request_body, "HEAD should not have request body by default"
+      end
+
       def test_hash_to_schema_infers_type_from_runtime_values
         # Contract with actual runtime values (not Ruby classes)
         contract = Struct.new(:to_h).new({
