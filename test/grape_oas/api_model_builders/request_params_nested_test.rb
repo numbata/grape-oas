@@ -264,6 +264,244 @@ module GrapeOAS
 
         assert_equal "object", metadata.type
       end
+
+      # === GET requests with nested params (query param flattening) ===
+
+      def test_get_request_flattens_nested_hash_to_query_params
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :name, type: String
+            optional :tax_id, type: Hash do
+              requires :type, type: String, documentation: { desc: "The TaxId type" }
+              requires :value, type: String, documentation: { desc: "The TaxId value" }
+            end
+          end
+          get "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        # Should have flat params including bracket notation for nested hash
+        param_names = params.map(&:name)
+
+        assert_includes param_names, "name"
+        assert_includes param_names, "tax_id[type]"
+        assert_includes param_names, "tax_id[value]"
+
+        # Check locations are all query
+        params.each do |param|
+          assert_equal "query", param.location
+        end
+
+        # Check descriptions are preserved
+        type_param = params.find { |p| p.name == "tax_id[type]" }
+        value_param = params.find { |p| p.name == "tax_id[value]" }
+
+        assert_equal "The TaxId type", type_param.description
+        assert_equal "The TaxId value", value_param.description
+      end
+
+      def test_get_request_with_deeply_nested_hash_flattens_correctly
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :address, type: Hash do
+              requires :country, type: String
+              optional :geo, type: Hash do
+                requires :lat, type: Float
+                requires :lng, type: Float
+              end
+            end
+          end
+          get "locations" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        param_names = params.map(&:name)
+
+        assert_includes param_names, "address[country]"
+        assert_includes param_names, "address[geo][lat]"
+        assert_includes param_names, "address[geo][lng]"
+      end
+
+      def test_post_request_keeps_nested_in_body_not_query
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :tax_id, type: Hash do
+              requires :type, type: String
+              requires :value, type: String
+            end
+          end
+          post "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        # No query params for nested structure in POST
+        param_names = params.map(&:name)
+
+        refute_includes param_names, "tax_id[type]"
+        refute_includes param_names, "tax_id[value]"
+
+        # Should be in body schema instead
+        assert_includes body_schema.properties.keys, "tax_id"
+      end
+
+      def test_get_request_with_explicit_request_body_keeps_nested_in_body
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash do
+              requires :field, type: String
+              requires :operator, type: String
+              requires :value, type: String
+            end
+          end
+          get "search", documentation: { request_body: true } do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        # No query params for nested structure when request_body is enabled
+        param_names = params.map(&:name)
+
+        refute_includes param_names, "filter[field]"
+        refute_includes param_names, "filter[operator]"
+        refute_includes param_names, "filter[value]"
+
+        # Should be in body schema instead
+        assert_includes body_schema.properties.keys, "filter"
+
+        filter_schema = body_schema.properties["filter"]
+
+        assert_equal "object", filter_schema.type
+        assert_includes filter_schema.properties.keys, "field"
+        assert_includes filter_schema.properties.keys, "operator"
+        assert_includes filter_schema.properties.keys, "value"
+      end
+
+      def test_get_request_with_in_body_documentation_keeps_nested_in_body
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { in: "body" } do
+              requires :field, type: String
+              requires :operator, type: String
+            end
+          end
+          get "search" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        # No query params for nested structure when in: 'body' is set
+        param_names = params.map(&:name)
+
+        refute_includes param_names, "filter[field]"
+        refute_includes param_names, "filter[operator]"
+
+        # Should be in body schema instead
+        assert_includes body_schema.properties.keys, "filter"
+      end
+
+      def test_get_request_with_param_type_body_keeps_nested_in_body
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :data, type: Hash, documentation: { param_type: "body" } do
+              requires :name, type: String
+              requires :value, type: String
+            end
+          end
+          get "fetch" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        # No query params for nested structure when param_type: 'body' is set
+        param_names = params.map(&:name)
+
+        refute_includes param_names, "data[name]"
+        refute_includes param_names, "data[value]"
+
+        # Should be in body schema instead
+        assert_includes body_schema.properties.keys, "data"
+      end
+
+      def test_delete_request_flattens_nested_to_query_by_default
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :options, type: Hash do
+              optional :cascade, type: Grape::API::Boolean
+              optional :force, type: Grape::API::Boolean
+            end
+          end
+          delete "items/:id" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        param_names = params.map(&:name)
+
+        assert_includes param_names, "options[cascade]"
+        assert_includes param_names, "options[force]"
+      end
+
+      def test_head_request_flattens_nested_to_query_by_default
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash do
+              optional :status, type: String
+              optional :active, type: Grape::API::Boolean
+            end
+          end
+          head "resources" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        param_names = params.map(&:name)
+
+        assert_includes param_names, "filter[status]"
+        assert_includes param_names, "filter[active]"
+      end
     end
   end
 end

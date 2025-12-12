@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#8](https://github.com/numbata/grape-oas/pull/8): Add OAS2 parameter schema constraint export with enum normalization and retain zero-valued constraints across OAS exporters. - [@numbata](https://github.com/numbata).
 - [#9](https://github.com/numbata/grape-oas/pull/9): Treat GET/HEAD/DELETE as bodyless by default via shared constants and tests - [@numbata](https://github.com/numbata).
 - [#10](https://github.com/numbata/grape-oas/pull/10): Add grape-swagger compatible `in:` location syntax for parameters alongside `param_type` - [@numbata](https://github.com/numbata).
+- [#11](https://github.com/numbata/grape-oas/pull/11): Flatten nested Hash params to bracket-notation query params for GET/HEAD/DELETE requests - [@numbata](https://github.com/numbata).
 
 ## [1.0.0] - 2025-12-06
 
