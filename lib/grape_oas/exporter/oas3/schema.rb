@@ -167,18 +167,18 @@ module GrapeOAS
         end
 
         def apply_numeric_constraints(hash)
-          hash["minimum"] = @schema.minimum if @schema.minimum
-          hash["maximum"] = @schema.maximum if @schema.maximum
+          hash["minimum"] = @schema.minimum unless @schema.minimum.nil?
+          hash["maximum"] = @schema.maximum unless @schema.maximum.nil?
 
           if @nullable_keyword
             hash["exclusiveMinimum"] = @schema.exclusive_minimum if @schema.exclusive_minimum
             hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
           else
-            if @schema.exclusive_minimum && @schema.minimum
+            if @schema.exclusive_minimum && !@schema.minimum.nil?
               hash["exclusiveMinimum"] = @schema.minimum
               hash.delete("minimum")
             end
-            if @schema.exclusive_maximum && @schema.maximum
+            if @schema.exclusive_maximum && !@schema.maximum.nil?
               hash["exclusiveMaximum"] = @schema.maximum
               hash.delete("maximum")
             end
@@ -186,14 +186,14 @@ module GrapeOAS
         end
 
         def apply_string_constraints(hash)
-          hash["minLength"] = @schema.min_length if @schema.min_length
-          hash["maxLength"] = @schema.max_length if @schema.max_length
+          hash["minLength"] = @schema.min_length unless @schema.min_length.nil?
+          hash["maxLength"] = @schema.max_length unless @schema.max_length.nil?
           hash["pattern"] = @schema.pattern if @schema.pattern
         end
 
         def apply_array_constraints(hash)
-          hash["minItems"] = @schema.min_items if @schema.min_items
-          hash["maxItems"] = @schema.max_items if @schema.max_items
+          hash["minItems"] = @schema.min_items unless @schema.min_items.nil?
+          hash["maxItems"] = @schema.max_items unless @schema.max_items.nil?
         end
 
         # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs

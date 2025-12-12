@@ -34,7 +34,7 @@ module GrapeOAS
         def build_parameter(param)
           type = param.schema&.type
           format = param.schema&.format
-          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[object string boolean file json array]
+          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[object string boolean file json array number]
           is_primitive = type && primitive_types.include?(type)
 
           if is_primitive && param.location != "body"
@@ -47,6 +47,7 @@ module GrapeOAS
               "type" => mapping ? mapping[:type] : type,
               "format" => format || (mapping ? mapping[:format] : nil)
             }
+            apply_schema_constraints(result, param.schema)
             apply_collection_format(result, param, type)
             result.compact
           else
@@ -61,6 +62,38 @@ module GrapeOAS
               h["format"] = format if format
             end.compact
           end
+        end
+
+        def apply_schema_constraints(result, schema)
+          return unless schema
+
+          result["minimum"] = schema.minimum if schema.respond_to?(:minimum) && !schema.minimum.nil?
+          result["maximum"] = schema.maximum if schema.respond_to?(:maximum) && !schema.maximum.nil?
+          result["exclusiveMinimum"] = schema.exclusive_minimum if schema.respond_to?(:exclusive_minimum) && schema.exclusive_minimum
+          result["exclusiveMaximum"] = schema.exclusive_maximum if schema.respond_to?(:exclusive_maximum) && schema.exclusive_maximum
+          result["minLength"] = schema.min_length if schema.respond_to?(:min_length) && !schema.min_length.nil?
+          result["maxLength"] = schema.max_length if schema.respond_to?(:max_length) && !schema.max_length.nil?
+          result["minItems"] = schema.min_items if schema.respond_to?(:min_items) && !schema.min_items.nil?
+          result["maxItems"] = schema.max_items if schema.respond_to?(:max_items) && !schema.max_items.nil?
+          result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
+          result["enum"] = normalize_enum(schema.enum, result["type"]) if schema.respond_to?(:enum) && schema.enum
+        end
+
+        def normalize_enum(enum_vals, type)
+          return nil unless enum_vals.is_a?(Array)
+
+          coerced = enum_vals.map do |v|
+            case type
+            when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
+            when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
+            else v
+            end
+          end.compact
+
+          result = coerced.uniq
+          return nil if result.empty?
+
+          result
         end
 
         def apply_collection_format(result, param, type)
