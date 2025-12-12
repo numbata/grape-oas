@@ -423,6 +423,27 @@ module GrapeOAS
 
         assert_equal [1, 2, 3], level_param["enum"]
       end
+
+      def test_empty_enum_not_emitted
+        schema = ApiModel::Schema.new(type: "string")
+        schema.enum = []
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "status",
+          schema: schema,
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        status_param = result.find { |p| p["name"] == "status" }
+
+        refute status_param.key?("enum")
+      end
     end
   end
 end

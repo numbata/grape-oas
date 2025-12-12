@@ -90,7 +90,10 @@ module GrapeOAS
             end
           end.compact
 
-          coerced.uniq
+          result = coerced.uniq
+          return nil if result.empty?
+
+          result
         end
 
         def apply_collection_format(result, param, type)
