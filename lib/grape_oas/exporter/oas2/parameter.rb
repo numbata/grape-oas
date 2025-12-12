@@ -34,7 +34,7 @@ module GrapeOAS
         def build_parameter(param)
           type = param.schema&.type
           format = param.schema&.format
-          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[object string boolean file json array]
+          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[object string boolean file json array number]
           is_primitive = type && primitive_types.include?(type)
 
           if is_primitive && param.location != "body"
@@ -76,7 +76,21 @@ module GrapeOAS
           result["minItems"] = schema.min_items if schema.respond_to?(:min_items) && !schema.min_items.nil?
           result["maxItems"] = schema.max_items if schema.respond_to?(:max_items) && !schema.max_items.nil?
           result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
-          result["enum"] = schema.enum if schema.respond_to?(:enum) && schema.enum
+          result["enum"] = normalize_enum(schema.enum, result["type"]) if schema.respond_to?(:enum) && schema.enum
+        end
+
+        def normalize_enum(enum_vals, type)
+          return nil unless enum_vals.is_a?(Array)
+
+          coerced = enum_vals.map do |v|
+            case type
+            when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
+            when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
+            else v
+            end
+          end.compact
+
+          coerced.uniq
         end
 
         def apply_collection_format(result, param, type)

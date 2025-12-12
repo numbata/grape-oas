@@ -145,8 +145,6 @@ module GrapeOAS
         refute values_param.key?("collectionFormat")
       end
 
-      # === Schema constraints tests ===
-
       def test_integer_parameter_includes_minimum_and_maximum
         schema = ApiModel::Schema.new(type: "integer")
         schema.minimum = 1
@@ -361,6 +359,69 @@ module GrapeOAS
         refute simple_param.key?("maxItems")
         refute simple_param.key?("exclusiveMinimum")
         refute simple_param.key?("exclusiveMaximum")
+      end
+
+      def test_integer_parameter_enum_normalized_from_strings
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.enum = %w[1 2 3]
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "priority",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        priority_param = result.find { |p| p["name"] == "priority" }
+
+        assert_equal [1, 2, 3], priority_param["enum"]
+      end
+
+      def test_number_parameter_enum_normalized_from_strings
+        schema = ApiModel::Schema.new(type: "number")
+        schema.enum = %w[1.5 2.5 3.5]
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "rate",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        rate_param = result.find { |p| p["name"] == "rate" }
+
+        assert_equal [1.5, 2.5, 3.5], rate_param["enum"]
+      end
+
+      def test_integer_parameter_enum_removes_duplicates
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.enum = %w[1 2 2 3 3 3]
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "level",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        level_param = result.find { |p| p["name"] == "level" }
+
+        assert_equal [1, 2, 3], level_param["enum"]
       end
     end
   end
