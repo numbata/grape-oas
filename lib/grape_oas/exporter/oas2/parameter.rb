@@ -67,10 +67,14 @@ module GrapeOAS
         def apply_schema_constraints(result, schema)
           return unless schema
 
-          result["minimum"] = schema.minimum if schema.respond_to?(:minimum) && schema.minimum
-          result["maximum"] = schema.maximum if schema.respond_to?(:maximum) && schema.maximum
-          result["minLength"] = schema.min_length if schema.respond_to?(:min_length) && schema.min_length
-          result["maxLength"] = schema.max_length if schema.respond_to?(:max_length) && schema.max_length
+          result["minimum"] = schema.minimum if schema.respond_to?(:minimum) && !schema.minimum.nil?
+          result["maximum"] = schema.maximum if schema.respond_to?(:maximum) && !schema.maximum.nil?
+          result["exclusiveMinimum"] = schema.exclusive_minimum if schema.respond_to?(:exclusive_minimum) && schema.exclusive_minimum
+          result["exclusiveMaximum"] = schema.exclusive_maximum if schema.respond_to?(:exclusive_maximum) && schema.exclusive_maximum
+          result["minLength"] = schema.min_length if schema.respond_to?(:min_length) && !schema.min_length.nil?
+          result["maxLength"] = schema.max_length if schema.respond_to?(:max_length) && !schema.max_length.nil?
+          result["minItems"] = schema.min_items if schema.respond_to?(:min_items) && !schema.min_items.nil?
+          result["maxItems"] = schema.max_items if schema.respond_to?(:max_items) && !schema.max_items.nil?
           result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
           result["enum"] = schema.enum if schema.respond_to?(:enum) && schema.enum
         end
