@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixes
+
+- [#8](https://github.com/numbata/grape-oas/pull/8): Add schema constraints support to OAS2 parameter exporter - [@numbata](https://github.com/numbata).
+
 ## [1.0.0] - 2025-12-06
 
 ### Added
