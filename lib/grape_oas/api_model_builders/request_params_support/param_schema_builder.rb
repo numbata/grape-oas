@@ -54,27 +54,27 @@ module GrapeOAS
 
         def build_entity_array_schema(spec, raw_type, doc_type)
           entity_type = resolve_entity_class(extract_entity_type_from_array(spec, raw_type, doc_type))
-          items = entity_type ? Introspectors::EntityIntrospector.new(entity_type).build_schema : nil
+          items = entity_type ? GrapeOAS.introspectors.build_schema(entity_type, stack: [], registry: {}) : nil
           items ||= ApiModel::Schema.new(type: sanitize_type(extract_entity_type_from_array(spec, raw_type)))
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items)
         end
 
         def build_doc_entity_array_schema(doc_type)
           entity_class = resolve_entity_class(doc_type)
-          items = Introspectors::EntityIntrospector.new(entity_class).build_schema
+          items = GrapeOAS.introspectors.build_schema(entity_class, stack: [], registry: {})
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items)
         end
 
         def build_entity_schema(type)
           entity_class = resolve_entity_class(type)
-          Introspectors::EntityIntrospector.new(entity_class).build_schema
+          GrapeOAS.introspectors.build_schema(entity_class, stack: [], registry: {})
         end
 
         def build_elements_array_schema(spec)
           items_type = spec[:elements]
           entity = resolve_entity_class(items_type)
           items_schema = if entity
-                           Introspectors::EntityIntrospector.new(entity).build_schema
+                           GrapeOAS.introspectors.build_schema(entity, stack: [], registry: {})
                          else
                            ApiModel::Schema.new(type: sanitize_type(items_type))
                          end

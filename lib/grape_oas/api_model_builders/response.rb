@@ -183,7 +183,7 @@ module GrapeOAS
       def build_schema(entity_class)
         return GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING) unless entity_class
 
-        GrapeOAS::Introspectors::EntityIntrospector.new(entity_class).build_schema
+        GrapeOAS.introspectors.build_schema(entity_class, stack: [], registry: {})
       end
 
       # Wraps schema with root element if configured via route_setting :swagger, root: true/'name'

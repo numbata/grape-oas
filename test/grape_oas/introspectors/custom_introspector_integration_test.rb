@@ -419,5 +419,196 @@ module GrapeOAS
                "Collected schema should have properties, not be an empty placeholder"
       end
     end
+
+    # Tests that Response builder uses introspector registry instead of EntityIntrospector directly
+    class ResponseBuilderRegistryUsageTest < Minitest::Test
+      # A tracking introspector that records when it's called
+      class TrackingIntrospector
+        extend Base
+
+        class << self
+          attr_accessor :handled_entities
+
+          def reset_tracking
+            @handled_entities = []
+          end
+
+          def handles?(subject)
+            return false unless EntityIntrospector.handles?(subject)
+
+            entity_class = EntityIntrospector.resolve_entity_class(subject)
+            entity_class&.name&.include?("TrackedResponse")
+          end
+
+          def build_schema(subject, stack: [], registry: {})
+            entity_class = EntityIntrospector.resolve_entity_class(subject)
+            @handled_entities ||= []
+            @handled_entities << entity_class.name
+
+            schema = EntityIntrospector.build_schema(subject, stack: stack, registry: registry)
+            schema.extensions ||= {}
+            schema.extensions["x-tracked-by-registry"] = true
+            schema
+          end
+        end
+      end
+
+      class TrackedResponseEntity < Grape::Entity
+        expose :id, documentation: { type: Integer }
+        expose :name, documentation: { type: String }
+      end
+
+      def setup
+        @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
+        @original_introspectors = GrapeOAS.introspectors.to_a.dup
+        TrackingIntrospector.reset_tracking
+      end
+
+      def teardown
+        GrapeOAS.introspectors.clear
+        @original_introspectors.each { |i| GrapeOAS.introspectors.register(i) }
+      end
+
+      def test_response_builder_uses_introspector_registry
+        # Register tracking introspector before EntityIntrospector
+        GrapeOAS.introspectors.register(
+          TrackingIntrospector,
+          before: EntityIntrospector,
+        )
+
+        api_class = Class.new(Grape::API) do
+          format :json
+          get "items", entity: TrackedResponseEntity do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = ApiModelBuilders::Response.new(api: @api, route: route)
+        responses = builder.build
+        response = responses.first
+
+        # Verify the tracking introspector was called
+        assert_includes TrackingIntrospector.handled_entities, TrackedResponseEntity.name,
+                        "Response builder should use introspector registry"
+
+        # Verify the schema has our custom extension
+        schema = response.media_types.first.schema
+
+        assert schema.extensions&.dig("x-tracked-by-registry"),
+               "Schema should have been processed by our tracking introspector"
+      end
+    end
+
+    # Tests that ParamSchemaBuilder uses introspector registry instead of EntityIntrospector directly
+    class ParamSchemaBuilderRegistryUsageTest < Minitest::Test
+      # A tracking introspector for param schema tests
+      class ParamTrackingIntrospector
+        extend Base
+
+        class << self
+          attr_accessor :handled_entities
+
+          def reset_tracking
+            @handled_entities = []
+          end
+
+          def handles?(subject)
+            return false unless EntityIntrospector.handles?(subject)
+
+            entity_class = EntityIntrospector.resolve_entity_class(subject)
+            entity_class&.name&.include?("TrackedParam")
+          end
+
+          def build_schema(subject, stack: [], registry: {})
+            entity_class = EntityIntrospector.resolve_entity_class(subject)
+            @handled_entities ||= []
+            @handled_entities << entity_class.name
+
+            schema = EntityIntrospector.build_schema(subject, stack: stack, registry: registry)
+            schema.extensions ||= {}
+            schema.extensions["x-param-tracked"] = true
+            schema
+          end
+        end
+      end
+
+      class TrackedParamEntity < Grape::Entity
+        expose :field, documentation: { type: String }
+      end
+
+      def setup
+        @original_introspectors = GrapeOAS.introspectors.to_a.dup
+        ParamTrackingIntrospector.reset_tracking
+      end
+
+      def teardown
+        GrapeOAS.introspectors.clear
+        @original_introspectors.each { |i| GrapeOAS.introspectors.register(i) }
+      end
+
+      def test_param_schema_builder_uses_registry_for_entity_type
+        GrapeOAS.introspectors.register(
+          ParamTrackingIntrospector,
+          before: EntityIntrospector,
+        )
+
+        spec = { type: TrackedParamEntity, documentation: {} }
+        schema = ApiModelBuilders::RequestParamsSupport::ParamSchemaBuilder.build(spec)
+
+        assert_includes ParamTrackingIntrospector.handled_entities, TrackedParamEntity.name,
+                        "ParamSchemaBuilder should use introspector registry for entity types"
+        assert schema.extensions&.dig("x-param-tracked"),
+               "Schema should have been processed by our tracking introspector"
+      end
+
+      def test_param_schema_builder_uses_registry_for_array_of_entities
+        GrapeOAS.introspectors.register(
+          ParamTrackingIntrospector,
+          before: EntityIntrospector,
+        )
+
+        spec = { type: Array, documentation: { type: TrackedParamEntity } }
+        schema = ApiModelBuilders::RequestParamsSupport::ParamSchemaBuilder.build(spec)
+
+        assert_includes ParamTrackingIntrospector.handled_entities, TrackedParamEntity.name,
+                        "ParamSchemaBuilder should use registry for array element entity types"
+        assert_equal "array", schema.type
+        assert schema.items.extensions&.dig("x-param-tracked"),
+               "Array items schema should have been processed by our tracking introspector"
+      end
+
+      def test_param_schema_builder_uses_registry_for_elements_option
+        GrapeOAS.introspectors.register(
+          ParamTrackingIntrospector,
+          before: EntityIntrospector,
+        )
+
+        spec = { type: Array, elements: TrackedParamEntity, documentation: {} }
+        schema = ApiModelBuilders::RequestParamsSupport::ParamSchemaBuilder.build(spec)
+
+        assert_includes ParamTrackingIntrospector.handled_entities, TrackedParamEntity.name,
+                        "ParamSchemaBuilder should use registry for elements option"
+        assert_equal "array", schema.type
+        assert schema.items.extensions&.dig("x-param-tracked"),
+               "Array items schema should have been processed by our tracking introspector"
+      end
+
+      def test_param_schema_builder_uses_registry_for_doc_type_array
+        GrapeOAS.introspectors.register(
+          ParamTrackingIntrospector,
+          before: EntityIntrospector,
+        )
+
+        spec = { type: String, documentation: { type: TrackedParamEntity, is_array: true } }
+        schema = ApiModelBuilders::RequestParamsSupport::ParamSchemaBuilder.build(spec)
+
+        assert_includes ParamTrackingIntrospector.handled_entities, TrackedParamEntity.name,
+                        "ParamSchemaBuilder should use registry for doc type array"
+        assert_equal "array", schema.type
+        assert schema.items.extensions&.dig("x-param-tracked"),
+               "Array items schema should have been processed by our tracking introspector"
+      end
+    end
   end
 end
