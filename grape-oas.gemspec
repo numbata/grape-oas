@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
     "changelog_uri" => "#{spec.homepage}/blob/main/CHANGELOG.md",
     "documentation_uri" => "#{spec.homepage}#readme",
     "bug_tracker_uri" => "#{spec.homepage}/issues",
-    "rubygems_mfa_required" => "true",
+    "rubygems_mfa_required" => "true"
   }
 
   spec.files = Dir["lib/**/*", "*.md", "LICENSE.txt", "grape-oas.gemspec"]
