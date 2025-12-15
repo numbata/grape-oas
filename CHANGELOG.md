@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-* Your contribution here
+### Fixes
+
+- [#14](https://github.com/numbata/grape-oas/pull/14): Fix Response and ParamSchemaBuilder to use introspector registry instead of directly instantiating EntityIntrospector - [@numbata](https://github.com/numbata).
 
 ## [1.0.1] - 2025-12-15
 
