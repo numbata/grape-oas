@@ -10,3 +10,9 @@ Gemfile.lock
 
 # rspec failure tracking
 .rspec_status
+
+# Benchmark outputs
+/benchmark/profiles/
+/benchmark/results/
+/benchmark/baseline.json
+/benchmark/memory_report.md

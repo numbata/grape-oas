@@ -29,8 +29,10 @@ group :development, :test do
 end
 
 group :test do
+  gem "benchmark-ips"
   gem "json_schemer", "~> 2.4"
   gem "memory_profiler"
   gem "simplecov", require: false
   gem "simplecov-lcov", require: false
+  gem "stackprof"
 end

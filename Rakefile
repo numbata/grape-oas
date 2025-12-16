@@ -13,7 +13,47 @@ require "rubocop/rake_task"
 
 RuboCop::RakeTask.new
 
+BENCHMARK_BASELINE_PATH = "benchmark/baseline.json"
+
 namespace :benchmark do
+  desc "Run IPS benchmark (iterations per second)"
+  task :ips do
+    sh "bundle exec ruby benchmark/ips_benchmark.rb"
+  end
+
+  desc "Run quick IPS benchmark"
+  task :quick do
+    sh "bundle exec ruby benchmark/ips_benchmark.rb --quick"
+  end
+
+  desc "Run IPS benchmark with detailed scenarios"
+  task :scenarios do
+    sh "bundle exec ruby benchmark/ips_benchmark.rb --scenarios"
+  end
+
+  desc "Run IPS benchmark and output JSON for CI"
+  task :ci do
+    sh "bundle exec ruby benchmark/ips_benchmark.rb --json"
+  end
+
+  desc "Save current benchmark results as baseline"
+  task :save do
+    sh "bundle exec ruby benchmark/ips_benchmark.rb --json > #{BENCHMARK_BASELINE_PATH}"
+    puts "Baseline saved to #{BENCHMARK_BASELINE_PATH}"
+  end
+
+  desc "Compare current results with baseline"
+  task :compare do
+    require "tempfile"
+
+    abort "No baseline found. Run 'rake benchmark:save' first." unless File.exist?(BENCHMARK_BASELINE_PATH)
+
+    current = Tempfile.new(["benchmark", ".json"])
+    sh "bundle exec ruby benchmark/ips_benchmark.rb --json > #{current.path}"
+    sh "bundle exec ruby benchmark/compare.rb #{BENCHMARK_BASELINE_PATH} #{current.path}"
+    current.unlink
+  end
+
   desc "Run memory profiling benchmark (use ITERATIONS=N to adjust, FORMAT=json|markdown|text)"
   task :memory do
     format = ENV.fetch("FORMAT", "text")
@@ -22,15 +62,33 @@ namespace :benchmark do
            when "markdown", "md" then "--markdown"
            else ""
            end
-    sh "ruby benchmark/memory_profile.rb #{flag}"
+    sh "bundle exec ruby benchmark/memory_profile.rb #{flag}"
   end
 
   desc "Run memory benchmark and save markdown report"
   task :memory_report do
-    sh "ruby benchmark/memory_profile.rb --markdown > benchmark/memory_report.md"
+    sh "bundle exec ruby benchmark/memory_profile.rb --markdown > benchmark/memory_report.md"
     puts "Report saved to benchmark/memory_report.md"
   end
+
+  desc "Run CPU profiling (requires stackprof gem)"
+  task :cpu do
+    iterations = ENV.fetch("ITERATIONS", "50")
+    sh "bundle exec ruby benchmark/cpu_profile.rb --iterations=#{iterations}"
+  end
+
+  desc "Generate flamegraph for speedscope (requires stackprof gem)"
+  task :flamegraph do
+    iterations = ENV.fetch("ITERATIONS", "50")
+    sh "bundle exec ruby benchmark/cpu_profile.rb --flamegraph --iterations=#{iterations}"
+  end
+
+  desc "Run all benchmarks (IPS + memory)"
+  task all: %i[ips memory]
 end
+
+desc "Run IPS benchmarks"
+task benchmark: "benchmark:ips"
 
 namespace :release do
   desc "Pre-release actions (update CHANGELOG with version and date)"
