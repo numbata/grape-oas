@@ -17,7 +17,7 @@ module GrapeOAS
         contract = Dry::Schema.Params do
           required(:id).filled(:integer)
           optional(:status).maybe(:string, included_in?: %w[draft published])
-          optional(:tags).array(:string, min_size?: 1, max_size?: 3)
+          optional(:tags).value(:array, min_size?: 1, max_size?: 3).each(:string)
         end
 
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
@@ -90,7 +90,7 @@ module GrapeOAS
 
       def test_array_with_item_constraints_and_nullable
         contract = Dry::Schema.Params do
-          optional(:tags).array(:string, min_size?: 1, max_size?: 3)
+          optional(:tags).value(:array, min_size?: 1, max_size?: 3).each(:string)
         end
 
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)

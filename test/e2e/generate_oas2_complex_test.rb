@@ -53,7 +53,7 @@ module GrapeOAS
     BasicContract = Dry::Schema.Params do
       required(:id).filled(:integer, gt?: 0)
       optional(:status).maybe(:string, included_in?: %w[draft active])
-      optional(:tags).array(:string, min_size?: 1, max_size?: 3)
+      optional(:tags).value(:array, min_size?: 1, max_size?: 3).each(:string)
       optional(:code).maybe(:string, format?: /\A[A-Z]{3}\d{2}\z/)
     end
 

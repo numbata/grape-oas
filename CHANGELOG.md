@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 * Your contribution here
+- [#17](https://github.com/numbata/grape-oas/pull/17): Support for nested rules and predicates in dry-schema introspection [@slbug](https://github.com/slbug)
 - [#20](https://github.com/numbata/grape-oas/pull/20): Use annotation for coverage report [@numbata](https://github.com/numbata)
 - [#18](https://github.com/numbata/grape-oas/pull/18): Support for range in size? predicate `required(:tags).value(:array, size?: 1..10).each(:string)` [@slbug](https://github.com/slbug)
 - [#19](https://github.com/numbata/grape-oas/pull/19): Temporary disable memory profiler workflow for PRs [@numbata](https://github.com/numbata).

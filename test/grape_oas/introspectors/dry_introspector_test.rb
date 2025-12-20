@@ -35,16 +35,103 @@ module GrapeOAS
 
       def test_each_array_predicates_apply_to_array_not_items
         contract = Dry::Schema.Params do
+          # WARN: THIS IS THE DIFFERENT MACRO USAGE, WITH DIFFERENT EFFECT
           required(:tags).array(:string, min_size?: 1, max_size?: 3)
+          required(:each_tags).value(:array, min_size?: 1, max_size?: 3).each(:string)
         end
 
         schema = processor.build(contract)
         tags = schema.properties["tags"]
+        each_tags = schema.properties["each_tags"]
 
         assert_equal "array", tags.type
-        assert_equal 1, tags.min_items
-        assert_equal 3, tags.max_items
         assert_equal "string", tags.items.type
+        assert_equal 1, tags.items.min_length
+        assert_equal 3, tags.items.max_length
+        assert_equal "array", each_tags.type
+        assert_equal 1, each_tags.min_items
+        assert_equal 3, each_tags.max_items
+        assert_equal "string", each_tags.items.type
+      end
+
+      def test_nested_array_constraints_no_bleeding
+        contract = Dry::Schema.Params do
+          optional(:deliveries).value(:array, max_size?: 2).each(:hash) do
+            optional(:addresses).array(:string, min_size?: 2, max_size?: 7)
+          end
+
+          optional(:orders).array(:hash) do
+            required(:id).filled(:string, format?: /^ORD-\d+$/)
+            optional(:items).value(:array, min_size?: 1, max_size?: 10).each(:hash) do
+              required(:code).filled(:string, min_size?: 3, max_size?: 50)
+              required(:price).filled(:integer, gteq?: 0)
+              optional(:tags).value(:array, min_size?: 4).each(:string)
+              optional(:metadata).value(:array, min_size?: 3, max_size?: 8).each(:hash) do
+                required(:key).filled(:string, max_size?: 256)
+                optional(:value).filled(:string)
+              end
+            end
+            optional(:notes).array(:string)
+          end
+        end
+
+        schema = processor.build(contract)
+
+        orders = schema.properties["orders"]
+
+        assert_equal "array", orders.type
+
+        order_props = orders.items.properties
+
+        assert_equal "string", order_props["id"].type
+        assert_equal "^ORD-\\d+$", order_props["id"].pattern
+
+        items_array = order_props["items"]
+
+        assert_equal "array", items_array.type
+        assert_equal 10, items_array.max_items
+        assert_equal 1, items_array.min_items
+
+        notes_array = order_props["notes"]
+
+        assert_equal "array", notes_array.type
+        assert_nil notes_array.min_items, "notes should not have min_items"
+        assert_nil notes_array.max_items, "notes should not have max_items"
+
+        item_props = items_array.items.properties
+
+        assert_equal "string", item_props["code"].type
+        assert_equal 50, item_props["code"].max_length
+        assert_equal 3, item_props["code"].min_length
+        assert_equal "integer", item_props["price"].type
+        assert_equal 0, item_props["price"].minimum
+
+        tags_array = item_props["tags"]
+
+        assert_equal "array", tags_array.type
+        assert_equal 4, tags_array.min_items
+        assert_equal "string", tags_array.items.type
+
+        metadata_array = item_props["metadata"]
+
+        assert_equal "array", metadata_array.type
+        assert_equal 8, metadata_array.max_items
+        assert_equal 3, metadata_array.min_items
+        metadata_props = metadata_array.items.properties
+
+        assert_equal "string", metadata_props["key"].type
+        assert_equal 256, metadata_props["key"].max_length
+        assert_nil metadata_props["key"].min_length, "key should not have min_length"
+        assert_equal "string", metadata_props["value"].type
+        assert_nil metadata_props["value"].max_length, "value should not have max_length"
+        assert_nil metadata_props["value"].min_length, "value should not have min_length"
+
+        assert_nil item_props["code"].minimum, "code should not have price minimum"
+        assert_nil item_props["code"].pattern, "code should not have id pattern"
+        assert_nil item_props["price"].max_length, "price should not have code max_length"
+        assert_nil item_props["price"].pattern, "price should not have id pattern"
+        assert_nil tags_array.items.minimum, "tag items should not have price minimum"
+        assert_nil tags_array.items.max_length, "tag items should not have code max_length"
       end
 
       def test_size_range_predicate_sets_min_and_max_size
@@ -654,10 +741,7 @@ module GrapeOAS
         assert_equal "object", dimensions.type
         assert dimensions.properties.key?("width")
         assert dimensions.properties.key?("height")
-        # NOTE: Due to Dry::Types limitation, nested hash keys all report as not required
-        # The required array will be empty because key.required? returns false for all
-        assert_empty dimensions.required,
-                     "Nested hash schema keys report as not required due to Dry::Types limitation"
+        assert_includes(dimensions.required, "width")
       end
 
       def test_deeply_nested_hash_schemas

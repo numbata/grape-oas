@@ -11,7 +11,39 @@ module GrapeOAS
         ConstraintSet = ConstraintExtractor::ConstraintSet
 
         def initialize
-          # Stateless builder - no initialization needed
+          @path_stack = []
+          @constraints_by_path = nil
+          @required_by_object_path = nil
+        end
+
+        def configure_path_aware_mode(constraints_by_path, required_by_object_path)
+          @path_stack = []
+          @constraints_by_path = constraints_by_path
+          @required_by_object_path = required_by_object_path
+        end
+
+        def with_path(part)
+          @path_stack << part
+          yield
+        ensure
+          @path_stack.pop
+        end
+
+        def current_object_path
+          @path_stack.join("/")
+        end
+
+        def constraints_for_current_path
+          return nil unless @constraints_by_path
+
+          @constraints_by_path[current_object_path]
+        end
+
+        def required_keys_for_current_object
+          return nil unless @required_by_object_path
+
+          # In path-aware mode we rely entirely on rule-index requiredness
+          @required_by_object_path[current_object_path] || []
         end
 
         # Builds a schema for a Dry type.
@@ -20,7 +52,7 @@ module GrapeOAS
         # @param constraints [ConstraintSet, nil] extracted constraints
         # @return [ApiModel::Schema] the built schema
         def build_schema_for_type(dry_type, constraints = nil)
-          constraints ||= ConstraintSet.new(unhandled_predicates: [])
+          constraints ||= constraints_for_current_path || ConstraintSet.new(unhandled_predicates: [])
           meta = dry_type.respond_to?(:meta) ? dry_type.meta : {}
 
           # Check for Sum type first (TypeA | TypeB) -> anyOf
@@ -28,6 +60,10 @@ module GrapeOAS
 
           # Check for Hash schema type (nested schemas like .hash(SomeSchema))
           return build_hash_schema(dry_type) if hash_schema_type?(dry_type)
+
+          # Check for object schema (unwrapped hash with keys)
+          unwrapped = TypeUnwrapper.unwrap(dry_type)
+          return build_object_schema(unwrapped) if unwrapped.respond_to?(:keys)
 
           primitive, member = TypeUnwrapper.derive_primitive_and_member(dry_type)
           enum_vals = extract_enum_from_type(dry_type)
@@ -59,6 +95,36 @@ module GrapeOAS
 
         private
 
+        def build_object_schema(unwrapped_schema_type)
+          schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+          required_keys = required_keys_for_current_object
+
+          # Dry::Types::Schema does not have each_key, so we disable the cop here
+          unwrapped_schema_type.keys.each do |key| # rubocop:disable Style/HashEachMethods
+            key_name = key.respond_to?(:name) ? key.name.to_s : key.to_s
+            key_type = key.respond_to?(:type) ? key.type : nil
+
+            prop_schema = nil
+            with_path(key_name) do
+              prop_schema = if key_type
+                              build_schema_for_type(key_type, constraints_for_current_path)
+                            else
+                              default_string_schema
+                            end
+            end
+
+            is_required = if required_keys
+                            required_keys.include?(key_name)
+                          else
+                            key.respond_to?(:required?) ? key.required? : false
+                          end
+
+            schema.add_property(key_name, prop_schema, required: is_required)
+          end
+
+          schema
+        end
+
         def build_any_of_schema(sum_type)
           types = TypeUnwrapper.extract_sum_types(sum_type)
 
@@ -86,29 +152,35 @@ module GrapeOAS
         end
 
         def build_hash_schema(dry_type)
-          schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           unwrapped = TypeUnwrapper.unwrap(dry_type)
 
-          return schema unless unwrapped.respond_to?(:keys)
+          # Delegate to the same path-aware logic as regular object schemas.
+          # This ensures nested rule constraints (e.g. max_size?, gteq?, format?) are applied
+          # to properties inside `.hash do ... end` blocks.
+          return ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT) unless unwrapped.respond_to?(:keys)
 
-          # Dry::Schema keys method returns an array of Key objects, not a Hash
-          schema_keys = unwrapped.keys
-          schema_keys.each do |key|
-            key_name = key.respond_to?(:name) ? key.name.to_s : key.to_s
-            key_type = key.respond_to?(:type) ? key.type : nil
-
-            prop_schema = key_type ? build_schema_for_type(key_type) : default_string_schema
-            req = key.respond_to?(:required?) ? key.required? : true
-            schema.add_property(key_name, prop_schema, required: req)
-          end
-
-          schema
+          build_object_schema(unwrapped)
         end
 
         def build_base_schema(primitive, member)
           if primitive == Array
-            items_schema = member ? build_schema_for_type(member) : default_string_schema
+            items_schema = nil
+
+            with_path("[]") do
+              if member
+                unwrapped = TypeUnwrapper.unwrap(member)
+                items_schema = if unwrapped.respond_to?(:keys)
+                                 build_object_schema(unwrapped)
+                               else
+                                 build_schema_for_type(member, constraints_for_current_path)
+                               end
+              else
+                items_schema = default_string_schema
+              end
+            end
+
             ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
+
           else
             build_schema_for_primitive(primitive)
           end

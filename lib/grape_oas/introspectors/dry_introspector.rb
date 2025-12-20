@@ -4,6 +4,7 @@ require_relative "base"
 require_relative "dry_introspector_support/contract_resolver"
 require_relative "dry_introspector_support/inheritance_handler"
 require_relative "dry_introspector_support/type_schema_builder"
+require_relative "dry_introspector_support/rule_index"
 
 module GrapeOAS
   module Introspectors
@@ -92,16 +93,30 @@ module GrapeOAS
       end
 
       def build_flat_schema
-        rule_constraints = DryIntrospectorSupport::ConstraintExtractor.extract(contract_resolver.contract_schema)
+        contract_schema = contract_resolver.contract_schema
+
+        constraints_by_path, required_by_object_path =
+          DryIntrospectorSupport::RuleIndex.build(contract_schema)
+
+        type_schema_builder.configure_path_aware_mode(constraints_by_path, required_by_object_path)
+
         schema = ApiModel::Schema.new(
           type: Constants::SchemaTypes::OBJECT,
           canonical_name: contract_resolver.canonical_name,
         )
 
-        contract_resolver.contract_schema.types.each do |name, dry_type|
-          constraints = rule_constraints[name]
-          prop_schema = type_schema_builder.build_schema_for_type(dry_type, constraints)
-          schema.add_property(name, prop_schema, required: type_schema_builder.required?(dry_type, constraints))
+        root_required = required_by_object_path.fetch("", [])
+
+        contract_schema.types.each do |name, dry_type|
+          name_s = name.to_s
+          prop_schema = nil
+
+          type_schema_builder.with_path(name_s) do
+            prop_schema = type_schema_builder.build_schema_for_type(dry_type,
+                                                                    type_schema_builder.constraints_for_current_path,)
+          end
+
+          schema.add_property(name, prop_schema, required: root_required.include?(name_s))
         end
 
         # Use canonical_name as registry key for schema objects (they don't have unique classes),
