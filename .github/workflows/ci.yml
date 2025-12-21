@@ -45,7 +45,7 @@ jobs:
       - name: Run tests
         run: bundle exec rake test
       - name: Annotate uncovered lines
-        uses: ggilder/codecoverage@v1
+        uses: ggilder/codecoverage@6a0a9c002c49b6e5e4ce15f22574275600163618
         if: github.event_name == 'pull_request' && matrix.ruby == '3.4'
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
