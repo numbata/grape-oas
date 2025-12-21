@@ -47,6 +47,24 @@ module GrapeOAS
         assert_equal "string", tags.items.type
       end
 
+      def test_size_range_predicate_sets_min_and_max_size
+        contract = Dry::Schema.Params do
+          required(:tags).value(:array, size?: 1..10).each(:string)
+          required(:labels).value(:array, size?: 1...10).each(:string)
+        end
+
+        schema = processor.build(contract)
+        tags = schema.properties["tags"]
+
+        assert_equal 1, tags.min_items
+        assert_equal 10, tags.max_items
+
+        labels = schema.properties["labels"]
+
+        assert_equal 1, labels.min_items
+        assert_equal 9, labels.max_items
+      end
+
       def test_excluded_values_and_numeric_bounds
         contract = Dry::Schema.Params do
           required(:score).filled(:integer, excluded_from?: [5], gteq?: 1, lteq?: 10)

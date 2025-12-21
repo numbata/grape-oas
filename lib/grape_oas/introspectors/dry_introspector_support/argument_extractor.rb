@@ -17,6 +17,7 @@ module GrapeOAS
         def extract_range(arg)
           return arg if arg.is_a?(Range)
           return arg[1] if arg.is_a?(Array) && arg.first == :range
+          return arg[1] if arg.is_a?(Array) && arg.first == :size && arg[1].is_a?(Range)
 
           nil
         end

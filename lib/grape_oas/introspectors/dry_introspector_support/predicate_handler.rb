@@ -97,10 +97,17 @@ module GrapeOAS
         end
 
         def handle_size(name, args)
-          min_val = ArgumentExtractor.extract_numeric(args[0])
-          max_val = ArgumentExtractor.extract_numeric(args[1]) if name == :size?
-          constraints.min_size = min_val if min_val
-          constraints.max_size = max_val if max_val
+          rng = ArgumentExtractor.extract_range(args.first)
+
+          if rng
+            constraints.min_size = rng.begin if rng.begin
+            constraints.max_size = rng.max if rng.end
+          else
+            min_val = ArgumentExtractor.extract_numeric(args[0])
+            max_val = ArgumentExtractor.extract_numeric(args[1]) if name == :size?
+            constraints.min_size = min_val if min_val
+            constraints.max_size = max_val if max_val
+          end
         end
 
         def handle_range(args)
