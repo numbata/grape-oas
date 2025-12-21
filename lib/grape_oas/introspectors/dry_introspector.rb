@@ -1,11 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "dry_introspector_support/contract_resolver"
-require_relative "dry_introspector_support/inheritance_handler"
-require_relative "dry_introspector_support/type_schema_builder"
-require_relative "dry_introspector_support/rule_index"
-
 module GrapeOAS
   module Introspectors
     # Introspector for Dry::Validation contracts and Dry::Schema.

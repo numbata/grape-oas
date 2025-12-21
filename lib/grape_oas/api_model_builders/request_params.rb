@@ -1,10 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "request_params_support/param_location_resolver"
-require_relative "request_params_support/param_schema_builder"
-require_relative "request_params_support/schema_enhancer"
-require_relative "request_params_support/nested_params_builder"
-
 module GrapeOAS
   module ApiModelBuilders
     class RequestParams

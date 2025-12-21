@@ -1,13 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "base"
-require_relative "../api_model_builders/concerns/type_resolver"
-require_relative "entity_introspector_support/cycle_tracker"
-require_relative "entity_introspector_support/discriminator_handler"
-require_relative "entity_introspector_support/inheritance_builder"
-require_relative "entity_introspector_support/property_extractor"
-require_relative "entity_introspector_support/exposure_processor"
-
 module GrapeOAS
   module Introspectors
     # Introspector for Grape::Entity classes.

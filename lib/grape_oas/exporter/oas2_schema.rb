@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require_relative "concerns/tag_builder"
-require_relative "concerns/schema_indexer"
-
 module GrapeOAS
   module Exporter
     class OAS2Schema

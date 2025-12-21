@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require "bigdecimal"
-require_relative "concerns/type_resolver"
 
 module GrapeOAS
   module ApiModelBuilders
