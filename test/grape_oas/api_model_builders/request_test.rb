@@ -258,7 +258,7 @@ module GrapeOAS
       def test_contract_from_route_settings
         contract = Struct.new(:to_h).new({ name: String })
         route_with_settings = Struct.new(:options, :path, :settings).new({ params: {} }, "/items",
-                                                                         { contract: contract },)
+                                                                         { contract: contract })
 
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
 
