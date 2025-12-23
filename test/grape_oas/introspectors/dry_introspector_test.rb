@@ -814,6 +814,115 @@ module GrapeOAS
         assert config_schema.properties.key?("field")
       end
 
+      def test_hash_schema_with_keys_without_explicit_type
+        contract = Dry::Schema.JSON do
+          required(:config).hash do
+            # Keys without explicit type should default to string
+            optional(:field1)
+            optional(:field2)
+          end
+        end
+
+        schema = processor.build(contract)
+        config_schema = schema.properties["config"]
+
+        assert_equal "object", config_schema.type
+        assert config_schema.properties.key?("field1")
+        assert config_schema.properties.key?("field2")
+
+        # Both fields should default to string type
+        assert_equal "string", config_schema.properties["field1"].type
+        assert_equal "string", config_schema.properties["field2"].type
+      end
+
+      def test_schema_object_key_required_check_without_rule_index
+        contract = Dry::Schema.JSON do
+          required(:config).hash do
+            required(:api_key).value(:string)
+            optional(:timeout).value(:integer)
+          end
+        end
+
+        schema = processor.build(contract)
+        config_schema = schema.properties["config"]
+
+        assert_equal "object", config_schema.type
+        assert config_schema.properties.key?("api_key")
+        assert config_schema.properties.key?("timeout")
+
+        # Verify required status is detected
+        assert_includes config_schema.required, "api_key"
+        refute_includes config_schema.required, "timeout"
+      end
+
+      def test_nested_array_with_object_items_applies_path_constraints
+        contract = Dry::Schema.Params do
+          required(:items).value(:array, min_size?: 1, max_size?: 5).each(:hash) do
+            required(:name).filled(:string, min_size?: 2, max_size?: 50)
+            required(:age).filled(:integer, gteq?: 0, lteq?: 120)
+          end
+        end
+
+        schema = processor.build(contract)
+        items_array = schema.properties["items"]
+
+        assert_equal "array", items_array.type
+        assert_equal 1, items_array.min_items
+        assert_equal 5, items_array.max_items
+
+        # Check item schema
+        item_schema = items_array.items
+
+        assert_equal "object", item_schema.type
+
+        # Check nested properties have constraints
+        name_schema = item_schema.properties["name"]
+
+        assert_equal "string", name_schema.type
+        assert_equal 2, name_schema.min_length
+        assert_equal 50, name_schema.max_length
+
+        age_schema = item_schema.properties["age"]
+
+        assert_equal "integer", age_schema.type
+        assert_equal 0, age_schema.minimum
+        assert_equal 120, age_schema.maximum
+      end
+
+      def test_rule_index_constraint_merging
+        contract = Dry::Schema.Params do
+          required(:email).filled(:string, min_size?: 5, max_size?: 100)
+        end
+
+        schema = processor.build(contract)
+        email_schema = schema.properties["email"]
+
+        assert_equal "string", email_schema.type
+        # Constraints should be applied
+        assert_equal 5, email_schema.min_length
+        assert_equal 100, email_schema.max_length
+      end
+
+      def test_hash_with_unwrapped_keys_object_schema
+        contract = Dry::Schema.Params do
+          required(:settings).hash do
+            required(:timeout).filled(:integer, gteq?: 0)
+            required(:name).filled(:string)
+          end
+        end
+
+        schema = processor.build(contract)
+        settings_schema = schema.properties["settings"]
+
+        assert_equal "object", settings_schema.type
+        assert settings_schema.properties.key?("timeout")
+        assert settings_schema.properties.key?("name")
+
+        assert_equal "integer", settings_schema.properties["timeout"].type
+        assert_equal 0, settings_schema.properties["timeout"].minimum
+        assert_equal "string", settings_schema.properties["name"].type
+      end
+
       private
 
       def constraint_set_class
