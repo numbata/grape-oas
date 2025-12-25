@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- [#26](https://github.com/numbata/grape-oas/pull/26): Add danger validation [@numbata](https://github.com/numbata).
+- [#23](https://github.com/numbata/grape-oas/pull/23): Add oneOf support for response schemas [@slbug](https://github.com/slbug).
+
 ### Fixed
 
-- Your contribution here.
-- [#23](https://github.com/numbata/grape-oas/pull/23): Add oneOf support for response schemas [@slbug](https://github.com/slbug).
 - [#22](https://github.com/numbata/grape-oas/pull/22): Handle boolean types in dry introspector [@slbug](https://github.com/slbug).
 
 ## [1.0.3] - 2025-12-23
