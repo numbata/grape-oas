@@ -77,6 +77,23 @@ end
 
 ## Response Documentation
 
+### one_of Responses
+
+```ruby
+desc 'Get user or profile' do
+  success one_of: [
+    { model: Entity::User },
+    { model: Entity::Profile }
+  ]
+end
+```
+
+**Notes:**
+- `one_of` is a grape-oas extension and is not part of the upstream Grape DSL.
+- If you mix `one_of` with regular `as:` response specs, `one_of` is ignored.
+- `:as` is ignored within `one_of` items.
+- `one_of` items must include `:model` or `:entity`.
+
 ### Basic Responses
 
 ```ruby

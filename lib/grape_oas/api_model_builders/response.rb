@@ -61,13 +61,61 @@ module GrapeOAS
       end
 
       # Builds a response from a group of specs with the same status code
-      # If multiple specs have `as:` keys, they are merged into a single object schema
+      # If any spec has `as:`, build a merged object response using only `as:` entries
+      # Else if any spec has `one_of:`, build a oneOf response from one_of entries and
+      # any regular specs in the group (this branch only runs when no `as:` entries exist)
       def build_response_from_group(group_specs)
-        if group_specs.any? { |s| s[:as] }
-          build_merged_response(group_specs)
+        has_one_of = group_specs.any? { |s| s[:one_of] && !s[:one_of].empty? }
+        has_as = group_specs.any? { |s| !s[:as].nil? }
+
+        if has_as
+          build_merged_response(group_specs.select { |s| s[:as] })
+        elsif has_one_of
+          build_one_of_response(group_specs)
         else
           build_response_from_spec(group_specs.first)
         end
+      end
+
+      # Builds a oneOf response for multiple possible response schemas
+      def build_one_of_response(specs)
+        first_spec = specs.first
+
+        all_schemas = []
+        specs.each do |spec|
+          if spec[:one_of]
+            spec[:one_of].each do |one_of_spec|
+              one_of_entity = one_of_spec.is_a?(Hash) ? (one_of_spec[:model] || one_of_spec[:entity]) : nil
+              raise ArgumentError, "one_of items must include :model or :entity" unless one_of_entity
+
+              is_array = one_of_spec.key?(:is_array) ? one_of_spec[:is_array] : spec[:is_array]
+              schema = build_schema(one_of_entity)
+              schema = array_schema(schema) if is_array
+              all_schemas << schema if schema
+            end
+          else
+            schema = build_schema(spec[:entity])
+            schema = array_schema(schema) if spec[:is_array]
+            all_schemas << schema if schema
+          end
+        end
+
+        schema = GrapeOAS::ApiModel::Schema.new(one_of: all_schemas)
+        media_types = Array(response_content_types).map do |mime|
+          build_media_type(mime_type: mime, schema: schema)
+        end
+
+        message = first_spec[:message]
+        description = message.is_a?(String) ? message : message&.to_s
+
+        GrapeOAS::ApiModel::Response.new(
+          http_status: first_spec[:code].to_s,
+          description: description || "Success",
+          media_types: media_types,
+          headers: normalize_headers(first_spec[:headers]) || headers_from_route,
+          extensions: first_spec[:extensions] || extensions_from_route,
+          examples: merge_examples(specs),
+        )
       end
 
       # Builds a merged response for multiple present with `as:` keys
@@ -78,7 +126,8 @@ module GrapeOAS
           build_media_type(mime_type: mime, schema: schema)
         end
 
-        description = first_spec[:message].is_a?(String) ? first_spec[:message] : first_spec[:message].to_s
+        message = first_spec[:message]
+        description = message.is_a?(String) ? message : message&.to_s
 
         GrapeOAS::ApiModel::Response.new(
           http_status: first_spec[:code].to_s,
@@ -136,7 +185,8 @@ module GrapeOAS
           )
         end
 
-        description = spec[:message].is_a?(String) ? spec[:message] : spec[:message].to_s
+        message = spec[:message]
+        description = message.is_a?(String) ? message : message&.to_s
 
         GrapeOAS::ApiModel::Response.new(
           http_status: spec[:code].to_s,
@@ -145,6 +195,13 @@ module GrapeOAS
           headers: normalize_headers(spec[:headers]) || headers_from_route,
           extensions: spec[:extensions] || extensions_from_route,
           examples: spec[:examples],
+        )
+      end
+
+      def array_schema(schema)
+        GrapeOAS::ApiModel::Schema.new(
+          type: Constants::SchemaTypes::ARRAY,
+          items: schema,
         )
       end
 
