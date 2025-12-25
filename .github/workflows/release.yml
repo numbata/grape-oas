@@ -23,7 +23,7 @@ jobs:
           tag="${GITHUB_REF_NAME}"
           version="${tag#v}"
           notes="$(awk -v version="$version" '
-            $0 ~ "^## \\[" version "\\]" {found=1; next}
+            $0 ~ "^## \\[" version "\\]([[:space:]-].*)?$" {found=1; next}
             found && $0 ~ "^## \\[" {exit}
             found {print}
           ' CHANGELOG.md)"
