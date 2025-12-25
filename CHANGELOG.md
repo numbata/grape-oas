@@ -9,22 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#26](https://github.com/numbata/grape-oas/pull/26): Add danger validation [@numbata](https://github.com/numbata).
-- [#23](https://github.com/numbata/grape-oas/pull/23): Add oneOf support for response schemas [@slbug](https://github.com/slbug).
+- [#27](https://github.com/numbata/grape-oas/pull/27): Add release workflow - [@numbata](https://github.com/numbata).
+- [#26](https://github.com/numbata/grape-oas/pull/26): Add danger validation - [@numbata](https://github.com/numbata).
+- [#23](https://github.com/numbata/grape-oas/pull/23): Add oneOf support for response schemas - [@slbug](https://github.com/slbug).
 
 ### Fixed
 
-- [#22](https://github.com/numbata/grape-oas/pull/22): Handle boolean types in dry introspector [@slbug](https://github.com/slbug).
+- [#22](https://github.com/numbata/grape-oas/pull/22): Handle boolean types in dry introspector - [@slbug](https://github.com/slbug).
 
 ## [1.0.3] - 2025-12-23
 
 ### Fixed
 
-- [#21](https://github.com/numbata/grape-oas/pull/21): Remove unnecessary require_relative in favor of Zeitwerk autoloadin [@numbata](https://github.com/numbata).
-- [#17](https://github.com/numbata/grape-oas/pull/17): Support for nested rules and predicates in dry-schema introspection [@slbug](https://github.com/slbug).
-- [#20](https://github.com/numbata/grape-oas/pull/20): Use annotation for coverage report [@numbata](https://github.com/numbata).
-- [#18](https://github.com/numbata/grape-oas/pull/18): Support for range in size? predicate `required(:tags).value(:array, size?: 1..10).each(:string)` [@slbug](https://github.com/slbug).
-- [#19](https://github.com/numbata/grape-oas/pull/19): Temporary disable memory profiler workflow for PRs [@numbata](https://github.com/numbata).
+- [#21](https://github.com/numbata/grape-oas/pull/21): Remove unnecessary require_relative in favor of Zeitwerk autoloadin - [@numbata](https://github.com/numbata).
+- [#17](https://github.com/numbata/grape-oas/pull/17): Support for nested rules and predicates in dry-schema introspection - [@slbug](https://github.com/slbug).
+- [#20](https://github.com/numbata/grape-oas/pull/20): Use annotation for coverage report - [@numbata](https://github.com/numbata).
+- [#18](https://github.com/numbata/grape-oas/pull/18): Support for range in size? predicate `required(:tags).value(:array, size?: 1..10).each(:string)` - [@slbug](https://github.com/slbug).
+- [#19](https://github.com/numbata/grape-oas/pull/19): Temporary disable memory profiler workflow for PRs - [@numbata](https://github.com/numbata).
 
 ## [1.0.2] - 2025-12-15
 
