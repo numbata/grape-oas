@@ -5,6 +5,30 @@
 
 OpenAPI Specification (OAS) documentation generator for [Grape](https://github.com/ruby-grape/grape) APIs. Supports OpenAPI 2.0 (Swagger), 3.0, and 3.1 specifications.
 
+## Table of Contents
+
+- [Why Grape::OAS?](#why-grapeoas)
+- [Features](#features)
+- [Compatibility](#compatibility)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+  - [Mount Documentation Endpoint](#mount-documentation-endpoint)
+  - [Manual Generation](#manual-generation)
+  - [Rake Tasks](#rake-tasks)
+- [Documentation](#documentation)
+- [Basic Usage](#basic-usage)
+  - [Documenting Endpoints](#documenting-endpoints)
+  - [Response Documentation](#response-documentation)
+  - [Entity Definition](#entity-definition)
+- [Extensibility](#extensibility)
+  - [Custom Introspectors](#custom-introspectors)
+  - [Custom Exporters](#custom-exporters)
+- [Related Projects](#related-projects)
+- [Development](#development)
+- [Contributing](#contributing)
+- [License](#license)
+
+
 ## Why Grape::OAS?
 
 Grape::OAS is built around a **DTO (Data Transfer Object) architecture** that separates collecting API metadata from generating schemas. This clean separation makes the codebase easier to reason about and enables support for multiple output formats (OAS 2.0, 3.0, 3.1) from the same API definition.

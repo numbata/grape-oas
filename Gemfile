@@ -28,6 +28,11 @@ group :development, :test do
   gem "rake"
   gem "rubocop", require: false
   gem "rubocop-minitest", require: false
+
+  gem "danger", "~> 9", require: false
+  gem "danger-changelog", "~> 0.8", require: false
+  gem "danger-pr-comment", require: false
+  gem "danger-toc", "~> 0.2", require: false
 end
 
 group :test do
