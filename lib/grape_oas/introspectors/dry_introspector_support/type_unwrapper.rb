@@ -24,6 +24,9 @@ module GrapeOAS
         # @param dry_type [Dry::Types::Type] the type to analyze
         # @return [Array(Class, Object)] tuple of [primitive_class, member_type_or_nil]
         def derive_primitive_and_member(dry_type)
+          # Handle boolean Sum types (TrueClass | FalseClass)
+          return [TrueClass, nil] if boolean_sum_type?(dry_type)
+
           core = unwrap(dry_type)
 
           return [Array, core.type.member] if array_member_type?(core)
@@ -137,6 +140,22 @@ module GrapeOAS
             core.primitive == Array
         end
         private_class_method :array_with_member?
+
+        def boolean_sum_type?(dry_type)
+          return false unless dry_type.respond_to?(:left) && dry_type.respond_to?(:right)
+
+          boolean_type?(dry_type.left) && boolean_type?(dry_type.right)
+        end
+        private_class_method :boolean_sum_type?
+
+        def boolean_type?(dry_type)
+          return false unless dry_type
+
+          return [TrueClass, FalseClass].include?(dry_type.primitive) if dry_type.respond_to?(:primitive)
+
+          false
+        end
+        private_class_method :boolean_type?
       end
     end
   end

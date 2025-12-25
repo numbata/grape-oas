@@ -59,7 +59,6 @@ module GrapeOAS
           when :email? then constraints.format = "email"
           when :date? then constraints.format = "date"
           when :time?, :date_time? then constraints.format = "date-time"
-          when :bool?, :boolean? then constraints.type_predicate ||= :boolean
           when :type? then constraints.type_predicate = ArgumentExtractor.extract_literal(args.first)
           when :odd? then constraints.parity = :odd
           when :even? then constraints.parity = :even

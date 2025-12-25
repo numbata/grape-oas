@@ -16,11 +16,13 @@ gem "grape", case ENV.fetch("GRAPE_VERSION", nil)
              end
 
 gem "dry-schema"
+gem "dry-types"
 gem "dry-validation"
 gem "grape-entity"
 
 group :development, :test do
   gem "debug"
+  gem "ostruct"
   gem "rack"
   gem "rack-test"
   gem "rake"

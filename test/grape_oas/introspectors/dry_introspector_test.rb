@@ -297,7 +297,7 @@ module GrapeOAS
         assert_equal "email", email_schema.format
         assert_equal "date", date_schema.format
         assert_equal "date-time", datetime_schema.format
-        assert_equal :boolean, bool_schema.extensions["x-typePredicate"]
+        assert_equal "boolean", bool_schema.type
       end
 
       def test_pattern_from_format_predicate
@@ -921,6 +921,70 @@ module GrapeOAS
         assert_equal "integer", settings_schema.properties["timeout"].type
         assert_equal 0, settings_schema.properties["timeout"].minimum
         assert_equal "string", settings_schema.properties["name"].type
+      end
+
+      def test_boolean_types_detected_correctly
+        contract = Dry::Schema.Params do
+          required(:simple).filled(:bool)
+          required(:hold).filled(Dry::Types["bool"])
+          required(:accepted).filled(Dry::Types["bool"].constrained(included_in: [true]))
+          optional(:items).array(:hash) do
+            required(:code).filled(:string)
+            optional(:active).filled(:bool)
+            optional(:verified).filled(Dry::Types["bool"])
+          end
+        end
+
+        schema = processor.build(contract)
+
+        simple_schema = schema.properties["simple"]
+        hold_schema = schema.properties["hold"]
+        accepted_schema = schema.properties["accepted"]
+
+        assert_equal "boolean", simple_schema.type
+        assert_equal "boolean", hold_schema.type
+        assert_equal "boolean", accepted_schema.type
+        assert_equal [true], accepted_schema.enum
+
+        items_array = schema.properties["items"]
+        active_schema = items_array.items.properties["active"]
+        verified_schema = items_array.items.properties["verified"]
+
+        assert_equal "boolean", active_schema.type
+        assert_equal "boolean", verified_schema.type
+      end
+
+      def test_boolean_types_in_inherited_contracts
+        parent_contract = Class.new(Dry::Validation::Contract) do
+          params do
+            required(:id).filled(:integer)
+            required(:enabled).filled(Dry::Types["bool"])
+          end
+        end
+
+        child_contract = Class.new(parent_contract) do
+          params do
+            required(:confirmed).filled(Dry::Types["bool"].constrained(included_in: [true]))
+            optional(:active).filled(:bool)
+          end
+        end
+
+        schema = processor.build(child_contract)
+
+        # Check allOf structure
+        assert schema.all_of
+        assert_equal 2, schema.all_of.length
+
+        parent_schema = schema.all_of.first
+        child_schema = schema.all_of.last
+
+        # Parent schema should have boolean type
+        assert_equal "boolean", parent_schema.properties["enabled"].type
+
+        # Child schema should have boolean types
+        assert_equal "boolean", child_schema.properties["confirmed"].type
+        assert_equal "boolean", child_schema.properties["active"].type
+        assert_equal [true], child_schema.properties["confirmed"].enum
       end
 
       private

@@ -106,6 +106,11 @@ module GrapeOAS
     module Types
       include Dry.Types()
 
+      # Boolean types for testing
+      ActiveFlag = Types::Bool
+
+      ConfirmedFlag = Types::Bool.constrained(included_in: [true])
+
       # Simple two-type sum
       CatType = Types::Hash.schema(
         meow_volume: Types::Integer,
@@ -135,6 +140,17 @@ module GrapeOAS
       )
 
       ShapeType = CircleShape | RectangleShape | TriangleShape
+    end
+
+    # Contract with boolean types
+    BooleanTypesContract = Dry::Schema.Params do
+      required(:simple_flag).filled(:bool)
+      required(:active).filled(Types::ActiveFlag)
+      required(:confirmed).filled(Types::ConfirmedFlag)
+      optional(:settings).hash do
+        optional(:enabled).filled(:bool)
+        optional(:verified).filled(Types::ActiveFlag)
+      end
     end
 
     class PetContract < Dry::Validation::Contract
@@ -198,6 +214,12 @@ module GrapeOAS
       # --- Array types ---
       namespace :bulk do
         desc "Bulk operation with various array types", contract: ArrayTypesContract
+        post { {} }
+      end
+
+      # --- Boolean types ---
+      namespace :flags do
+        desc "Boolean types testing", contract: BooleanTypesContract
         post { {} }
       end
 
@@ -411,6 +433,30 @@ module GrapeOAS
 
       assert_equal "array", body["properties"]["scores"]["type"]
       assert_equal "number", body["properties"]["scores"]["items"]["type"]
+    end
+
+    # --- Boolean Types Tests ---
+
+    def test_boolean_types_are_boolean
+      body = request_body_schema("/flags")
+
+      assert_equal "boolean", body["properties"]["simple_flag"]["type"]
+      assert_equal "boolean", body["properties"]["active"]["type"]
+      assert_equal "boolean", body["properties"]["confirmed"]["type"]
+    end
+
+    def test_constrained_boolean_has_enum
+      body = request_body_schema("/flags")
+
+      assert_equal [true], body["properties"]["confirmed"]["enum"]
+    end
+
+    def test_nested_boolean_types
+      body = request_body_schema("/flags")
+      settings = body["properties"]["settings"]
+
+      assert_equal "boolean", settings["properties"]["enabled"]["type"]
+      assert_equal "boolean", settings["properties"]["verified"]["type"]
     end
 
     # --- Contract Inheritance (allOf) Tests ---
