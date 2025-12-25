@@ -35,6 +35,11 @@ jobs:
           - '3.2'
           - '3.3'
           - '3.4'
+          - '4.0'
+        include:
+          - ruby: 'ruby-head'
+            allow-failure: true
+    continue-on-error: ${{ matrix.allow-failure || false }}
     steps:
       - uses: actions/checkout@v6
       - name: Set up Ruby
@@ -46,7 +51,7 @@ jobs:
         run: bundle exec rake test
       - name: Annotate uncovered lines
         uses: ggilder/codecoverage@6a0a9c002c49b6e5e4ce15f22574275600163618
-        if: github.event_name == 'pull_request' && matrix.ruby == '3.4'
+        if: github.event_name == 'pull_request' && matrix.ruby == '4.0'
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERAGE_FILE_PATH: coverage/lcov.info

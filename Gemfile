@@ -4,7 +4,7 @@ source "https://rubygems.org"
 
 gemspec
 
-gem "bundler", "~> 2.0"
+gem "bundler"
 
 gem "grape", case ENV.fetch("GRAPE_VERSION", nil)
              when "HEAD"
