@@ -22,6 +22,7 @@ gem "grape-entity"
 
 group :development, :test do
   gem "debug"
+  gem "ostruct"
   gem "rack"
   gem "rack-test"
   gem "rake"

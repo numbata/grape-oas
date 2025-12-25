@@ -153,10 +153,6 @@ module GrapeOAS
 
           return [TrueClass, FalseClass].include?(dry_type.primitive) if dry_type.respond_to?(:primitive)
 
-          if dry_type.respond_to?(:type) && dry_type.type.respond_to?(:primitive)
-            return [TrueClass, FalseClass].include?(dry_type.type.primitive)
-          end
-
           false
         end
         private_class_method :boolean_type?
