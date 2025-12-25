@@ -9,3 +9,4 @@ jobs:
     secrets: inherit
     with:
       ruby-version: "4.0"
+      danger-args: "dry_run --base=main --head=${{ github.event.pull_request.head.sha }}"
