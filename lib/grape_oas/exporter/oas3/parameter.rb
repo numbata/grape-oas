@@ -17,6 +17,8 @@ module GrapeOAS
               "in" => param.location,
               "required" => param.required,
               "description" => param.description,
+              "style" => param.style,
+              "explode" => param.explode,
               "schema" => Schema.new(param.schema, @ref_tracker, nullable_keyword: @nullable_keyword).build
             }.compact
           end.presence
