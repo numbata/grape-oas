@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-
+- [#28](https://github.com/numbata/grape-oas/pull/28): support nested dry-contracts query parameters with style & explode - [@slbug](https://github.com/slbug).
 - [#27](https://github.com/numbata/grape-oas/pull/27): Add release workflow - [@numbata](https://github.com/numbata).
 - [#26](https://github.com/numbata/grape-oas/pull/26): Add danger validation - [@numbata](https://github.com/numbata).
 - [#23](https://github.com/numbata/grape-oas/pull/23): Add oneOf support for response schemas - [@slbug](https://github.com/slbug).
