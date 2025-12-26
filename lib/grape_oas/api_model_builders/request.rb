@@ -23,7 +23,15 @@ module GrapeOAS
                                     .build
 
         contract_schema = build_contract_schema
-        body_schema = contract_schema if contract_schema
+
+        # For GET/HEAD/DELETE requests, convert contract schema to query parameters
+        # instead of putting it in request body, UNLESS request_body is explicitly enabled
+        if contract_schema && should_convert_contract_to_query_params?
+          contract_params = convert_contract_schema_to_params(contract_schema)
+          operation.add_parameters(*contract_params)
+        elsif contract_schema
+          body_schema = contract_schema
+        end
 
         operation.add_parameters(*route_params)
         append_request_body(body_schema) unless body_schema.empty?
@@ -297,6 +305,63 @@ module GrapeOAS
         vals if vals.is_a?(Array)
       rescue NoMethodError
         nil
+      end
+
+      def convert_contract_schema_to_params(schema)
+        return [] unless schema.respond_to?(:properties)
+
+        params = []
+        param_docs = contract_param_documentation
+        path_params = path_param_names
+
+        schema.properties.each do |name, prop_schema|
+          name_s = name.to_s
+          next if path_params.include?(name_s)
+
+          required = schema.required&.include?(name_s) || false
+          doc = param_docs[name_s] || {}
+          params << build_query_parameter(name_s, prop_schema, required, doc)
+        end
+
+        params
+      end
+
+      def should_convert_contract_to_query_params?
+        http_method = operation.http_method.to_s.downcase
+        return false unless Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
+
+        !(route.options.dig(:documentation, :request_body) || route.options[:request_body])
+      end
+
+      def build_query_parameter(name, schema, required, doc = {})
+        style = doc[:style] || doc["style"]
+        explode = if doc.key?(:explode) || doc.key?("explode")
+                    doc.key?(:explode) ? doc[:explode] : doc["explode"]
+                  end
+        ApiModel::Parameter.new(
+          location: "query",
+          name: name,
+          required: required,
+          schema: schema,
+          description: schema.description,
+          style: style,
+          explode: explode,
+        )
+      end
+
+      def contract_param_documentation
+        params = documentation_options[:params]
+        return {} unless params.is_a?(Hash)
+
+        params.each_with_object({}) do |(key, value), acc|
+          acc[key.to_s] = value.is_a?(Hash) ? value : {}
+        end
+      end
+
+      def path_param_names
+        names = route.path.scan(RequestParams::ROUTE_PARAM_REGEX)
+        mapped_names = path_param_name_map ? path_param_name_map.values : []
+        (names + mapped_names).map(&:to_s).uniq
       end
     end
   end
