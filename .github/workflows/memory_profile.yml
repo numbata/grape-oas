@@ -51,6 +51,16 @@ jobs:
           
           echo "elapsed_time=$ELAPSED_TIME" >> $GITHUB_OUTPUT
           echo "ruby_version=${{ matrix.ruby-version }}" >> $GITHUB_OUTPUT
+          
+          # Output to action logs
+          echo ""
+          echo "========================================"
+          echo "Ruby ${{ matrix.ruby-version }} Benchmark Report"
+          echo "========================================"
+          echo "$REPORT"
+          echo "========================================"
+          echo ""
+          echo "Benchmark completed in ${ELAPSED_TIME}s"
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v6
@@ -259,6 +269,15 @@ jobs:
           
           # Save to file for artifact upload
           echo "$REPORT_OUTPUT" > /tmp/comparison.md
+          
+          # Output to action logs
+          echo "==================================="
+          echo "Memory Profile Comparison Report"
+          echo "==================================="
+          echo ""
+          echo "$REPORT_OUTPUT"
+          echo ""
+          echo "==================================="
 
       - name: Find existing comment
         uses: peter-evans/find-comment@v4
