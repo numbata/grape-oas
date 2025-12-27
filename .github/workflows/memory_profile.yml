@@ -250,9 +250,15 @@ jobs:
           puts comparison_report
           RUBY_SCRIPT
           
+          # Generate and save the report
+          REPORT_OUTPUT=$(ruby /tmp/compare.rb)
+          
           echo "report<<EOF" >> $GITHUB_OUTPUT
-          ruby /tmp/compare.rb >> $GITHUB_OUTPUT
+          echo "$REPORT_OUTPUT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          
+          # Save to file for artifact upload
+          echo "$REPORT_OUTPUT" > /tmp/comparison.md
 
       - name: Find existing comment
         uses: peter-evans/find-comment@v4
