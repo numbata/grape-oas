@@ -53,12 +53,9 @@ module GrapeOAS
 
         # Set canonical_name if not already set (e.g., DryIntrospector may have set it for polymorphism)
         if body_schema.respond_to?(:canonical_name) && body_schema.canonical_name.nil?
-          settings = route.respond_to?(:settings) ? route.settings : {}
-          contract_class = route.options[:contract] || route.options[:schema] || settings[:contract]
+          contract = find_contract
 
-          if contract_class.is_a?(Class) && defined?(Menti::Endpoint::Schema) && contract_class < Menti::Endpoint::Schema
-            body_schema.canonical_name = contract_class.name
-          elsif contract_class # some other contract (e.g., Dry); keep inline
+          if contract # Dry contract; keep inline
             # no-op
           elsif body_schema.properties.values.any? { |prop| prop.respond_to?(:canonical_name) && prop.canonical_name }
             # keep entity/property refs intact; don't override
@@ -98,9 +95,48 @@ module GrapeOAS
         extract_extensions(mt)
       end
 
+      # Find contract from Grape's contract storage locations.
+      # Contracts can be defined in two ways:
+      # 1. Via `contract MyContract` DSL - stores in inheritable_setting.namespace_stackable[:validations]
+      # 2. Via `desc "...", contract: MyContract` - stores in route.options[:contract]
+      #
+      # @return [Object, nil] The contract instance or nil if not found
+      def find_contract
+        # Check route options first (from desc "...", contract: MyContract)
+        contract = route.options[:contract]
+        return contract if contract
+
+        # Check Grape's native contract() DSL storage
+        extract_contract_from_grape_validations
+      end
+
+      # Extract contract from Grape's native contract() DSL storage location.
+      # When using `contract MyContract` in Grape DSL, the contract is stored in
+      # route.app.inheritable_setting.namespace_stackable[:validations] as validator options.
+      #
+      # @return [Object, nil] The contract instance or nil if not found
+      def extract_contract_from_grape_validations
+        return unless route.respond_to?(:app) && route.app.respond_to?(:inheritable_setting)
+
+        setting = route.app.inheritable_setting
+        return unless setting.respond_to?(:namespace_stackable)
+
+        validations = setting.namespace_stackable[:validations]
+        return unless validations.is_a?(Array)
+
+        # Find ContractScopeValidator which holds the Dry contract/schema
+        contract_validation = validations.find do |v|
+          v.is_a?(Hash) && v[:validator_class].to_s.include?("ContractScope")
+        end
+
+        return unless contract_validation
+
+        # The contract instance is stored in opts[:schema]
+        contract_validation.dig(:opts, :schema)
+      end
+
       def build_contract_schema
-        settings = route.respond_to?(:settings) ? route.settings : {}
-        contract = route.options[:contract] || settings[:contract]
+        contract = find_contract
         return unless contract
 
         schema_obj = if contract.respond_to?(:schema)
