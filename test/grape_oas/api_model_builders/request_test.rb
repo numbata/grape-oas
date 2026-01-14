@@ -265,6 +265,200 @@ module GrapeOAS
 
         refute_nil operation.request_body, "PATCH should have request body"
       end
+
+      def test_request_body_and_content_extensions_from_documentation
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract = Dry::Schema.Params do
+            required(:foo).filled(:string)
+          end
+
+          desc "Create",
+               contract: contract,
+               documentation: {
+                 "x-req" => "rb",
+                 content: {
+                   "application/json" => { "x-ct" => "ct" }
+                 }
+               }
+          post "/items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        rb = operation.request_body
+
+        assert_equal "rb", rb.extensions["x-req"]
+        mt = rb.media_types.first
+
+        assert_equal "ct", mt.extensions["x-ct"]
+      end
+
+      def test_media_type_extensions_with_symbol_key
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract = Dry::Schema.Params do
+            required(:foo).filled(:string)
+          end
+
+          desc "Create",
+               contract: contract,
+               documentation: {
+                 content: {
+                   "application/json": { "x-ct" => "symbol_key" }
+                 }
+               }
+          post "/items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        mt = operation.request_body.media_types.first
+
+        assert_equal "symbol_key", mt.extensions["x-ct"]
+      end
+
+      def test_no_media_type_extensions_when_content_not_hash
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract = Dry::Schema.Params do
+            required(:foo).filled(:string)
+          end
+
+          desc "Create",
+               contract: contract,
+               documentation: { content: "not a hash" }
+          post "/items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        mt = operation.request_body.media_types.first
+
+        assert_nil mt.extensions
+      end
+
+      def test_no_media_type_extensions_when_mime_not_found
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract = Dry::Schema.Params do
+            required(:foo).filled(:string)
+          end
+
+          desc "Create",
+               contract: contract,
+               documentation: {
+                 content: {
+                   "text/plain" => { "x-ct" => "different_mime" }
+                 }
+               }
+          post "/items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        mt = operation.request_body.media_types.first
+
+        assert_nil mt.extensions
+      end
+
+      def test_no_request_body_extensions_when_no_x_prefixed
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract = Dry::Schema.Params do
+            required(:foo).filled(:string)
+          end
+
+          desc "Create",
+               contract: contract,
+               documentation: { "regular" => "value" }
+          post "/items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        rb = operation.request_body
+
+        assert_nil rb.extensions
+      end
+
+      def test_request_body_for_get_when_explicitly_allowed
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract = Dry::Schema.Params do
+            required(:query).filled(:string)
+          end
+
+          desc "Search",
+               contract: contract,
+               documentation: { request_body: true }
+          get "/search" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :get)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        refute_nil operation.request_body, "GET should have request body when explicitly allowed"
+      end
+
+      def test_request_body_for_delete_when_explicitly_allowed_via_option
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract = Dry::Schema.Params do
+            required(:ids).array(:integer)
+          end
+
+          desc "Bulk delete",
+               contract: contract,
+               request_body: true
+          delete "/items/bulk" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :delete)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        refute_nil operation.request_body, "DELETE should have request body when explicitly allowed"
+      end
     end
   end
 end
