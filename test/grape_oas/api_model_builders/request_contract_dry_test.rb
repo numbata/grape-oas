@@ -5,8 +5,6 @@ require "test_helper"
 module GrapeOAS
   module ApiModelBuilders
     class RequestContractDryTest < Minitest::Test
-      DummyRoute = Struct.new(:options, :path, :settings)
-
       def api
         @api ||= ApiModel::API.new(title: "t", version: "v")
       end
@@ -14,14 +12,22 @@ module GrapeOAS
       # === Basic contract schema building ===
 
       def test_optional_enum_and_array_constraints
-        contract = Dry::Schema.Params do
-          required(:id).filled(:integer)
-          optional(:status).maybe(:string, included_in?: %w[draft published])
-          optional(:tags).value(:array, min_size?: 1, max_size?: 3).each(:string)
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract Dry::Schema.Params do
+            required(:id).filled(:integer)
+            optional(:status).maybe(:string, included_in?: %w[draft published])
+            optional(:tags).value(:array, min_size?: 1, max_size?: 3).each(:string)
+          end
+
+          post "/items" do
+            {}
+          end
         end
 
+        route = api_class.routes.first
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
-        route = DummyRoute.new({ contract: contract, params: {} }, "/items", {})
 
         Request.new(api: api, route: route, operation: operation).build
 
@@ -46,13 +52,21 @@ module GrapeOAS
       # === String predicate tests ===
 
       def test_string_size_and_format_and_enum
-        contract = Dry::Schema.Params do
-          optional(:status).maybe(:string, min_size?: 5, max_size?: 50, format?: /\A[a-z]+\z/,
-                                           included_in?: %w[draft published],)
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract Dry::Schema.Params do
+            optional(:status).maybe(:string, min_size?: 5, max_size?: 50, format?: /\A[a-z]+\z/,
+                                             included_in?: %w[draft published],)
+          end
+
+          post "/items" do
+            {}
+          end
         end
 
+        route = api_class.routes.first
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
-        route = DummyRoute.new({ contract: contract, params: {} }, "/items", {})
 
         Request.new(api: api, route: route, operation: operation).build
 
@@ -69,12 +83,20 @@ module GrapeOAS
       # === Numeric predicate tests ===
 
       def test_numeric_bounds_and_excluded
-        contract = Dry::Schema.Params do
-          required(:score).filled(:integer, gteq?: 1, lteq?: 10, excluded_from?: [5])
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract Dry::Schema.Params do
+            required(:score).filled(:integer, gteq?: 1, lteq?: 10, excluded_from?: [5])
+          end
+
+          post "/items" do
+            {}
+          end
         end
 
+        route = api_class.routes.first
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
-        route = DummyRoute.new({ contract: contract, params: {} }, "/items", {})
 
         Request.new(api: api, route: route, operation: operation).build
 
@@ -89,12 +111,20 @@ module GrapeOAS
       # === Array predicate tests ===
 
       def test_array_with_item_constraints_and_nullable
-        contract = Dry::Schema.Params do
-          optional(:tags).value(:array, min_size?: 1, max_size?: 3).each(:string)
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract Dry::Schema.Params do
+            optional(:tags).value(:array, min_size?: 1, max_size?: 3).each(:string)
+          end
+
+          post "/items" do
+            {}
+          end
         end
 
+        route = api_class.routes.first
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
-        route = DummyRoute.new({ contract: contract, params: {} }, "/items", {})
 
         Request.new(api: api, route: route, operation: operation).build
 
