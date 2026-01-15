@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#30](https://github.com/numbata/grape-oas/pull/30): Add support for Grape's native `contract` DSL resolution when building request schemas - [@numbata](https://github.com/numbata).
 - [#28](https://github.com/numbata/grape-oas/pull/28): support nested dry-contracts query parameters with style & explode - [@slbug](https://github.com/slbug).
 - [#24](https://github.com/numbata/grape-oas/pull/24): Properly parse desc blocks with responses [@slbug](https://github.com/slbug).
 - [#27](https://github.com/numbata/grape-oas/pull/27): Add release workflow - [@numbata](https://github.com/numbata).
