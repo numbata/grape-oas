@@ -59,7 +59,7 @@ module GrapeOAS
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
           opts = exposure.instance_variable_get(:@options) || {}
-          type = doc[:type] || doc["type"] || opts[:using]
+          type = opts[:using] || doc[:type] || doc["type"]
 
           schema = build_exposure_base_schema(type)
           apply_exposure_properties(schema, doc)
@@ -243,7 +243,7 @@ module GrapeOAS
 
         def resolve_entity_from_opts(exposure, doc)
           opts = exposure.instance_variable_get(:@options) || {}
-          type = doc[:type] || doc["type"] || opts[:using]
+          type = opts[:using] || doc[:type] || doc["type"]
           return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
 
           nil

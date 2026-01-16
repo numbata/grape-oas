@@ -52,6 +52,19 @@ module GrapeOAS
         expose :count, documentation: { type: Integer }
       end
 
+      # === Test Entity for using: with type: "object" ===
+      class SettingsEntity < Grape::Entity
+        expose :enabled, documentation: { type: "boolean" }
+        expose :mode, documentation: { type: String }
+      end
+
+      class UsingWithTypeObjectEntity < Grape::Entity
+        expose :name, documentation: { type: String }
+        # This pattern is common: using: specifies the entity class,
+        # but documentation has type: "object" for legacy reasons
+        expose :settings, using: SettingsEntity, documentation: { type: "object", desc: "The settings" }
+      end
+
       # === Basic property and reference tests ===
 
       def test_builds_properties_and_refs
@@ -87,6 +100,26 @@ module GrapeOAS
         assert_includes profile.properties.keys, "bio"
 
         assert_equal "root-ext", schema.extensions["x-entity-root"]
+      end
+
+      def test_using_takes_precedence_over_type_object
+        # When using: specifies an entity class but documentation has type: "object",
+        # the using: class should take precedence so its properties are included
+        schema = Introspectors::EntityIntrospector.new(UsingWithTypeObjectEntity).build_schema
+
+        assert_equal "object", schema.type
+        assert_equal %w[name settings].sort, schema.properties.keys.sort
+
+        settings_schema = schema.properties["settings"]
+
+        assert_equal "object", settings_schema.type
+        # The key assertion: settings should have the SettingsEntity's properties,
+        # not be an empty object due to type: "object" taking precedence
+        assert_equal "GrapeOAS::Introspectors::EntityIntrospectorTest::SettingsEntity", settings_schema.canonical_name
+        assert_includes settings_schema.properties.keys, "enabled"
+        assert_includes settings_schema.properties.keys, "mode"
+        # Description from documentation should still be applied
+        assert_equal "The settings", settings_schema.description
       end
 
       # === Recursive/self-referential entity tests ===
