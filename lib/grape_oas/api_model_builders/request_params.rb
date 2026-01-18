@@ -133,10 +133,8 @@ module GrapeOAS
 
       def build_parameter(name, location, required, schema, spec)
         doc = spec[:documentation] || {}
-        style = doc[:style] || doc["style"]
-        explode = if doc.key?(:explode) || doc.key?("explode")
-                    doc.key?(:explode) ? doc[:explode] : doc["explode"]
-                  end
+        style = doc.fetch(:style) { doc["style"] }
+        explode = doc.fetch(:explode) { doc["explode"] }
 
         ApiModel::Parameter.new(
           location: location,
