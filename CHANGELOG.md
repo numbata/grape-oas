@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#31](https://github.com/numbata/grape-oas/pull/31): Fix: prefer `using:` option over `documentation: { type: "object" }` - [@numbata](https://github.com/numbata).
 - [#22](https://github.com/numbata/grape-oas/pull/22): Handle boolean types in dry introspector - [@slbug](https://github.com/slbug).
 
 ## [1.0.3] - 2025-12-23
