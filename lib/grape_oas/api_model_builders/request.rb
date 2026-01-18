@@ -336,12 +336,13 @@ module GrapeOAS
       def build_query_parameter(name, schema, required, doc = {})
         style = doc.fetch(:style) { doc["style"] }
         explode = doc.fetch(:explode) { doc["explode"] }
+        description = doc[:desc] || doc[:description] || schema.description
         ApiModel::Parameter.new(
           location: "query",
           name: name,
           required: required,
           schema: schema,
-          description: schema.description,
+          description: description,
           style: style,
           explode: explode,
         )
