@@ -9,17 +9,7 @@ module GrapeOAS
         include Base
 
         def applicable?(route)
-          # Check route.options (current behavior)
-          entity_hash = route.options[:entity].is_a?(Hash) ? route.options[:entity] : nil
-          options_applicable = route.options[:http_codes] || route.options[:failure] || route.options[:success] ||
-                               (entity_hash && (entity_hash[:code] || entity_hash[:model] || entity_hash[:entity] || entity_hash[:one_of]))
-
-          # Check route.settings[:description] (desc block behavior)
-          desc_data = route.settings&.dig(:description)
-          settings_applicable = desc_data.is_a?(Hash) &&
-                                (desc_data[:success] || desc_data[:failure] || desc_data[:http_codes] || desc_data[:entity])
-
-          options_applicable || settings_applicable
+          options_applicable?(route) || desc_block?(route)
         end
 
         def parse(route)
@@ -45,11 +35,11 @@ module GrapeOAS
         end
 
         def parse_from_desc(route)
-          desc_data = route.settings&.dig(:description)
-          return [] unless desc_data.is_a?(Hash)
+          data = desc_data(route)
+          return [] unless data
 
-          specs = parse_values(desc_data, route)
-          specs = append_entity_spec(specs, desc_data[:entity], route) if desc_data[:entity]
+          specs = parse_values(data, route)
+          specs = append_entity_spec(specs, data[:entity], route) if data[:entity]
           specs
         end
 
@@ -75,15 +65,24 @@ module GrapeOAS
           [value]
         end
 
+        def desc_data(route)
+          data = route.settings&.dig(:description)
+          data if data.is_a?(Hash)
+        end
+
+        def options_applicable?(route)
+          entity_hash = route.options[:entity].is_a?(Hash) ? route.options[:entity] : nil
+          route.options[:http_codes] || route.options[:failure] || route.options[:success] ||
+            (entity_hash && (entity_hash[:code] || entity_hash[:model] || entity_hash[:entity] || entity_hash[:one_of]))
+        end
+
         def desc_block?(route)
-          desc_data = route.settings&.dig(:description)
-          desc_data.is_a?(Hash) &&
-            (desc_data[:success] || desc_data[:failure] || desc_data[:http_codes] || desc_data[:entity])
+          data = desc_data(route)
+          data && (data[:success] || data[:failure] || data[:http_codes] || data[:entity])
         end
 
         def desc_block_has_explicit_success?(route)
-          desc_data = route.settings&.dig(:description)
-          desc_data.is_a?(Hash) && desc_data[:success]
+          desc_data(route)&.key?(:success)
         end
 
         def append_entity_spec(specs, entity_value, route)
