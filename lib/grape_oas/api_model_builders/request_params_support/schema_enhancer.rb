@@ -61,6 +61,7 @@ module GrapeOAS
           # Applies values from spec[:values] - converts Range to min/max,
           # evaluates Proc (arity 0), and sets enum for arrays.
           # Skips Proc/Lambda validators (arity > 0) used for custom validation.
+          # For array schemas, applies enum to items (since values constrain array elements).
           def apply_values(schema, spec)
             values = spec[:values]
             return unless values
@@ -80,8 +81,18 @@ module GrapeOAS
             if values.is_a?(Range)
               apply_range_values(schema, values)
             elsif values.is_a?(Array) && values.any?
-              schema.enum = values if schema.respond_to?(:enum=)
+              # For array schemas, apply enum to items (values constrain array elements)
+              # For non-array schemas, apply enum directly
+              target_schema = array_schema_with_items?(schema) ? schema.items : schema
+              target_schema.enum = values if target_schema.respond_to?(:enum=)
             end
+          end
+
+          def array_schema_with_items?(schema)
+            schema.respond_to?(:type) &&
+              schema.type == Constants::SchemaTypes::ARRAY &&
+              schema.respond_to?(:items) &&
+              schema.items
           end
 
           # Converts a Range to minimum/maximum constraints.
