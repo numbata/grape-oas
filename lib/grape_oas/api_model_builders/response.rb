@@ -8,7 +8,7 @@ module GrapeOAS
 
       # Default response parsers in priority order
       # DocumentationResponsesParser has highest priority (most comprehensive)
-      # HttpCodesParser handles legacy grape-swagger formats
+      # HttpCodesParser handles legacy grape-swagger formats and desc blocks
       # DefaultResponseParser is the fallback
       DEFAULT_PARSERS = [
         ResponseParsers::DocumentationResponsesParser,
