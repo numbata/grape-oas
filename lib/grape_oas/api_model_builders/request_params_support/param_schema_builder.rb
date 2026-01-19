@@ -55,7 +55,11 @@ module GrapeOAS
         def build_entity_array_schema(spec, raw_type, doc_type)
           entity_type = resolve_entity_class(extract_entity_type_from_array(spec, raw_type, doc_type))
           items = entity_type ? GrapeOAS.introspectors.build_schema(entity_type, stack: [], registry: {}) : nil
-          items ||= ApiModel::Schema.new(type: sanitize_type(extract_entity_type_from_array(spec, raw_type)))
+          fallback_type = extract_entity_type_from_array(spec, raw_type)
+          items ||= ApiModel::Schema.new(
+            type: sanitize_type(fallback_type),
+            format: Constants.format_for_type(fallback_type)
+          )
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items)
         end
 
@@ -76,7 +80,10 @@ module GrapeOAS
           items_schema = if entity
                            GrapeOAS.introspectors.build_schema(entity, stack: [], registry: {})
                          else
-                           ApiModel::Schema.new(type: sanitize_type(items_type))
+                           ApiModel::Schema.new(
+                             type: sanitize_type(items_type),
+                             format: Constants.format_for_type(items_type)
+                           )
                          end
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
         end
@@ -92,14 +99,19 @@ module GrapeOAS
         def build_multi_type_schema(type)
           type_names = extract_multi_types(type)
           schemas = type_names.map do |type_name|
-            ApiModel::Schema.new(type: resolve_schema_type(type_name))
+            ApiModel::Schema.new(
+              type: resolve_schema_type(type_name),
+              format: Constants.format_for_type(type_name)
+            )
           end
           ApiModel::Schema.new(one_of: schemas)
         end
 
         def build_primitive_schema(raw_type, doc)
+          schema_type = sanitize_type(raw_type)
           ApiModel::Schema.new(
-            type: sanitize_type(raw_type),
+            type: schema_type,
+            format: Constants.format_for_type(raw_type),
             description: doc[:desc],
           )
         end
@@ -138,7 +150,10 @@ module GrapeOAS
           items_type = resolve_schema_type(member_type)
           ApiModel::Schema.new(
             type: Constants::SchemaTypes::ARRAY,
-            items: ApiModel::Schema.new(type: items_type),
+            items: ApiModel::Schema.new(
+              type: items_type,
+              format: Constants.format_for_type(member_type)
+            ),
           )
         end
 

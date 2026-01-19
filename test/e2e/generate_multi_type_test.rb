@@ -36,11 +36,11 @@ module GrapeOAS
       value_param = params.find { |p| p["name"] == "value" }
 
       # query param should have oneOf
-      assert_equal({ "oneOf" => [{ "type" => "string" }, { "type" => "integer" }] }, query_param["schema"])
+      assert_equal({ "oneOf" => [{ "type" => "string" }, { "type" => "integer", "format" => "int32" }] }, query_param["schema"])
       assert query_param["required"]
 
       # value param should have oneOf
-      assert_equal({ "oneOf" => [{ "type" => "string" }, { "type" => "number" }] }, value_param["schema"])
+      assert_equal({ "oneOf" => [{ "type" => "string" }, { "type" => "number", "format" => "float" }] }, value_param["schema"])
       refute value_param["required"]
     end
 
@@ -51,7 +51,7 @@ module GrapeOAS
 
       query_param = params.find { |p| p["name"] == "query" }
 
-      assert_equal({ "oneOf" => [{ "type" => "string" }, { "type" => "integer" }] }, query_param["schema"])
+      assert_equal({ "oneOf" => [{ "type" => "string" }, { "type" => "integer", "format" => "int32" }] }, query_param["schema"])
     end
 
     def test_oas2_uses_first_type_fallback
@@ -75,7 +75,7 @@ module GrapeOAS
       id_param = params.find { |p| p["name"] == "id" }
 
       assert_equal "path", id_param["in"]
-      assert_equal({ "oneOf" => [{ "type" => "string" }, { "type" => "integer" }] }, id_param["schema"])
+      assert_equal({ "oneOf" => [{ "type" => "string" }, { "type" => "integer", "format" => "int32" }] }, id_param["schema"])
     end
 
     # === Three types ===
@@ -97,8 +97,8 @@ module GrapeOAS
 
       expected_one_of = [
         { "type" => "string" },
-        { "type" => "integer" },
-        { "type" => "number" }
+        { "type" => "integer", "format" => "int32" },
+        { "type" => "number", "format" => "float" }
       ]
 
       assert_equal({ "oneOf" => expected_one_of }, mixed_param["schema"])

@@ -253,7 +253,10 @@ module GrapeOAS
           schema_type = Constants.primitive_type(type)
           return nil unless schema_type
 
-          ApiModel::Schema.new(type: schema_type)
+          ApiModel::Schema.new(
+            type: schema_type,
+            format: Constants.format_for_type(type)
+          )
         end
       end
     end
