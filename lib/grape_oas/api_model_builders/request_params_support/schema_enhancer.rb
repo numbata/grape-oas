@@ -14,7 +14,8 @@ module GrapeOAS
           nullable = extract_nullable(spec, doc)
 
           schema.description ||= doc[:desc]
-          schema.nullable = nullable if schema.respond_to?(:nullable=)
+          # Preserve existing nullable: true (e.g., from [Type, Nil] optimization)
+          schema.nullable = (schema.nullable || nullable) if schema.respond_to?(:nullable=)
 
           apply_additional_properties(schema, doc)
           apply_format_and_example(schema, doc)
@@ -98,9 +99,9 @@ module GrapeOAS
             elsif array_schema_with_items?(schema)
               # For array schemas, apply enum to items (values constrain array elements)
               schema.items.enum = values if schema.items.respond_to?(:enum=)
-            else
+            elsif schema.respond_to?(:enum=)
               # For regular schemas, apply enum directly
-              schema.enum = values if schema.respond_to?(:enum=)
+              schema.enum = values
             end
           end
 

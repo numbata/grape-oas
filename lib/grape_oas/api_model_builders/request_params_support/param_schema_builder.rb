@@ -95,9 +95,22 @@ module GrapeOAS
           )
         end
 
-        # Builds oneOf schema for Grape's multi-type notation like "[String, Integer]"
+        # Builds schema for Grape's multi-type notation like "[String, Integer]"
+        # Special case: "[Type, NilClass]" becomes a nullable Type (not oneOf)
         def build_multi_type_schema(type)
           type_names = extract_multi_types(type)
+
+          # OPTIMIZE: [Type, Nil] becomes nullable Type instead of oneOf
+          if nullable_type_pair?(type_names)
+            non_nil_type = type_names.find { |t| !nil_type_name?(t) }
+            return ApiModel::Schema.new(
+              type: resolve_schema_type(non_nil_type),
+              format: Constants.format_for_type(non_nil_type),
+              nullable: true,
+            )
+          end
+
+          # General case: build oneOf schema
           schemas = type_names.map do |type_name|
             ApiModel::Schema.new(
               type: resolve_schema_type(type_name),
@@ -105,6 +118,23 @@ module GrapeOAS
             )
           end
           ApiModel::Schema.new(one_of: schemas)
+        end
+
+        # Checks if type_names is a pair of [SomeType, NilType]
+        def nullable_type_pair?(type_names)
+          return false unless type_names.size == 2
+
+          type_names.one? { |t| nil_type_name?(t) }
+        end
+
+        # Checks if the type name represents a nil/null type
+        def nil_type_name?(type_name)
+          normalized = type_name.to_s
+          # Match common nil type patterns
+          normalized == "NilClass" ||
+            normalized == "Nil" ||
+            normalized.end_with?("::Nil") ||
+            normalized.include?("Types::Nil")
         end
 
         def build_primitive_schema(raw_type, doc)

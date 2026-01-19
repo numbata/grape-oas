@@ -279,14 +279,10 @@ module GrapeOAS
       # === Multi-type (oneOf) with enum ===
 
       def test_multi_type_with_enum_values
-        # This is a special Grape type that represents null
-        null_type = Class.new
-        Object.const_set(:TestNilType, null_type) unless defined?(TestNilType)
-
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            # Use types: [String, NilClass] - Grape will convert to "[String, NilClass]" string
+            # Use types: [String, NilClass] - optimized to nullable string (not oneOf)
             optional :status, types: [String, NilClass], values: %w[visible hidden]
           end
           get "items" do
@@ -301,18 +297,42 @@ module GrapeOAS
         status_param = params.find { |p| p.name == "status" }
 
         refute_nil status_param
-        # Should be a oneOf schema
-        refute_nil status_param.schema.one_of
-        assert_equal 2, status_param.schema.one_of.size
+        # [String, NilClass] is optimized to nullable string (not oneOf)
+        assert_equal Constants::SchemaTypes::STRING, status_param.schema.type
+        assert status_param.schema.nullable
 
-        # Find the string variant (not nil/null)
-        string_variant = status_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
-        refute_nil string_variant
-
-        # The string variant should have the enum values
-        assert_equal %w[visible hidden], string_variant.enum
+        # The enum should be applied directly to the schema
+        assert_equal %w[visible hidden], status_param.schema.enum
       end
 
+      def test_multi_type_three_types_still_uses_one_of
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            # Three types can't be simplified to nullable, so uses oneOf
+            optional :value, types: [String, Integer, NilClass], values: %w[a b c]
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        value_param = params.find { |p| p.name == "value" }
+
+        refute_nil value_param
+        # Three types still uses oneOf
+        refute_nil value_param.schema.one_of
+        assert_equal 3, value_param.schema.one_of.size
+
+        # Non-null variants should have the enum
+        string_variant = value_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
+
+        assert_equal %w[a b c], string_variant.enum
+      end
     end
   end
 end
