@@ -41,7 +41,7 @@ module GrapeOAS
           return Constants::SchemaTypes::ARRAY if type_str.match?(TYPED_ARRAY_PATTERN)
 
           # Handle string/symbol type names
-          Constants::PRIMITIVE_TYPE_MAPPING.fetch(type_str.downcase, Constants::SchemaTypes::STRING)
+          Constants.primitive_type(type_str) || Constants::SchemaTypes::STRING
         end
 
         # Checks if type is Grape's Boolean class (handles dynamic loading)
@@ -102,7 +102,10 @@ module GrapeOAS
           elsif primitive == Hash
             ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           else
-            ApiModel::Schema.new(type: resolve_schema_type(primitive))
+            ApiModel::Schema.new(
+              type: resolve_schema_type(primitive),
+              format: Constants.format_for_type(primitive),
+            )
           end
         end
 

@@ -57,34 +57,47 @@ module GrapeOAS
       File => SchemaTypes::FILE
     }.freeze
 
-    # String type name to schema type mapping (lowercase).
+    # String type name to schema type and format mapping (lowercase).
     # Supports lookup with any case via primitive_type helper.
-    # Note: float and bigdecimal both map to NUMBER as they represent
-    # the same OpenAPI numeric type.
+    # Each entry contains :type and optional :format for OpenAPI schema generation.
+    #
+    # @see https://swagger.io/specification/#data-types
+    # @see https://spec.openapis.org/registry/format/
     PRIMITIVE_TYPE_MAPPING = {
-      "float" => SchemaTypes::NUMBER,
-      "bigdecimal" => SchemaTypes::NUMBER,
-      "string" => SchemaTypes::STRING,
-      "integer" => SchemaTypes::INTEGER,
-      "number" => SchemaTypes::NUMBER,
-      "boolean" => SchemaTypes::BOOLEAN,
-      "grape::api::boolean" => SchemaTypes::BOOLEAN,
-      "trueclass" => SchemaTypes::BOOLEAN,
-      "falseclass" => SchemaTypes::BOOLEAN,
-      "array" => SchemaTypes::ARRAY,
-      "hash" => SchemaTypes::OBJECT,
-      "object" => SchemaTypes::OBJECT,
-      "file" => SchemaTypes::FILE,
-      "rack::multipart::uploadedfile" => SchemaTypes::FILE
+      "float" => { type: SchemaTypes::NUMBER, format: "float" },
+      "bigdecimal" => { type: SchemaTypes::NUMBER, format: "double" },
+      "string" => { type: SchemaTypes::STRING },
+      "integer" => { type: SchemaTypes::INTEGER, format: "int32" },
+      "number" => { type: SchemaTypes::NUMBER, format: "double" },
+      "boolean" => { type: SchemaTypes::BOOLEAN },
+      "grape::api::boolean" => { type: SchemaTypes::BOOLEAN },
+      "trueclass" => { type: SchemaTypes::BOOLEAN },
+      "falseclass" => { type: SchemaTypes::BOOLEAN },
+      "array" => { type: SchemaTypes::ARRAY },
+      "hash" => { type: SchemaTypes::OBJECT },
+      "object" => { type: SchemaTypes::OBJECT },
+      "file" => { type: SchemaTypes::FILE },
+      "rack::multipart::uploadedfile" => { type: SchemaTypes::FILE }
     }.freeze
 
     # Resolves a primitive type name to its OpenAPI schema type.
     # Normalizes the key to lowercase for consistent lookup.
     #
-    # @param key [String, Symbol] The type name to resolve
+    # @param key [String, Symbol, Class] The type name to resolve
     # @return [String, nil] The OpenAPI schema type or nil if not found
     def self.primitive_type(key)
-      PRIMITIVE_TYPE_MAPPING[key.to_s.downcase]
+      entry = PRIMITIVE_TYPE_MAPPING[key.to_s.downcase]
+      entry&.fetch(:type, nil)
+    end
+
+    # Resolves the default format for a given type.
+    # Returns nil if no specific format applies (e.g., for strings, booleans).
+    #
+    # @param key [String, Symbol, Class] The type name to resolve format for
+    # @return [String, nil] The OpenAPI format or nil if not applicable
+    def self.format_for_type(key)
+      entry = PRIMITIVE_TYPE_MAPPING[key.to_s.downcase]
+      entry&.fetch(:format, nil)
     end
   end
 end
