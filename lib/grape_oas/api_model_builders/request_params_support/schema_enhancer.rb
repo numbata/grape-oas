@@ -14,7 +14,8 @@ module GrapeOAS
           nullable = extract_nullable(spec, doc)
 
           schema.description ||= doc[:desc]
-          schema.nullable = nullable if schema.respond_to?(:nullable=)
+          # Preserve existing nullable: true (e.g., from [Type, Nil] optimization)
+          schema.nullable = (schema.nullable || nullable) if schema.respond_to?(:nullable=)
 
           apply_additional_properties(schema, doc)
           apply_format_and_example(schema, doc)
