@@ -62,6 +62,7 @@ module GrapeOAS
           # evaluates Proc (arity 0), and sets enum for arrays.
           # Skips Proc/Lambda validators (arity > 0) used for custom validation.
           # For array schemas, applies enum to items (since values constrain array elements).
+          # For oneOf schemas, applies enum to each non-null variant.
           def apply_values(schema, spec)
             values = spec[:values]
             return unless values
@@ -81,11 +82,36 @@ module GrapeOAS
             if values.is_a?(Range)
               apply_range_values(schema, values)
             elsif values.is_a?(Array) && values.any?
-              # For array schemas, apply enum to items (values constrain array elements)
-              # For non-array schemas, apply enum directly
-              target_schema = array_schema_with_items?(schema) ? schema.items : schema
-              target_schema.enum = values if target_schema.respond_to?(:enum=)
+              apply_enum_values(schema, values)
             end
+          end
+
+          def apply_enum_values(schema, values)
+            # For oneOf schemas, apply enum to each variant that supports enum
+            if one_of_schema?(schema)
+              schema.one_of.each do |variant|
+                # Skip null types - they don't have enums
+                next if null_type_schema?(variant)
+
+                variant.enum = values if variant.respond_to?(:enum=)
+              end
+            elsif array_schema_with_items?(schema)
+              # For array schemas, apply enum to items (values constrain array elements)
+              schema.items.enum = values if schema.items.respond_to?(:enum=)
+            else
+              # For regular schemas, apply enum directly
+              schema.enum = values if schema.respond_to?(:enum=)
+            end
+          end
+
+          def one_of_schema?(schema)
+            schema.respond_to?(:one_of) && schema.one_of.is_a?(Array) && schema.one_of.any?
+          end
+
+          def null_type_schema?(schema)
+            return false unless schema.respond_to?(:type)
+
+            schema.type.nil? || schema.type == "null"
           end
 
           def array_schema_with_items?(schema)

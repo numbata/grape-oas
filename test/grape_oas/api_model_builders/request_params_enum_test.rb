@@ -275,6 +275,44 @@ module GrapeOAS
         assert_includes filter.properties.keys, "status"
         assert_includes filter.properties.keys, "sort"
       end
+
+      # === Multi-type (oneOf) with enum ===
+
+      def test_multi_type_with_enum_values
+        # This is a special Grape type that represents null
+        null_type = Class.new
+        Object.const_set(:TestNilType, null_type) unless defined?(TestNilType)
+
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            # Use types: [String, NilClass] - Grape will convert to "[String, NilClass]" string
+            optional :status, types: [String, NilClass], values: %w[visible hidden]
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        status_param = params.find { |p| p.name == "status" }
+
+        refute_nil status_param
+        # Should be a oneOf schema
+        refute_nil status_param.schema.one_of
+        assert_equal 2, status_param.schema.one_of.size
+
+        # Find the string variant (not nil/null)
+        string_variant = status_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
+        refute_nil string_variant
+
+        # The string variant should have the enum values
+        assert_equal %w[visible hidden], string_variant.enum
+      end
+
     end
   end
 end
