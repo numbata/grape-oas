@@ -99,9 +99,9 @@ module GrapeOAS
             elsif array_schema_with_items?(schema)
               # For array schemas, apply enum to items (values constrain array elements)
               schema.items.enum = values if schema.items.respond_to?(:enum=)
-            else
+            elsif schema.respond_to?(:enum=)
               # For regular schemas, apply enum directly
-              schema.enum = values if schema.respond_to?(:enum=)
+              schema.enum = values
             end
           end
 

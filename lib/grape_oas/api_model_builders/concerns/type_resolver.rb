@@ -104,7 +104,7 @@ module GrapeOAS
           else
             ApiModel::Schema.new(
               type: resolve_schema_type(primitive),
-              format: Constants.format_for_type(primitive)
+              format: Constants.format_for_type(primitive),
             )
           end
         end

@@ -255,7 +255,7 @@ module GrapeOAS
 
           ApiModel::Schema.new(
             type: schema_type,
-            format: Constants.format_for_type(type)
+            format: Constants.format_for_type(type),
           )
         end
       end

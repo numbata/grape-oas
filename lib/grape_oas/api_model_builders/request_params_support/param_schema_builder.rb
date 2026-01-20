@@ -58,7 +58,7 @@ module GrapeOAS
           fallback_type = extract_entity_type_from_array(spec, raw_type)
           items ||= ApiModel::Schema.new(
             type: sanitize_type(fallback_type),
-            format: Constants.format_for_type(fallback_type)
+            format: Constants.format_for_type(fallback_type),
           )
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items)
         end
@@ -82,7 +82,7 @@ module GrapeOAS
                          else
                            ApiModel::Schema.new(
                              type: sanitize_type(items_type),
-                             format: Constants.format_for_type(items_type)
+                             format: Constants.format_for_type(items_type),
                            )
                          end
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
@@ -100,13 +100,13 @@ module GrapeOAS
         def build_multi_type_schema(type)
           type_names = extract_multi_types(type)
 
-          # Optimize: [Type, Nil] becomes nullable Type instead of oneOf
+          # OPTIMIZE: [Type, Nil] becomes nullable Type instead of oneOf
           if nullable_type_pair?(type_names)
             non_nil_type = type_names.find { |t| !nil_type_name?(t) }
             return ApiModel::Schema.new(
               type: resolve_schema_type(non_nil_type),
               format: Constants.format_for_type(non_nil_type),
-              nullable: true
+              nullable: true,
             )
           end
 
@@ -114,7 +114,7 @@ module GrapeOAS
           schemas = type_names.map do |type_name|
             ApiModel::Schema.new(
               type: resolve_schema_type(type_name),
-              format: Constants.format_for_type(type_name)
+              format: Constants.format_for_type(type_name),
             )
           end
           ApiModel::Schema.new(one_of: schemas)
@@ -124,7 +124,7 @@ module GrapeOAS
         def nullable_type_pair?(type_names)
           return false unless type_names.size == 2
 
-          type_names.count { |t| nil_type_name?(t) } == 1
+          type_names.one? { |t| nil_type_name?(t) }
         end
 
         # Checks if the type name represents a nil/null type
@@ -182,7 +182,7 @@ module GrapeOAS
             type: Constants::SchemaTypes::ARRAY,
             items: ApiModel::Schema.new(
               type: items_type,
-              format: Constants.format_for_type(member_type)
+              format: Constants.format_for_type(member_type),
             ),
           )
         end

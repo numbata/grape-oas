@@ -330,9 +330,9 @@ module GrapeOAS
 
         # Non-null variants should have the enum
         string_variant = value_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
+
         assert_equal %w[a b c], string_variant.enum
       end
-
     end
   end
 end
