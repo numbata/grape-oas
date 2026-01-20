@@ -987,6 +987,77 @@ module GrapeOAS
         assert_equal [true], child_schema.properties["confirmed"].enum
       end
 
+      # Tests for numeric Range handling in included_in? predicate
+      def test_included_in_numeric_range_produces_min_max
+        contract = Dry::Schema.Params do
+          required(:score).filled(:integer, included_in?: (-10..10))
+        end
+
+        schema = processor.build(contract)
+        score_schema = schema.properties["score"]
+
+        assert_equal "integer", score_schema.type
+        assert_equal(-10, score_schema.minimum)
+        assert_equal 10, score_schema.maximum
+        assert_nil score_schema.enum
+      end
+
+      def test_included_in_endless_range_produces_only_minimum
+        contract = Dry::Schema.Params do
+          required(:age).filled(:integer, included_in?: (18..))
+        end
+
+        schema = processor.build(contract)
+        age_schema = schema.properties["age"]
+
+        assert_equal "integer", age_schema.type
+        assert_equal 18, age_schema.minimum
+        assert_nil age_schema.maximum
+        assert_nil age_schema.enum
+      end
+
+      def test_included_in_beginless_range_produces_only_maximum
+        contract = Dry::Schema.Params do
+          required(:discount).filled(:integer, included_in?: (..100))
+        end
+
+        schema = processor.build(contract)
+        discount_schema = schema.properties["discount"]
+
+        assert_equal "integer", discount_schema.type
+        assert_nil discount_schema.minimum
+        assert_equal 100, discount_schema.maximum
+        assert_nil discount_schema.enum
+      end
+
+      def test_included_in_exclusive_range_sets_exclusive_maximum
+        contract = Dry::Schema.Params do
+          required(:index).filled(:integer, included_in?: (0...10))
+        end
+
+        schema = processor.build(contract)
+        index_schema = schema.properties["index"]
+
+        assert_equal "integer", index_schema.type
+        assert_equal 0, index_schema.minimum
+        assert_equal 10, index_schema.maximum
+        assert index_schema.exclusive_maximum
+      end
+
+      def test_included_in_string_range_produces_enum
+        contract = Dry::Schema.Params do
+          required(:grade).filled(:string, included_in?: ("A".."F"))
+        end
+
+        schema = processor.build(contract)
+        grade_schema = schema.properties["grade"]
+
+        assert_equal "string", grade_schema.type
+        assert_equal %w[A B C D E F], grade_schema.enum
+        assert_nil grade_schema.minimum
+        assert_nil grade_schema.maximum
+      end
+
       private
 
       def constraint_set_class
