@@ -112,16 +112,21 @@ module GrapeOAS
 
       # Extract contract from Grape's native contract() DSL storage location.
       # When using `contract MyContract` in Grape DSL, the contract is stored in
-      # route.app.inheritable_setting.namespace_stackable[:validations] as validator options.
+      # route.app.inheritable_setting.route[:saved_validations] as validator options.
+      # This is a point-in-time copy specific to this endpoint, ensuring each route
+      # gets only its own contract even when multiple routes define different contracts.
       #
       # @return [Object, nil] The contract instance or nil if not found
       def extract_contract_from_grape_validations
         return unless route.respond_to?(:app) && route.app.respond_to?(:inheritable_setting)
 
         setting = route.app.inheritable_setting
-        return unless setting.respond_to?(:namespace_stackable)
+        return unless setting.respond_to?(:route)
 
-        validations = setting.namespace_stackable[:validations]
+        # Use route[:saved_validations] which contains only the validations
+        # for this specific endpoint (point-in-time copy), not the shared
+        # namespace_stackable[:validations] which contains all validators for the API class
+        validations = setting.route[:saved_validations]
         return unless validations.is_a?(Array)
 
         # Find ContractScopeValidator which holds the Dry contract/schema

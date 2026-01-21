@@ -137,6 +137,79 @@ module GrapeOAS
         refute tags.nullable
         refute_includes operation.request_body.media_types.first.schema.required, "tags"
       end
+
+      # === Multiple routes with different contracts ===
+
+      def test_multiple_routes_with_different_contracts_use_correct_schemas
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract Dry::Schema.Params do
+            required(:user_name).filled(:string)
+            required(:email).filled(:string)
+          end
+
+          post "/users" do
+            {}
+          end
+
+          contract Dry::Schema.Params do
+            required(:product_id).filled(:integer)
+            required(:quantity).filled(:integer)
+          end
+
+          post "/orders" do
+            {}
+          end
+
+          contract Dry::Schema.Params do
+            required(:title).filled(:string)
+            optional(:body).maybe(:string)
+          end
+
+          post "/articles" do
+            {}
+          end
+        end
+
+        routes = api_class.routes
+
+        # Find routes by path
+        users_route = routes.find { |r| r.path == "/users(.json)" }
+        orders_route = routes.find { |r| r.path == "/orders(.json)" }
+        articles_route = routes.find { |r| r.path == "/articles(.json)" }
+
+        # Build operations for each route
+        users_op = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+        Request.new(api: api, route: users_route, operation: users_op).build
+
+        orders_op = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+        Request.new(api: api, route: orders_route, operation: orders_op).build
+
+        articles_op = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+        Request.new(api: api, route: articles_route, operation: articles_op).build
+
+        # Verify /users route has user_name and email fields
+        users_schema = users_op.request_body.media_types.first.schema
+        assert users_schema.properties.key?("user_name"), "users route should have user_name"
+        assert users_schema.properties.key?("email"), "users route should have email"
+        refute users_schema.properties.key?("product_id"), "users route should NOT have product_id"
+        refute users_schema.properties.key?("title"), "users route should NOT have title"
+
+        # Verify /orders route has product_id and quantity fields
+        orders_schema = orders_op.request_body.media_types.first.schema
+        assert orders_schema.properties.key?("product_id"), "orders route should have product_id"
+        assert orders_schema.properties.key?("quantity"), "orders route should have quantity"
+        refute orders_schema.properties.key?("user_name"), "orders route should NOT have user_name"
+        refute orders_schema.properties.key?("title"), "orders route should NOT have title"
+
+        # Verify /articles route has title and body fields
+        articles_schema = articles_op.request_body.media_types.first.schema
+        assert articles_schema.properties.key?("title"), "articles route should have title"
+        assert articles_schema.properties.key?("body"), "articles route should have body"
+        refute articles_schema.properties.key?("user_name"), "articles route should NOT have user_name"
+        refute articles_schema.properties.key?("product_id"), "articles route should NOT have product_id"
+      end
     end
   end
 end
