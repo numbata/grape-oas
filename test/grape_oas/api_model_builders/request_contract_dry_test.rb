@@ -191,6 +191,7 @@ module GrapeOAS
 
         # Verify /users route has user_name and email fields
         users_schema = users_op.request_body.media_types.first.schema
+
         assert users_schema.properties.key?("user_name"), "users route should have user_name"
         assert users_schema.properties.key?("email"), "users route should have email"
         refute users_schema.properties.key?("product_id"), "users route should NOT have product_id"
@@ -198,6 +199,7 @@ module GrapeOAS
 
         # Verify /orders route has product_id and quantity fields
         orders_schema = orders_op.request_body.media_types.first.schema
+
         assert orders_schema.properties.key?("product_id"), "orders route should have product_id"
         assert orders_schema.properties.key?("quantity"), "orders route should have quantity"
         refute orders_schema.properties.key?("user_name"), "orders route should NOT have user_name"
@@ -205,6 +207,7 @@ module GrapeOAS
 
         # Verify /articles route has title and body fields
         articles_schema = articles_op.request_body.media_types.first.schema
+
         assert articles_schema.properties.key?("title"), "articles route should have title"
         assert articles_schema.properties.key?("body"), "articles route should have body"
         refute articles_schema.properties.key?("user_name"), "articles route should NOT have user_name"

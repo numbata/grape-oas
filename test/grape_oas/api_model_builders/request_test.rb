@@ -466,7 +466,7 @@ module GrapeOAS
         route_with_settings = Struct.new(:options, :path, :settings).new(
           { params: {} },
           "/items",
-          { contract: contract }
+          { contract: contract },
         )
 
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
@@ -487,7 +487,7 @@ module GrapeOAS
         route = Struct.new(:options, :path, :settings).new(
           { schema: contract, params: {} },
           "/items",
-          {}
+          {},
         )
 
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
