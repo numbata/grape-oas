@@ -98,9 +98,7 @@ module GrapeOAS
                 compatible_values = filter_compatible_values(variant, values)
 
                 # Only apply enum if there are compatible values
-                if compatible_values.any? && variant.respond_to?(:enum=)
-                  variant.enum = compatible_values
-                end
+                variant.enum = compatible_values if compatible_values.any? && variant.respond_to?(:enum=)
               end
             elsif array_schema_with_items?(schema)
               # For array schemas, apply enum to items (values constrain array elements)

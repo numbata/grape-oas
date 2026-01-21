@@ -381,7 +381,7 @@ module GrapeOAS
 
         result = enhancer.send(:filter_compatible_values, integer_schema, string_values)
 
-        assert_equal [], result
+        assert_empty result
       end
     end
   end
