@@ -275,6 +275,114 @@ module GrapeOAS
         assert_includes filter.properties.keys, "status"
         assert_includes filter.properties.keys, "sort"
       end
+
+      # === Multi-type (oneOf) with enum ===
+
+      def test_multi_type_with_enum_values
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            # Use types: [String, NilClass] - optimized to nullable string (not oneOf)
+            optional :status, types: [String, NilClass], values: %w[visible hidden]
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        status_param = params.find { |p| p.name == "status" }
+
+        refute_nil status_param
+        # [String, NilClass] is optimized to nullable string (not oneOf)
+        assert_equal Constants::SchemaTypes::STRING, status_param.schema.type
+        assert status_param.schema.nullable
+
+        # The enum should be applied directly to the schema
+        assert_equal %w[visible hidden], status_param.schema.enum
+      end
+
+      def test_multi_type_three_types_still_uses_one_of
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            # Three types: NilClass is filtered out and represented via nullable
+            optional :value, types: [String, Integer, NilClass], values: %w[a b c]
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        value_param = params.find { |p| p.name == "value" }
+
+        refute_nil value_param
+        # NilClass is filtered out, represented via nullable property
+        refute_nil value_param.schema.one_of
+        assert_equal 2, value_param.schema.one_of.size
+        assert value_param.schema.nullable
+
+        # String variant should have the string enum
+        string_variant = value_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
+
+        assert_equal %w[a b c], string_variant.enum
+
+        # Integer variant should NOT have string enum (type incompatible)
+        integer_variant = value_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
+
+        assert_nil integer_variant.enum
+      end
+
+      # === Mixed-type enum values (unit tests for filter_compatible_values) ===
+
+      def test_filter_compatible_values_splits_mixed_enum
+        # Unit test for SchemaEnhancer.filter_compatible_values
+        # Grape DSL doesn't allow mixed-type enums, but we test the filter logic directly
+        enhancer = RequestParamsSupport::SchemaEnhancer
+
+        string_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+        integer_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+        mixed_values = ["a", "b", 1, 2]
+
+        # String schema should filter to only strings
+        string_result = enhancer.send(:filter_compatible_values, string_schema, mixed_values)
+
+        assert_equal %w[a b], string_result
+
+        # Integer schema should filter to only integers
+        integer_result = enhancer.send(:filter_compatible_values, integer_schema, mixed_values)
+
+        assert_equal [1, 2], integer_result
+      end
+
+      def test_filter_compatible_values_returns_all_for_homogeneous_enum
+        enhancer = RequestParamsSupport::SchemaEnhancer
+
+        string_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+        string_values = %w[a b c]
+
+        result = enhancer.send(:filter_compatible_values, string_schema, string_values)
+
+        assert_equal %w[a b c], result
+      end
+
+      def test_filter_compatible_values_returns_empty_for_incompatible_enum
+        enhancer = RequestParamsSupport::SchemaEnhancer
+
+        integer_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+        string_values = %w[a b c]
+
+        result = enhancer.send(:filter_compatible_values, integer_schema, string_values)
+
+        assert_empty result
+      end
     end
   end
 end

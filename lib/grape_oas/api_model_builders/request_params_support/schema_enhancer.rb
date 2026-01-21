@@ -14,7 +14,8 @@ module GrapeOAS
           nullable = extract_nullable(spec, doc)
 
           schema.description ||= doc[:desc]
-          schema.nullable = nullable if schema.respond_to?(:nullable=)
+          # Preserve existing nullable: true (e.g., from [Type, Nil] optimization)
+          schema.nullable = (schema.nullable || nullable) if schema.respond_to?(:nullable=)
 
           apply_additional_properties(schema, doc)
           apply_format_and_example(schema, doc)
@@ -61,6 +62,8 @@ module GrapeOAS
           # Applies values from spec[:values] - converts Range to min/max,
           # evaluates Proc (arity 0), and sets enum for arrays.
           # Skips Proc/Lambda validators (arity > 0) used for custom validation.
+          # For array schemas, applies enum to items (since values constrain array elements).
+          # For oneOf schemas, applies enum to each non-null variant.
           def apply_values(schema, spec)
             values = spec[:values]
             return unless values
@@ -80,7 +83,79 @@ module GrapeOAS
             if values.is_a?(Range)
               apply_range_values(schema, values)
             elsif values.is_a?(Array) && values.any?
-              schema.enum = values if schema.respond_to?(:enum=)
+              apply_enum_values(schema, values)
+            end
+          end
+
+          def apply_enum_values(schema, values)
+            # For oneOf schemas, apply enum to each variant that supports enum
+            if one_of_schema?(schema)
+              schema.one_of.each do |variant|
+                # Skip null types - they don't have enums
+                next if null_type_schema?(variant)
+
+                # Filter values to those compatible with this variant's type
+                compatible_values = filter_compatible_values(variant, values)
+
+                # Only apply enum if there are compatible values
+                variant.enum = compatible_values if compatible_values.any? && variant.respond_to?(:enum=)
+              end
+            elsif array_schema_with_items?(schema)
+              # For array schemas, apply enum to items (values constrain array elements)
+              schema.items.enum = values if schema.items.respond_to?(:enum=)
+            elsif schema.respond_to?(:enum=)
+              # For regular schemas, apply enum directly
+              schema.enum = values
+            end
+          end
+
+          def one_of_schema?(schema)
+            schema.respond_to?(:one_of) && schema.one_of.is_a?(Array) && schema.one_of.any?
+          end
+
+          def null_type_schema?(schema)
+            return false unless schema.respond_to?(:type)
+
+            schema.type.nil? || schema.type == "null"
+          end
+
+          def array_schema_with_items?(schema)
+            schema.respond_to?(:type) &&
+              schema.type == Constants::SchemaTypes::ARRAY &&
+              schema.respond_to?(:items) &&
+              schema.items
+          end
+
+          # Filters enum values to those compatible with the schema variant's type.
+          # For mixed-type enums like ["a", 1], returns only values matching the variant type.
+          def filter_compatible_values(schema, values)
+            return values unless schema.respond_to?(:type) && schema.type
+            return [] if values.nil? || values.empty?
+
+            case schema.type
+            when Constants::SchemaTypes::STRING,
+                 Constants::SchemaTypes::INTEGER,
+                 Constants::SchemaTypes::NUMBER,
+                 Constants::SchemaTypes::BOOLEAN
+              values.select { |value| enum_value_compatible_with_type?(schema.type, value) }
+            else
+              values # Return all values for unknown types
+            end
+          end
+
+          # Checks if a single enum value is compatible with the given schema type.
+          def enum_value_compatible_with_type?(schema_type, value)
+            case schema_type
+            when Constants::SchemaTypes::STRING
+              value.is_a?(String) || value.is_a?(Symbol)
+            when Constants::SchemaTypes::INTEGER
+              value.is_a?(Integer)
+            when Constants::SchemaTypes::NUMBER
+              value.is_a?(Numeric)
+            when Constants::SchemaTypes::BOOLEAN
+              [true, false].include?(value)
+            else
+              true
             end
           end
 

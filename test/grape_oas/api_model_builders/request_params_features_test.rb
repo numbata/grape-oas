@@ -120,6 +120,92 @@ module GrapeOAS
         assert_equal "int32", small_int_param.schema.format
       end
 
+      # === Automatic format hints for numeric types ===
+
+      def test_integer_gets_int32_format_automatically
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :count, type: Integer, desc: "Count value"
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        count_param = params.find { |p| p.name == "count" }
+
+        assert_equal "integer", count_param.schema.type
+        assert_equal "int32", count_param.schema.format
+      end
+
+      def test_float_gets_float_format_automatically
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :price, type: Float, desc: "Price value"
+          end
+          get "products" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        price_param = params.find { |p| p.name == "price" }
+
+        assert_equal "number", price_param.schema.type
+        assert_equal "float", price_param.schema.format
+      end
+
+      def test_bigdecimal_gets_double_format_automatically
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :amount, type: BigDecimal, desc: "Precise amount"
+          end
+          get "transactions" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        amount_param = params.find { |p| p.name == "amount" }
+
+        assert_equal "number", amount_param.schema.type
+        assert_equal "double", amount_param.schema.format
+      end
+
+      def test_string_has_no_format_by_default
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :name, type: String, desc: "Name value"
+          end
+          get "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        name_param = params.find { |p| p.name == "name" }
+
+        assert_equal "string", name_param.schema.type
+        assert_nil name_param.schema.format
+      end
+
       # === Parameter examples (grape-swagger params_example_spec.rb) ===
 
       def test_parameter_with_example_value

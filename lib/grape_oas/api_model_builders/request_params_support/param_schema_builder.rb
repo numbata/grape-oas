@@ -55,7 +55,11 @@ module GrapeOAS
         def build_entity_array_schema(spec, raw_type, doc_type)
           entity_type = resolve_entity_class(extract_entity_type_from_array(spec, raw_type, doc_type))
           items = entity_type ? GrapeOAS.introspectors.build_schema(entity_type, stack: [], registry: {}) : nil
-          items ||= ApiModel::Schema.new(type: sanitize_type(extract_entity_type_from_array(spec, raw_type)))
+          fallback_type = extract_entity_type_from_array(spec, raw_type)
+          items ||= ApiModel::Schema.new(
+            type: sanitize_type(fallback_type),
+            format: Constants.format_for_type(fallback_type),
+          )
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items)
         end
 
@@ -76,7 +80,10 @@ module GrapeOAS
           items_schema = if entity
                            GrapeOAS.introspectors.build_schema(entity, stack: [], registry: {})
                          else
-                           ApiModel::Schema.new(type: sanitize_type(items_type))
+                           ApiModel::Schema.new(
+                             type: sanitize_type(items_type),
+                             format: Constants.format_for_type(items_type),
+                           )
                          end
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
         end
@@ -88,18 +95,59 @@ module GrapeOAS
           )
         end
 
-        # Builds oneOf schema for Grape's multi-type notation like "[String, Integer]"
+        # Builds schema for Grape's multi-type notation like "[String, Integer]"
+        # Special case: "[Type, NilClass]" becomes a nullable Type (not oneOf)
         def build_multi_type_schema(type)
           type_names = extract_multi_types(type)
-          schemas = type_names.map do |type_name|
-            ApiModel::Schema.new(type: resolve_schema_type(type_name))
+
+          # OPTIMIZE: [Type, Nil] becomes nullable Type instead of oneOf
+          if nullable_type_pair?(type_names)
+            non_nil_type = type_names.find { |t| !nil_type_name?(t) }
+            return ApiModel::Schema.new(
+              type: resolve_schema_type(non_nil_type),
+              format: Constants.format_for_type(non_nil_type),
+              nullable: true,
+            )
           end
-          ApiModel::Schema.new(one_of: schemas)
+
+          # General case: build oneOf schema
+          # Filter out nil types - OpenAPI 3.0 uses nullable property instead
+          has_nil_type = type_names.any? { |t| nil_type_name?(t) }
+          non_nil_types = type_names.reject { |t| nil_type_name?(t) }
+
+          schemas = non_nil_types.map do |type_name|
+            ApiModel::Schema.new(
+              type: resolve_schema_type(type_name),
+              format: Constants.format_for_type(type_name),
+            )
+          end
+          ApiModel::Schema.new(one_of: schemas, nullable: has_nil_type ? true : nil)
+        end
+
+        # Checks if type_names is a pair of [SomeType, NilType]
+        def nullable_type_pair?(type_names)
+          return false unless type_names.size == 2
+
+          type_names.one? { |t| nil_type_name?(t) }
+        end
+
+        # Checks if the type name represents a nil/null type
+        def nil_type_name?(type_name)
+          normalized = type_name.to_s
+          # Match common nil type patterns:
+          # - "NilClass" (Ruby's nil type)
+          # - "Nil" (shorthand)
+          # - "Foo::Nil", "Types::Nil" (namespaced nil types)
+          normalized == "NilClass" ||
+            normalized == "Nil" ||
+            normalized.end_with?("::Nil")
         end
 
         def build_primitive_schema(raw_type, doc)
+          schema_type = sanitize_type(raw_type)
           ApiModel::Schema.new(
-            type: sanitize_type(raw_type),
+            type: schema_type,
+            format: Constants.format_for_type(raw_type),
             description: doc[:desc],
           )
         end
@@ -138,7 +186,10 @@ module GrapeOAS
           items_type = resolve_schema_type(member_type)
           ApiModel::Schema.new(
             type: Constants::SchemaTypes::ARRAY,
-            items: ApiModel::Schema.new(type: items_type),
+            items: ApiModel::Schema.new(
+              type: items_type,
+              format: Constants.format_for_type(member_type),
+            ),
           )
         end
 
