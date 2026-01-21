@@ -480,6 +480,26 @@ module GrapeOAS
         assert_includes schema.properties.keys, "name"
         assert_includes schema.properties.keys, "email"
       end
+
+      def test_contract_from_route_options_schema
+        # Contracts can also be provided via desc "...", schema: MySchema
+        contract = Struct.new(:to_h).new({ title: String })
+        route = Struct.new(:options, :path, :settings).new(
+          { schema: contract, params: {} },
+          "/items",
+          {}
+        )
+
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        refute_nil operation.request_body, "Should build request body from route.options[:schema]"
+        schema = operation.request_body.media_types.first.schema
+
+        assert_equal "object", schema.type
+        assert_includes schema.properties.keys, "title"
+      end
     end
   end
 end

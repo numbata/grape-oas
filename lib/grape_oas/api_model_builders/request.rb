@@ -55,7 +55,8 @@ module GrapeOAS
         if body_schema.respond_to?(:canonical_name) && body_schema.canonical_name.nil?
           contract = find_contract
 
-          if contract # Dry contract; keep inline
+          if contract
+            # Dry contracts are kept inline (no canonical_name)
             # no-op
           elsif body_schema.properties.values.any? { |prop| prop.respond_to?(:canonical_name) && prop.canonical_name }
             # keep entity/property refs intact; don't override
@@ -96,15 +97,16 @@ module GrapeOAS
       end
 
       # Find contract from Grape's contract storage locations.
-      # Contracts can be defined in three ways:
+      # Contracts can be defined in several ways:
       # 1. Via `contract MyContract` DSL - stores in inheritable_setting.route[:saved_validations]
       # 2. Via `desc "...", contract: MyContract` - stores in route.options[:contract]
-      # 3. Via route.settings[:contract] - used by mounted APIs or legacy configuration
+      # 3. Via `desc "...", schema: MySchema` - stores in route.options[:schema]
+      # 4. Via route.settings[:contract] - used by mounted APIs or legacy configuration
       #
       # @return [Object, nil] The contract instance or nil if not found
       def find_contract
-        # Check route options first (from desc "...", contract: MyContract)
-        contract = route.options[:contract]
+        # Check route options first (from desc "...", contract: MyContract or schema: MySchema)
+        contract = route.options[:contract] || route.options[:schema]
         return contract if contract
 
         # Check route settings (mounted APIs or legacy configuration)
