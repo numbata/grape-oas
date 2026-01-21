@@ -96,14 +96,19 @@ module GrapeOAS
       end
 
       # Find contract from Grape's contract storage locations.
-      # Contracts can be defined in two ways:
-      # 1. Via `contract MyContract` DSL - stores in inheritable_setting.namespace_stackable[:validations]
+      # Contracts can be defined in three ways:
+      # 1. Via `contract MyContract` DSL - stores in inheritable_setting.route[:saved_validations]
       # 2. Via `desc "...", contract: MyContract` - stores in route.options[:contract]
+      # 3. Via route.settings[:contract] - used by mounted APIs or legacy configuration
       #
       # @return [Object, nil] The contract instance or nil if not found
       def find_contract
         # Check route options first (from desc "...", contract: MyContract)
         contract = route.options[:contract]
+        return contract if contract
+
+        # Check route settings (mounted APIs or legacy configuration)
+        contract = route.settings[:contract] if route.respond_to?(:settings)
         return contract if contract
 
         # Check Grape's native contract() DSL storage

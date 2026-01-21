@@ -459,6 +459,27 @@ module GrapeOAS
 
         refute_nil operation.request_body, "DELETE should have request body when explicitly allowed"
       end
+
+      def test_contract_from_route_settings
+        # Contracts can be stored in route.settings[:contract] for mounted APIs or legacy configuration
+        contract = Struct.new(:to_h).new({ name: String, email: String })
+        route_with_settings = Struct.new(:options, :path, :settings).new(
+          { params: {} },
+          "/items",
+          { contract: contract }
+        )
+
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: @api, route: route_with_settings, operation: operation).build
+
+        refute_nil operation.request_body, "Should build request body from route.settings[:contract]"
+        schema = operation.request_body.media_types.first.schema
+
+        assert_equal "object", schema.type
+        assert_includes schema.properties.keys, "name"
+        assert_includes schema.properties.keys, "email"
+      end
     end
   end
 end
