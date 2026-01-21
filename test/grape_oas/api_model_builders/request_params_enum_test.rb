@@ -339,6 +339,50 @@ module GrapeOAS
 
         assert_nil integer_variant.enum
       end
+
+      # === Mixed-type enum values (unit tests for filter_compatible_values) ===
+
+      def test_filter_compatible_values_splits_mixed_enum
+        # Unit test for SchemaEnhancer.filter_compatible_values
+        # Grape DSL doesn't allow mixed-type enums, but we test the filter logic directly
+        enhancer = RequestParamsSupport::SchemaEnhancer
+
+        string_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+        integer_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+        mixed_values = ["a", "b", 1, 2]
+
+        # String schema should filter to only strings
+        string_result = enhancer.send(:filter_compatible_values, string_schema, mixed_values)
+
+        assert_equal %w[a b], string_result
+
+        # Integer schema should filter to only integers
+        integer_result = enhancer.send(:filter_compatible_values, integer_schema, mixed_values)
+
+        assert_equal [1, 2], integer_result
+      end
+
+      def test_filter_compatible_values_returns_all_for_homogeneous_enum
+        enhancer = RequestParamsSupport::SchemaEnhancer
+
+        string_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+        string_values = %w[a b c]
+
+        result = enhancer.send(:filter_compatible_values, string_schema, string_values)
+
+        assert_equal %w[a b c], result
+      end
+
+      def test_filter_compatible_values_returns_empty_for_incompatible_enum
+        enhancer = RequestParamsSupport::SchemaEnhancer
+
+        integer_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+        string_values = %w[a b c]
+
+        result = enhancer.send(:filter_compatible_values, integer_schema, string_values)
+
+        assert_equal [], result
+      end
     end
   end
 end

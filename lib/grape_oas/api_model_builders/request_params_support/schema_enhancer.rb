@@ -93,10 +93,14 @@ module GrapeOAS
               schema.one_of.each do |variant|
                 # Skip null types - they don't have enums
                 next if null_type_schema?(variant)
-                # Only apply enum if values are type-compatible with the variant
-                next unless enum_type_compatible?(variant, values)
 
-                variant.enum = values if variant.respond_to?(:enum=)
+                # Filter values to those compatible with this variant's type
+                compatible_values = filter_compatible_values(variant, values)
+
+                # Only apply enum if there are compatible values
+                if compatible_values.any? && variant.respond_to?(:enum=)
+                  variant.enum = compatible_values
+                end
               end
             elsif array_schema_with_items?(schema)
               # For array schemas, apply enum to items (values constrain array elements)
@@ -124,21 +128,20 @@ module GrapeOAS
               schema.items
           end
 
-          # Checks if enum values are type-compatible with the schema variant.
-          # String enums should only apply to string schemas, numeric enums to numeric schemas.
-          # Checks ALL values to handle mixed-type arrays correctly.
-          def enum_type_compatible?(schema, values)
-            return true unless schema.respond_to?(:type) && schema.type
-            return false if values.nil? || values.empty?
+          # Filters enum values to those compatible with the schema variant's type.
+          # For mixed-type enums like ["a", 1], returns only values matching the variant type.
+          def filter_compatible_values(schema, values)
+            return values unless schema.respond_to?(:type) && schema.type
+            return [] if values.nil? || values.empty?
 
             case schema.type
             when Constants::SchemaTypes::STRING,
                  Constants::SchemaTypes::INTEGER,
                  Constants::SchemaTypes::NUMBER,
                  Constants::SchemaTypes::BOOLEAN
-              values.all? { |value| enum_value_compatible_with_type?(schema.type, value) }
+              values.select { |value| enum_value_compatible_with_type?(schema.type, value) }
             else
-              true # Allow for unknown types
+              values # Return all values for unknown types
             end
           end
 
