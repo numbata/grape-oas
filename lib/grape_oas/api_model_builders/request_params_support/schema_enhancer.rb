@@ -126,21 +126,35 @@ module GrapeOAS
 
           # Checks if enum values are type-compatible with the schema variant.
           # String enums should only apply to string schemas, numeric enums to numeric schemas.
+          # Checks ALL values to handle mixed-type arrays correctly.
           def enum_type_compatible?(schema, values)
             return true unless schema.respond_to?(:type) && schema.type
+            return false if values.nil? || values.empty?
 
-            sample = values.first
             case schema.type
-            when Constants::SchemaTypes::STRING
-              sample.is_a?(String) || sample.is_a?(Symbol)
-            when Constants::SchemaTypes::INTEGER
-              sample.is_a?(Integer)
-            when Constants::SchemaTypes::NUMBER
-              sample.is_a?(Numeric)
-            when Constants::SchemaTypes::BOOLEAN
-              [true, false].include?(sample)
+            when Constants::SchemaTypes::STRING,
+                 Constants::SchemaTypes::INTEGER,
+                 Constants::SchemaTypes::NUMBER,
+                 Constants::SchemaTypes::BOOLEAN
+              values.all? { |value| enum_value_compatible_with_type?(schema.type, value) }
             else
               true # Allow for unknown types
+            end
+          end
+
+          # Checks if a single enum value is compatible with the given schema type.
+          def enum_value_compatible_with_type?(schema_type, value)
+            case schema_type
+            when Constants::SchemaTypes::STRING
+              value.is_a?(String) || value.is_a?(Symbol)
+            when Constants::SchemaTypes::INTEGER
+              value.is_a?(Integer)
+            when Constants::SchemaTypes::NUMBER
+              value.is_a?(Numeric)
+            when Constants::SchemaTypes::BOOLEAN
+              [true, false].include?(value)
+            else
+              true
             end
           end
 
