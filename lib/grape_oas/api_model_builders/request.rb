@@ -138,7 +138,12 @@ module GrapeOAS
 
         # Find ContractScopeValidator which holds the Dry contract/schema
         contract_validation = validations.find do |v|
-          v.is_a?(Hash) && v[:validator_class].to_s.include?("ContractScope")
+          next unless v.is_a?(Hash)
+
+          validator_class = v[:validator_class]
+          validator_class.is_a?(Class) &&
+            defined?(Grape::Validations::Validators::ContractScopeValidator) &&
+            validator_class <= Grape::Validations::Validators::ContractScopeValidator
         end
 
         return unless contract_validation
