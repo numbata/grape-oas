@@ -67,7 +67,31 @@ module GrapeOAS
 
         def apply_enum_from_list(args)
           vals = ArgumentExtractor.extract_list(args.first)
-          constraints.enum = vals if vals
+          if vals
+            constraints.enum = vals
+          else
+            # For numeric ranges, extract min/max instead of enum
+            apply_min_max_from_range(args)
+          end
+        end
+
+        def apply_min_max_from_range(args)
+          rng = ArgumentExtractor.extract_range(args.first)
+          return unless rng
+          # Only apply min/max for numeric ranges; non-numeric ranges that can't
+          # be enumerated should be silently ignored rather than producing invalid schema
+          return if rng.begin && !rng.begin.is_a?(Numeric)
+          return if rng.end && !rng.end.is_a?(Numeric)
+
+          apply_range_constraints(rng)
+        end
+
+        def apply_range_constraints(rng)
+          return unless rng
+
+          constraints.minimum = rng.begin if rng.begin
+          constraints.maximum = rng.end if rng.end
+          constraints.exclusive_maximum = rng.exclude_end? if rng.end
         end
 
         def apply_excluded_from_list(args)
@@ -110,12 +134,8 @@ module GrapeOAS
         end
 
         def handle_range(args)
-          rng = args.first.is_a?(Range) ? args.first : ArgumentExtractor.extract_range(args.first)
-          return unless rng
-
-          constraints.minimum = rng.begin if rng.begin
-          constraints.maximum = rng.end if rng.end
-          constraints.exclusive_maximum = rng.exclude_end?
+          rng = ArgumentExtractor.extract_range(args.first)
+          apply_range_constraints(rng)
         end
 
         def handle_multiple_of(args)
