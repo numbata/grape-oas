@@ -111,13 +111,17 @@ module GrapeOAS
           end
 
           # General case: build oneOf schema
-          schemas = type_names.map do |type_name|
+          # Filter out nil types - OpenAPI 3.0 uses nullable property instead
+          has_nil_type = type_names.any? { |t| nil_type_name?(t) }
+          non_nil_types = type_names.reject { |t| nil_type_name?(t) }
+
+          schemas = non_nil_types.map do |type_name|
             ApiModel::Schema.new(
               type: resolve_schema_type(type_name),
               format: Constants.format_for_type(type_name),
             )
           end
-          ApiModel::Schema.new(one_of: schemas)
+          ApiModel::Schema.new(one_of: schemas, nullable: has_nil_type ? true : nil)
         end
 
         # Checks if type_names is a pair of [SomeType, NilType]
@@ -130,11 +134,13 @@ module GrapeOAS
         # Checks if the type name represents a nil/null type
         def nil_type_name?(type_name)
           normalized = type_name.to_s
-          # Match common nil type patterns
+          # Match common nil type patterns:
+          # - "NilClass" (Ruby's nil type)
+          # - "Nil" (shorthand)
+          # - "Foo::Nil", "Types::Nil" (namespaced nil types)
           normalized == "NilClass" ||
             normalized == "Nil" ||
-            normalized.end_with?("::Nil") ||
-            normalized.include?("Types::Nil")
+            normalized.end_with?("::Nil")
         end
 
         def build_primitive_schema(raw_type, doc)

@@ -93,6 +93,8 @@ module GrapeOAS
               schema.one_of.each do |variant|
                 # Skip null types - they don't have enums
                 next if null_type_schema?(variant)
+                # Only apply enum if values are type-compatible with the variant
+                next unless enum_type_compatible?(variant, values)
 
                 variant.enum = values if variant.respond_to?(:enum=)
               end
@@ -120,6 +122,26 @@ module GrapeOAS
               schema.type == Constants::SchemaTypes::ARRAY &&
               schema.respond_to?(:items) &&
               schema.items
+          end
+
+          # Checks if enum values are type-compatible with the schema variant.
+          # String enums should only apply to string schemas, numeric enums to numeric schemas.
+          def enum_type_compatible?(schema, values)
+            return true unless schema.respond_to?(:type) && schema.type
+
+            sample = values.first
+            case schema.type
+            when Constants::SchemaTypes::STRING
+              sample.is_a?(String) || sample.is_a?(Symbol)
+            when Constants::SchemaTypes::INTEGER
+              sample.is_a?(Integer)
+            when Constants::SchemaTypes::NUMBER
+              sample.is_a?(Numeric)
+            when Constants::SchemaTypes::BOOLEAN
+              [true, false].include?(sample)
+            else
+              true # Allow for unknown types
+            end
           end
 
           # Converts a Range to minimum/maximum constraints.

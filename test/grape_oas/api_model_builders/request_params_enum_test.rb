@@ -309,7 +309,7 @@ module GrapeOAS
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            # Three types can't be simplified to nullable, so uses oneOf
+            # Three types: NilClass is filtered out and represented via nullable
             optional :value, types: [String, Integer, NilClass], values: %w[a b c]
           end
           get "items" do
@@ -324,14 +324,20 @@ module GrapeOAS
         value_param = params.find { |p| p.name == "value" }
 
         refute_nil value_param
-        # Three types still uses oneOf
+        # NilClass is filtered out, represented via nullable property
         refute_nil value_param.schema.one_of
-        assert_equal 3, value_param.schema.one_of.size
+        assert_equal 2, value_param.schema.one_of.size
+        assert value_param.schema.nullable
 
-        # Non-null variants should have the enum
+        # String variant should have the string enum
         string_variant = value_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
 
         assert_equal %w[a b c], string_variant.enum
+
+        # Integer variant should NOT have string enum (type incompatible)
+        integer_variant = value_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
+
+        assert_nil integer_variant.enum
       end
     end
   end
