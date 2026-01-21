@@ -1058,6 +1058,22 @@ module GrapeOAS
         assert_nil grade_schema.maximum
       end
 
+      def test_included_in_large_string_range_produces_no_constraints
+        # Non-numeric ranges that are too large to enumerate should be silently
+        # ignored rather than producing invalid min/max with string values
+        contract = Dry::Schema.Params do
+          required(:code).filled(:string, included_in?: ("A".."ZZZ"))
+        end
+
+        schema = processor.build(contract)
+        code_schema = schema.properties["code"]
+
+        assert_equal "string", code_schema.type
+        assert_nil code_schema.enum
+        assert_nil code_schema.minimum
+        assert_nil code_schema.maximum
+      end
+
       private
 
       def constraint_set_class

@@ -13,6 +13,8 @@ module GrapeOAS
         LITERAL_TAGS = %i[value val literal class left right].freeze
         # AST node tags for regex patterns
         PATTERN_TAGS = %i[regexp regex].freeze
+        # Maximum size for converting ranges to enum arrays
+        MAX_ENUM_RANGE_SIZE = 100
 
         def extract_numeric(arg)
           return arg if arg.is_a?(Numeric)
@@ -49,8 +51,6 @@ module GrapeOAS
         # Converts a non-numeric bounded Range to an array for enum values.
         # Returns nil for numeric ranges (should use min/max instead).
         # Returns nil for unbounded (endless/beginless) or excessively large ranges.
-        MAX_ENUM_RANGE_SIZE = 100
-
         def range_to_enum_array(range)
           # Reject unbounded ranges (endless/beginless)
           return nil if range.begin.nil? || range.end.nil?
@@ -58,16 +58,16 @@ module GrapeOAS
           # Numeric ranges should use min/max constraints, not enum
           return nil if range.begin.is_a?(Numeric) || range.end.is_a?(Numeric)
 
-          # Convert to array and check size
-          # String ranges (e.g., 'A'..'F') have nil size but can be converted
+          # Use bounded iteration to avoid memory exhaustion on large ranges.
+          # Take one more than max to detect oversized ranges without full enumeration.
           begin
-            array = range.to_a
+            array = range.take(MAX_ENUM_RANGE_SIZE + 1)
           rescue TypeError
             # Range can't be iterated (e.g., non-discrete types)
             return nil
           end
 
-          # Reject excessively large ranges
+          # Reject ranges exceeding the size limit
           return nil if array.size > MAX_ENUM_RANGE_SIZE
 
           array

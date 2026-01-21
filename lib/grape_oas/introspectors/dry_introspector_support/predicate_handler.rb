@@ -77,6 +77,12 @@ module GrapeOAS
 
         def apply_min_max_from_range(args)
           rng = ArgumentExtractor.extract_range(args.first)
+          return unless rng
+          # Only apply min/max for numeric ranges; non-numeric ranges that can't
+          # be enumerated should be silently ignored rather than producing invalid schema
+          return if rng.begin && !rng.begin.is_a?(Numeric)
+          return if rng.end && !rng.end.is_a?(Numeric)
+
           apply_range_constraints(rng)
         end
 
