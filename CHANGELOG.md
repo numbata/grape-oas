@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.1.0] - 2026-01-23
 
 ### Added
 
@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#21](https://github.com/numbata/grape-oas/pull/21): Remove unnecessary require_relative in favor of Zeitwerk autoloadin - [@numbata](https://github.com/numbata).
+- [#21](https://github.com/numbata/grape-oas/pull/21): Remove unnecessary require\_relative in favor of Zeitwerk autoloadin - [@numbata](https://github.com/numbata).
 - [#17](https://github.com/numbata/grape-oas/pull/17): Support for nested rules and predicates in dry-schema introspection - [@slbug](https://github.com/slbug).
 - [#20](https://github.com/numbata/grape-oas/pull/20): Use annotation for coverage report - [@numbata](https://github.com/numbata).
 - [#18](https://github.com/numbata/grape-oas/pull/18): Support for range in size? predicate `required(:tags).value(:array, size?: 1..10).each(:string)` - [@slbug](https://github.com/slbug).
@@ -90,8 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Request body for GET/HEAD/DELETE when explicitly enabled
   - Operation extensions (`x-*` properties)
 -  Configuration
-  - Global options: host, base_path, schemes, servers, consumes, produces
-  - Info object: title, version, description, contact, license, terms_of_service
+  - Global options: host, base\_path, schemes, servers, consumes, produces
+  - Info object: title, version, description, contact, license, terms\_of\_service
   - Security definitions (API key, OAuth2, Bearer)
   - Tag definitions with descriptions
   - `models` option to pre-register entities

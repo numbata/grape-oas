@@ -124,7 +124,7 @@ module GrapeOAS
   #     app: MyAPI,
   #     schema_type: :oas3,
   #     title: "My API",
-  #     version: "1.0.0"
+  #     version: "1.1.0"
   #   )
   #
   # @example Filter by namespace
