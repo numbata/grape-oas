@@ -188,7 +188,7 @@ schema = GrapeOAS.generate(app: API, schema_type: :custom)
 | [grape-entity](https://github.com/ruby-grape/grape-entity) | Entity exposure for Grape APIs |
 | [grape-swagger](https://github.com/ruby-grape/grape-swagger) | OpenAPI documentation for Grape APIs |
 | [grape-swagger-entity](https://github.com/ruby-grape/grape-swagger-entity) | grape-swagger adapter for grape-entity |
-| [oas_grape](https://github.com/a-chacon/oas_grape) | Another OpenAPI 3.1 generator for Grape |
+| [oas\_grape](https://github.com/a-chacon/oas_grape) | Another OpenAPI 3.1 generator for Grape |
 
 ## Development
 
