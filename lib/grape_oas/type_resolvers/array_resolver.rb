@@ -59,9 +59,7 @@ module GrapeOAS
         def build_schema_from_class(klass)
           # First, check if Introspectors can handle this class
           # (e.g., Grape::Entity, Dry::Schema, custom types)
-          if GrapeOAS.introspectors.handles?(klass)
-            return GrapeOAS.introspectors.build_schema(klass, stack: [], registry: {})
-          end
+          return GrapeOAS.introspectors.build_schema(klass, stack: [], registry: {}) if GrapeOAS.introspectors.handles?(klass)
 
           # Handle Dry::Types
           if klass.respond_to?(:primitive)
