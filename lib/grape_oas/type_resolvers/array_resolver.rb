@@ -128,9 +128,9 @@ module GrapeOAS
           # which checks instance-of relationships (Integer === Integer is false)
           if klass == Integer
             Constants::SchemaTypes::INTEGER
-          elsif klass == Float || klass == BigDecimal
+          elsif [Float, BigDecimal].include?(klass)
             Constants::SchemaTypes::NUMBER
-          elsif klass == TrueClass || klass == FalseClass
+          elsif [TrueClass, FalseClass].include?(klass)
             Constants::SchemaTypes::BOOLEAN
           elsif klass == Hash
             Constants::SchemaTypes::OBJECT
