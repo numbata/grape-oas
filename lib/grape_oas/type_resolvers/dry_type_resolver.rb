@@ -76,9 +76,7 @@ module GrapeOAS
           end
 
           # Check for nullable
-          if dry_type.respond_to?(:optional?) && dry_type.optional?
-            schema.nullable = true
-          end
+          schema.nullable = true if dry_type.respond_to?(:optional?) && dry_type.optional?
 
           schema
         end
