@@ -8,8 +8,8 @@ module GrapeOAS
       # Centralizes Ruby type to OpenAPI schema type resolution.
       # Used by request builders and introspectors to avoid duplicated type switching logic.
       module TypeResolver
-        # Regex to match Grape's typed array notation like "[String]", "[Integer]"
-        TYPED_ARRAY_PATTERN = /^\[(\w+)\]$/
+        # Regex to match Grape's typed array notation like "[String]", "[Integer]", "[MyModule::MyType]"
+        TYPED_ARRAY_PATTERN = /^\[(\w+(?:::\w+)*)\]$/
 
         # Regex to match Grape's multi-type notation like "[String, Integer]", "[String, Float]"
         MULTI_TYPE_PATTERN = /^\[(\w+(?:::\w+)*(?:,\s*\w+(?:::\w+)*)+)\]$/
