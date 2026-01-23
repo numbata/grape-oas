@@ -67,7 +67,11 @@ module GrapeOAS
 
           # Extract enum values if present
           if dry_type.respond_to?(:values)
-            values = dry_type.values rescue nil
+            values = begin
+              dry_type.values
+            rescue NoMethodError
+              nil
+            end
             schema.enum = values if values.is_a?(Array)
           end
 
