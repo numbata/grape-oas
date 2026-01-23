@@ -28,7 +28,7 @@ module GrapeOAS
         "Array" => { type: Constants::SchemaTypes::ARRAY },
         "File" => { type: Constants::SchemaTypes::FILE },
         "Rack::Multipart::UploadedFile" => { type: Constants::SchemaTypes::FILE },
-        "Symbol" => { type: Constants::SchemaTypes::STRING },
+        "Symbol" => { type: Constants::SchemaTypes::STRING }
       }.freeze
 
       class << self
