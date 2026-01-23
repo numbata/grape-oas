@@ -95,6 +95,39 @@ module GrapeOAS
   end
   module_function :exporters
 
+  # Returns the global type resolver registry.
+  #
+  # The registry manages type resolvers that convert Grape's stringified types
+  # back to OpenAPI schemas. Grape stores parameter types as strings for memory
+  # optimization, but TypeResolvers can resolve them back to actual classes
+  # and extract rich metadata (e.g., Dry::Types format, constraints).
+  #
+  # @return [TypeResolvers::Registry] the global type resolver registry
+  #
+  # @example Registering a custom type resolver
+  #   GrapeOAS.type_resolvers.register(MyCustomTypeResolver)
+  #
+  # @example Inserting before an existing resolver
+  #   GrapeOAS.type_resolvers.register(
+  #     HighPriorityResolver,
+  #     before: GrapeOAS::TypeResolvers::ArrayResolver
+  #   )
+  #
+  def type_resolvers
+    @type_resolvers ||= begin
+      registry = TypeResolvers::Registry.new
+      # Register built-in resolvers in order of precedence
+      # ArrayResolver handles "[Type]" patterns first
+      registry.register(TypeResolvers::ArrayResolver)
+      # DryTypeResolver handles Dry::Types (standalone, not arrays)
+      registry.register(TypeResolvers::DryTypeResolver)
+      # PrimitiveResolver is the fallback for basic types
+      registry.register(TypeResolvers::PrimitiveResolver)
+      registry
+    end
+  end
+  module_function :type_resolvers
+
   # Generates an OpenAPI specification from a Grape API application.
   #
   # Introspects the Grape API routes, parameters, entities, and contracts

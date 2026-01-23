@@ -295,6 +295,112 @@ module GrapeOAS
 
         assert_nil ids_param.collection_format
       end
+
+      # === Namespaced types ===
+
+      def test_array_of_namespaced_type_with_uuid
+        # Simulate what Grape stores when you use type: [MyModule::Types::UUID]
+        # Grape converts this to the string "[MyModule::Types::UUID]"
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            # Using a string that simulates namespaced type (Grape stringifies these)
+            requires :slide_ids, type: "[MyModule::Types::UUID]", documentation: { param_type: "body" }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        slide_ids = body_schema.properties["slide_ids"]
+
+        assert_equal "array", slide_ids.type
+        assert_equal "string", slide_ids.items.type
+        assert_equal "uuid", slide_ids.items.format
+      end
+
+      def test_array_of_namespaced_type_with_datetime
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :timestamps, type: "[MyModule::Types::DateTime]", documentation: { param_type: "body" }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        timestamps = body_schema.properties["timestamps"]
+
+        assert_equal "array", timestamps.type
+        assert_equal "string", timestamps.items.type
+        assert_equal "date-time", timestamps.items.format
+      end
+
+      def test_array_of_deeply_namespaced_type
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :ids, type: "[Very::Deeply::Nested::Module::Type]", documentation: { param_type: "body" }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        ids = body_schema.properties["ids"]
+
+        assert_equal "array", ids.type
+        # Unknown namespaced types default to string
+        assert_equal "string", ids.items.type
+      end
+
+      # === Entity arrays ===
+
+      def test_array_of_entity_in_typed_notation
+        # Define an entity class for testing
+        user_entity = Class.new(Grape::Entity) do
+          expose :id, documentation: { type: Integer }
+          expose :name, documentation: { type: String }
+        end
+
+        # Make the entity accessible via const_get
+        Object.const_set(:TestUserEntityForArray, user_entity) unless defined?(TestUserEntityForArray)
+
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :users, type: "[TestUserEntityForArray]", documentation: { param_type: "body" }
+          end
+          post "batch" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        users = body_schema.properties["users"]
+
+        assert_equal "array", users.type
+        # Items should be an object schema from the entity introspector
+        assert_equal "object", users.items.type
+        assert users.items.properties.key?("id")
+        assert users.items.properties.key?("name")
+      end
     end
   end
 end
