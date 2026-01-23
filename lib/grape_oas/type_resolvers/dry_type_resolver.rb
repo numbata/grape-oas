@@ -134,7 +134,6 @@ module GrapeOAS
           when "TrueClass", "FalseClass" then Constants::SchemaTypes::BOOLEAN
           when "Hash" then Constants::SchemaTypes::OBJECT
           when "Array" then Constants::SchemaTypes::ARRAY
-          when "NilClass" then Constants::SchemaTypes::STRING # nullable handled separately
           else
             Constants::SchemaTypes::STRING
           end
