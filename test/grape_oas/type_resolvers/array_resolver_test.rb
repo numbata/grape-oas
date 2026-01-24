@@ -31,6 +31,10 @@ module GrapeOAS
         refute ArrayResolver.handles?("[]")
       end
 
+      def test_does_not_handle_multi_type_notation
+        refute ArrayResolver.handles?("[String, Integer]")
+      end
+
       # === build_schema tests for basic types ===
 
       def test_builds_array_of_strings
