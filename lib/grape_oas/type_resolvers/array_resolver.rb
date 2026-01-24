@@ -124,21 +124,7 @@ module GrapeOAS
         end
 
         def primitive_to_schema_type(klass)
-          # Use == for class comparisons because case/when uses ===
-          # which checks instance-of relationships (Integer === Integer is false)
-          if klass == Integer
-            Constants::SchemaTypes::INTEGER
-          elsif klass == Float || klass.to_s == "BigDecimal"
-            Constants::SchemaTypes::NUMBER
-          elsif [TrueClass, FalseClass].include?(klass)
-            Constants::SchemaTypes::BOOLEAN
-          elsif klass == Hash
-            Constants::SchemaTypes::OBJECT
-          elsif klass == Array
-            Constants::SchemaTypes::ARRAY
-          else
-            Constants::SchemaTypes::STRING
-          end
+          Constants.primitive_type(klass) || Constants::SchemaTypes::STRING
         end
 
         def string_to_schema_type(type_name)

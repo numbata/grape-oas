@@ -61,6 +61,20 @@ module GrapeOAS
         assert_equal Constants::SchemaTypes::BOOLEAN, schema.items.type
       end
 
+      def test_builds_array_of_grape_api_boolean
+        schema = ArrayResolver.build_schema("[Grape::API::Boolean]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::BOOLEAN, schema.items.type
+      end
+
+      def test_builds_array_of_files
+        schema = ArrayResolver.build_schema("[File]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::FILE, schema.items.type
+      end
+
       # === build_schema tests for namespaced types ===
 
       def test_builds_array_with_unknown_namespaced_type_as_string
