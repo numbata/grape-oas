@@ -140,6 +140,26 @@ module GrapeOAS
 
         assert_equal Constants::SchemaTypes::STRING, schema.type
       end
+
+      def test_handles_does_not_raise_when_date_constants_are_missing
+        original_date = Object.const_get(:Date) if Object.const_defined?(:Date)
+        original_datetime = Object.const_get(:DateTime) if Object.const_defined?(:DateTime)
+        original_namespace = Object.const_get(:PrimitiveResolverTestNamespace) if Object.const_defined?(:PrimitiveResolverTestNamespace)
+
+        Object.send(:remove_const, :Date) if Object.const_defined?(:Date)
+        Object.send(:remove_const, :DateTime) if Object.const_defined?(:DateTime)
+
+        Object.send(:remove_const, :PrimitiveResolverTestNamespace) if Object.const_defined?(:PrimitiveResolverTestNamespace)
+        Object.const_set(:PrimitiveResolverTestNamespace, Module.new)
+        Object.const_get(:PrimitiveResolverTestNamespace).const_set(:CustomType, Class.new)
+
+        refute PrimitiveResolver.handles?("PrimitiveResolverTestNamespace::CustomType")
+      ensure
+        Object.send(:remove_const, :PrimitiveResolverTestNamespace) if Object.const_defined?(:PrimitiveResolverTestNamespace)
+        Object.const_set(:PrimitiveResolverTestNamespace, original_namespace) if original_namespace && !Object.const_defined?(:PrimitiveResolverTestNamespace)
+        Object.const_set(:Date, original_date) if original_date && !Object.const_defined?(:Date)
+        Object.const_set(:DateTime, original_datetime) if original_datetime && !Object.const_defined?(:DateTime)
+      end
     end
   end
 end
