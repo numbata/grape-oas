@@ -15,6 +15,15 @@ module GrapeOAS
         end
       end
 
+      class MockNamedDryType < MockDryType
+        attr_reader :name
+
+        def initialize(name:, primitive:, meta: {})
+          super(primitive: primitive, meta: meta)
+          @name = name
+        end
+      end
+
       # Mock Dry::Type with enum values
       class MockEnumDryType < MockDryType
         attr_reader :values
@@ -41,6 +50,12 @@ module GrapeOAS
         end
       end
 
+      class NotDryTypeWithTypeMethod
+        def type
+          String
+        end
+      end
+
       # === handles? tests ===
 
       def test_handles_object_with_primitive_method
@@ -54,6 +69,10 @@ module GrapeOAS
         constrained = MockConstrainedDryType.new(inner_type)
 
         assert DryTypeResolver.handles?(constrained)
+      end
+
+      def test_does_not_handle_non_dry_object_with_type_method
+        refute DryTypeResolver.handles?(NotDryTypeWithTypeMethod.new)
       end
 
       def test_does_not_handle_regular_string
@@ -135,6 +154,22 @@ module GrapeOAS
         schema = DryTypeResolver.build_schema(dry_type)
 
         assert_equal "uuid", schema.format
+      end
+
+      def test_infers_uuid_format_from_name_suffix
+        dry_type = MockNamedDryType.new(name: "MyApp::Types::UUID", primitive: String)
+
+        schema = DryTypeResolver.build_schema(dry_type)
+
+        assert_equal "uuid", schema.format
+      end
+
+      def test_does_not_infer_date_format_from_substring
+        dry_type = MockNamedDryType.new(name: "MyApp::Types::DateRange", primitive: String)
+
+        schema = DryTypeResolver.build_schema(dry_type)
+
+        assert_nil schema.format
       end
 
       # === Enum tests ===
