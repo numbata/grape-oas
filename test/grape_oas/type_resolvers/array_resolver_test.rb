@@ -75,6 +75,26 @@ module GrapeOAS
         assert_equal Constants::SchemaTypes::FILE, schema.items.type
       end
 
+      def test_builds_array_of_dates_with_date_format_when_date_constant_resolves
+        require "date"
+
+        schema = ArrayResolver.build_schema("[Date]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::STRING, schema.items.type
+        assert_equal "date", schema.items.format
+      end
+
+      def test_builds_array_of_datetimes_with_date_time_format_when_date_constant_resolves
+        require "date"
+
+        schema = ArrayResolver.build_schema("[DateTime]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::STRING, schema.items.type
+        assert_equal "date-time", schema.items.format
+      end
+
       # === build_schema tests for namespaced types ===
 
       def test_builds_array_with_unknown_namespaced_type_as_string

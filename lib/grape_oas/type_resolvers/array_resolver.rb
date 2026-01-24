@@ -104,7 +104,7 @@ module GrapeOAS
 
         def build_primitive_schema(klass)
           schema_type = primitive_to_schema_type(klass)
-          format = Constants.format_for_type(klass)
+          format = Constants.format_for_type(klass) || infer_format_from_name(klass.name.to_s)
 
           ApiModel::Schema.new(
             type: schema_type,
