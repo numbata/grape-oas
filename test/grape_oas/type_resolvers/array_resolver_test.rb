@@ -107,6 +107,19 @@ module GrapeOAS
         assert_equal Constants::SchemaTypes::ARRAY, schema.type
         assert_equal "uri", schema.items.format
       end
+
+      def test_build_schema_does_not_raise_when_bigdecimal_constant_is_missing
+        original_bigdecimal = Object.const_get(:BigDecimal) if Object.const_defined?(:BigDecimal)
+
+        Object.send(:remove_const, :BigDecimal) if Object.const_defined?(:BigDecimal)
+
+        schema = ArrayResolver.build_schema("[Float]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::NUMBER, schema.items.type
+      ensure
+        Object.const_set(:BigDecimal, original_bigdecimal) if original_bigdecimal && !Object.const_defined?(:BigDecimal)
+      end
     end
   end
 end

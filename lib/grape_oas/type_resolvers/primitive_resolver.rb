@@ -76,10 +76,13 @@ module GrapeOAS
           resolved = resolve_class(normalize_type(type))
           return false unless resolved
 
-          # Check if it's a known primitive class
-          [String, Integer, Float, BigDecimal, Numeric,
-           TrueClass, FalseClass, Date, DateTime, Time,
-           Hash, Array, File, Symbol].include?(resolved)
+          # Dry::Types should be handled by DryTypeResolver.
+          return false if resolved.respond_to?(:primitive)
+
+          resolved_name = resolved.respond_to?(:name) ? resolved.name : resolved.to_s
+          return false if resolved_name.nil? || resolved_name.empty?
+
+          PRIMITIVES.key?(resolved_name)
         end
 
         def build_from_resolved(klass)
