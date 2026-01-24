@@ -49,7 +49,20 @@ module GrapeOAS
         def dry_type?(obj)
           return false unless obj
 
-          obj.respond_to?(:primitive) || obj.respond_to?(:type)
+          return true if obj.respond_to?(:primitive)
+
+          # Some Dry::Types wrappers (e.g., constrained/constructor types) expose
+          # an inner type via `.type`. Avoid treating any random object with a
+          # `type` method as a Dry type by requiring the inner type to look like
+          # a Dry::Type.
+          return false unless obj.respond_to?(:type)
+
+          inner = obj.type
+          return false if inner.nil? || inner.equal?(obj)
+
+          inner.respond_to?(:primitive)
+        rescue NoMethodError
+          false
         end
 
         def build_dry_type_schema(dry_type)
@@ -118,11 +131,14 @@ module GrapeOAS
         end
 
         def infer_format_from_name(name)
-          return "uuid" if name.include?("UUID")
-          return "date-time" if name.include?("DateTime")
-          return "date" if name.include?("Date") && !name.include?("DateTime")
-          return "email" if name.include?("Email")
-          return "uri" if name.include?("URI") || name.include?("Url")
+          last_segment = name.to_s.split("::").last.to_s
+          return nil if last_segment.empty?
+
+          return "uuid" if last_segment.end_with?("UUID")
+          return "date-time" if last_segment.end_with?("DateTime")
+          return "date" if last_segment.end_with?("Date") && !last_segment.end_with?("DateTime")
+          return "email" if last_segment.end_with?("Email")
+          return "uri" if last_segment.end_with?("URI") || last_segment.end_with?("Url") || last_segment.end_with?("URL")
 
           nil
         end
