@@ -66,7 +66,11 @@ module GrapeOAS
       Array => SchemaTypes::ARRAY,
       Hash => SchemaTypes::OBJECT,
       File => SchemaTypes::FILE
-    }.tap { |map| map[BigDecimal] = SchemaTypes::NUMBER if defined?(BigDecimal) }.freeze
+    }.tap do |mapping|
+      mapping.default_proc = lambda do |_hash, key|
+        key.is_a?(Class) && key.to_s == "BigDecimal" ? SchemaTypes::NUMBER : nil
+      end
+    end.freeze
 
     # String type name to schema type and format mapping (lowercase).
     # Supports lookup with any case via primitive_type helper.
