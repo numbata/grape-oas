@@ -253,7 +253,7 @@ module GrapeOAS
         schema.nullable = nullable
         schema.enum = enum_vals if enum_vals
         apply_string_meta_constraints(schema, meta) if primitive == String
-        apply_numeric_meta_constraints(schema, meta) if primitive == Integer || primitive == Float || primitive.to_s == "BigDecimal"
+        apply_numeric_meta_constraints(schema, meta) if [Integer, Float].include?(primitive) || primitive.to_s == "BigDecimal"
         schema
       end
 
