@@ -174,90 +174,9 @@ module GrapeOAS
           !!resolve_entity_class(type)
         end
 
-        # Checks if type is a Grape typed array notation like "[String]"
-        def typed_array?(type)
-          type.is_a?(String) && type.match?(TYPED_ARRAY_PATTERN)
-        end
-
         # Checks if type is a simple Array (class or string)
         def simple_array?(type)
           type == Array || type.to_s == "Array"
-        end
-
-        # Checks if type is a Ruby Array with type elements like [String], [MyModule::MyType]
-        # This handles actual Ruby arrays, not string notation
-        def ruby_typed_array?(type)
-          type.is_a?(::Array) && type.length == 1
-        end
-
-        # Builds schema for Ruby Array notation like [String], [MyModule::MyType]
-        # This handles Dry::Types and other custom types that respond to :primitive
-        def build_ruby_typed_array_schema(type)
-          member_type = type.first
-          items_schema = build_items_schema_for_member(member_type)
-          ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
-        end
-
-        # Builds items schema for a member type (could be Dry::Type, Ruby class, or string)
-        def build_items_schema_for_member(member_type)
-          # Check if it's a Dry::Type with primitive info
-          if member_type.respond_to?(:primitive)
-            primitive = member_type.primitive
-            format = extract_format_from_dry_type(member_type)
-            return ApiModel::Schema.new(
-              type: resolve_schema_type(primitive),
-              format: format,
-            )
-          end
-
-          # Plain Ruby class or string
-          ApiModel::Schema.new(
-            type: resolve_schema_type(member_type),
-            format: Constants.format_for_type(member_type),
-          )
-        end
-
-        # Extract format from Dry::Type if available (e.g., UUID, DateTime)
-        def extract_format_from_dry_type(dry_type)
-          # Check meta for explicit format
-          if dry_type.respond_to?(:meta) && dry_type.meta[:format]
-            return dry_type.meta[:format]
-          end
-
-          # Infer format from type name for common patterns
-          type_name = dry_type.respond_to?(:name) ? dry_type.name.to_s : dry_type.to_s
-          return "uuid" if type_name.include?("UUID")
-          return "date-time" if type_name.include?("DateTime")
-          return "date" if type_name.include?("Date") && !type_name.include?("DateTime")
-          return "email" if type_name.include?("Email")
-
-          nil
-        end
-
-        # Builds schema for Grape's typed array notation like "[String]", "[Integer]", "[MyModule::UUID]"
-        def build_typed_array_schema(type)
-          member_type = extract_typed_array_member(type)
-          items_type = resolve_schema_type(member_type)
-          items_format = Constants.format_for_type(member_type) || infer_format_from_type_name(member_type)
-          ApiModel::Schema.new(
-            type: Constants::SchemaTypes::ARRAY,
-            items: ApiModel::Schema.new(
-              type: items_type,
-              format: items_format,
-            ),
-          )
-        end
-
-        # Infer format from type name for common patterns (e.g., UUID, DateTime)
-        def infer_format_from_type_name(type_name)
-          return nil unless type_name.is_a?(String)
-
-          return "uuid" if type_name.end_with?("UUID")
-          return "date-time" if type_name.end_with?("DateTime")
-          return "date" if type_name.end_with?("Date") && !type_name.end_with?("DateTime")
-          return "email" if type_name.end_with?("Email")
-
-          nil
         end
 
         def resolve_entity_class(type)
