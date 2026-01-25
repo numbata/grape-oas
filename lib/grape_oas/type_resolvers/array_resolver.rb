@@ -93,16 +93,6 @@ module GrapeOAS
           infer_format_from_name(type_name)
         end
 
-        def infer_format_from_name(name)
-          return "uuid" if name.end_with?("UUID")
-          return "date-time" if name.end_with?("DateTime")
-          return "date" if name.end_with?("Date") && !name.end_with?("DateTime")
-          return "email" if name.end_with?("Email")
-          return "uri" if name.end_with?("URI")
-
-          nil
-        end
-
         def build_primitive_schema(klass)
           schema_type = primitive_to_schema_type(klass)
           format = Constants.format_for_type(klass) || infer_format_from_name(klass.name.to_s)
@@ -122,10 +112,6 @@ module GrapeOAS
             type: schema_type,
             format: format,
           )
-        end
-
-        def primitive_to_schema_type(klass)
-          Constants.primitive_type(klass) || Constants::SchemaTypes::STRING
         end
 
         def string_to_schema_type(type_name)

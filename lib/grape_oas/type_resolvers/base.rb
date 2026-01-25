@@ -78,6 +78,33 @@ module GrapeOAS
       rescue NameError
         nil
       end
+
+      # Infers OpenAPI format from a type name suffix.
+      # Shared across resolvers for consistent format detection.
+      #
+      # @param name [String] The type name to analyze
+      # @return [String, nil] The inferred format or nil
+      def infer_format_from_name(name)
+        last_segment = name.to_s.split("::").last.to_s
+        return nil if last_segment.empty?
+
+        return "uuid" if last_segment.end_with?("UUID")
+        return "date-time" if last_segment.end_with?("DateTime")
+        return "date" if last_segment.end_with?("Date")
+        return "email" if last_segment.end_with?("Email")
+        return "uri" if last_segment.end_with?("URI", "Url", "URL")
+
+        nil
+      end
+
+      # Converts a Ruby class to its OpenAPI schema type.
+      # Shared across resolvers for consistent type mapping.
+      #
+      # @param klass [Class] The Ruby class
+      # @return [String] The OpenAPI schema type
+      def primitive_to_schema_type(klass)
+        Constants.primitive_type(klass) || Constants::SchemaTypes::STRING
+      end
     end
   end
 end
