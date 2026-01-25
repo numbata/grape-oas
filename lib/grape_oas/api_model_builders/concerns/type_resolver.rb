@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
-require "bigdecimal"
+begin
+  require "bigdecimal"
+rescue LoadError
+  # BigDecimal is an optional default gem dependency.
+end
 
 module GrapeOAS
   module ApiModelBuilders
