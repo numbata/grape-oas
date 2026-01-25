@@ -138,8 +138,8 @@ module GrapeOAS
 
       def test_size_returns_count
         assert_equal 0, @registry.size
-
         @registry.register(MockResolver)
+
         assert_equal 1, @registry.size
       end
 

@@ -177,7 +177,7 @@ module GrapeOAS
       def test_extracts_enum_values
         dry_type = MockEnumDryType.new(
           primitive: String,
-          values: %w[draft published archived]
+          values: %w[draft published archived],
         )
 
         schema = DryTypeResolver.build_schema(dry_type)
@@ -192,7 +192,7 @@ module GrapeOAS
 
         schema = DryTypeResolver.build_schema(dry_type)
 
-        assert_equal true, schema.nullable
+        assert schema.nullable
       end
 
       # === Constrained type unwrapping ===

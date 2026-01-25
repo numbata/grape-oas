@@ -156,7 +156,9 @@ module GrapeOAS
         refute PrimitiveResolver.handles?("PrimitiveResolverTestNamespace::CustomType")
       ensure
         Object.send(:remove_const, :PrimitiveResolverTestNamespace) if Object.const_defined?(:PrimitiveResolverTestNamespace)
-        Object.const_set(:PrimitiveResolverTestNamespace, original_namespace) if original_namespace && !Object.const_defined?(:PrimitiveResolverTestNamespace)
+        if original_namespace && !Object.const_defined?(:PrimitiveResolverTestNamespace)
+          Object.const_set(:PrimitiveResolverTestNamespace, original_namespace)
+        end
         Object.const_set(:Date, original_date) if original_date && !Object.const_defined?(:Date)
         Object.const_set(:DateTime, original_datetime) if original_datetime && !Object.const_defined?(:DateTime)
       end
