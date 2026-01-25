@@ -31,7 +31,8 @@ module GrapeOAS
           # Handle Ruby classes directly
           if type.is_a?(Class)
             # Check static mapping first
-            return Constants::RUBY_TYPE_MAPPING[type] if Constants::RUBY_TYPE_MAPPING.key?(type)
+            mapped = Constants::RUBY_TYPE_MAPPING[type]
+            return mapped if mapped
 
             # Handle Grape::API::Boolean dynamically (may not be loaded at constant definition time)
             return Constants::SchemaTypes::BOOLEAN if grape_boolean_type?(type)

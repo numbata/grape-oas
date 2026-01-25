@@ -206,9 +206,9 @@ module GrapeOAS
 
         # First try direct lookup (for Ruby class values like String, Integer)
         # Then try class-based lookup (for actual runtime values like "hello", 123)
-        Constants::RUBY_TYPE_MAPPING.fetch(value) do
-          Constants::RUBY_TYPE_MAPPING.fetch(value.class, Constants::SchemaTypes::STRING)
-        end
+        Constants::RUBY_TYPE_MAPPING[value] ||
+          Constants::RUBY_TYPE_MAPPING[value.class] ||
+          Constants::SchemaTypes::STRING
       end
 
       def schema_from_types(types_hash, rule_constraints)
