@@ -129,7 +129,6 @@ module GrapeOAS
             dry_type.to_s
           end
         end
-
       end
     end
   end
