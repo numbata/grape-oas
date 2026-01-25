@@ -130,30 +130,6 @@ module GrapeOAS
           end
         end
 
-        def infer_format_from_name(name)
-          last_segment = name.to_s.split("::").last.to_s
-          return nil if last_segment.empty?
-
-          return "uuid" if last_segment.end_with?("UUID")
-          return "date-time" if last_segment.end_with?("DateTime")
-          return "date" if last_segment.end_with?("Date") && !last_segment.end_with?("DateTime")
-          return "email" if last_segment.end_with?("Email")
-          return "uri" if last_segment.end_with?("URI") || last_segment.end_with?("Url") || last_segment.end_with?("URL")
-
-          nil
-        end
-
-        def primitive_to_schema_type(klass)
-          case klass.to_s
-          when "Integer" then Constants::SchemaTypes::INTEGER
-          when "Float", "BigDecimal" then Constants::SchemaTypes::NUMBER
-          when "TrueClass", "FalseClass" then Constants::SchemaTypes::BOOLEAN
-          when "Hash" then Constants::SchemaTypes::OBJECT
-          when "Array" then Constants::SchemaTypes::ARRAY
-          else
-            Constants::SchemaTypes::STRING
-          end
-        end
       end
     end
   end
