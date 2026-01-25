@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
-require "bigdecimal"
+begin
+  require "bigdecimal"
+rescue LoadError
+  # BigDecimal is an optional default gem dependency.
+end
 
 module GrapeOAS
   module ApiModelBuilders
@@ -249,7 +253,7 @@ module GrapeOAS
         schema.nullable = nullable
         schema.enum = enum_vals if enum_vals
         apply_string_meta_constraints(schema, meta) if primitive == String
-        apply_numeric_meta_constraints(schema, meta) if [Integer, Float, BigDecimal].include?(primitive)
+        apply_numeric_meta_constraints(schema, meta) if primitive == Integer || primitive == Float || primitive.to_s == "BigDecimal"
         schema
       end
 
