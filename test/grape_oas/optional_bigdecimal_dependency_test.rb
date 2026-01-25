@@ -40,7 +40,7 @@ module GrapeOAS
         chdir: root,
       )
 
-      assert status.success?, "expected success, got:\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
+      assert_predicate status, :success?, "expected success, got:\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
       assert_includes stdout, "ok"
     end
 
@@ -75,7 +75,7 @@ module GrapeOAS
         chdir: root,
       )
 
-      assert status.success?, "expected success, got:\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
+      assert_predicate status, :success?, "expected success, got:\nstdout:\n#{stdout}\nstderr:\n#{stderr}"
       assert_equal "number", stdout.strip
     end
   end
