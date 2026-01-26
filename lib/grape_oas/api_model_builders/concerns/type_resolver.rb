@@ -1,6 +1,10 @@
 # frozen_string_literal: true
 
-require "bigdecimal"
+begin
+  require "bigdecimal"
+rescue LoadError
+  # BigDecimal is an optional default gem dependency.
+end
 
 module GrapeOAS
   module ApiModelBuilders
@@ -8,8 +12,8 @@ module GrapeOAS
       # Centralizes Ruby type to OpenAPI schema type resolution.
       # Used by request builders and introspectors to avoid duplicated type switching logic.
       module TypeResolver
-        # Regex to match Grape's typed array notation like "[String]", "[Integer]"
-        TYPED_ARRAY_PATTERN = /^\[(\w+)\]$/
+        # Regex to match Grape's typed array notation like "[String]", "[Integer]", "[MyModule::MyType]"
+        TYPED_ARRAY_PATTERN = /^\[(\w+(?:::\w+)*)\]$/
 
         # Regex to match Grape's multi-type notation like "[String, Integer]", "[String, Float]"
         MULTI_TYPE_PATTERN = /^\[(\w+(?:::\w+)*(?:,\s*\w+(?:::\w+)*)+)\]$/
@@ -27,7 +31,8 @@ module GrapeOAS
           # Handle Ruby classes directly
           if type.is_a?(Class)
             # Check static mapping first
-            return Constants::RUBY_TYPE_MAPPING[type] if Constants::RUBY_TYPE_MAPPING.key?(type)
+            mapped = Constants::RUBY_TYPE_MAPPING[type]
+            return mapped if mapped
 
             # Handle Grape::API::Boolean dynamically (may not be loaded at constant definition time)
             return Constants::SchemaTypes::BOOLEAN if grape_boolean_type?(type)
