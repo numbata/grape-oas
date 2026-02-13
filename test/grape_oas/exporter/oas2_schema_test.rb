@@ -119,6 +119,7 @@ module GrapeOAS
         result = OAS2::Schema.new(parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
 
         child = result["properties"]["child"]
+
         assert_equal "#/definitions/MyEntity", child["$ref"]
         assert child["x-nullable"]
       end
@@ -132,6 +133,7 @@ module GrapeOAS
         result = OAS2::Schema.new(parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
 
         child = result["properties"]["child"]
+
         assert_equal "#/definitions/MyEntity", child["$ref"]
         refute child.key?("x-nullable")
       end

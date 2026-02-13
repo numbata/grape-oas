@@ -52,7 +52,10 @@ module GrapeOAS
           if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY && !@schema.unevaluated_properties.nil?
             schema_hash["unevaluatedProperties"] = @schema.unevaluated_properties
           end
-          schema_hash["$defs"] = @schema.defs if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY && @schema.defs && !@schema.defs.empty?
+          if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY && @schema.defs && !@schema.defs.empty?
+            schema_hash["$defs"] =
+              @schema.defs
+          end
           schema_hash["discriminator"] = build_discriminator if @schema.discriminator
         end
 
@@ -177,10 +180,7 @@ module GrapeOAS
           hash["minimum"] = @schema.minimum unless @schema.minimum.nil?
           hash["maximum"] = @schema.maximum unless @schema.maximum.nil?
 
-          if @nullable_strategy != Constants::NullableStrategy::TYPE_ARRAY
-            hash["exclusiveMinimum"] = @schema.exclusive_minimum if @schema.exclusive_minimum
-            hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
-          else
+          if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY
             if @schema.exclusive_minimum && !@schema.minimum.nil?
               hash["exclusiveMinimum"] = @schema.minimum
               hash.delete("minimum")
@@ -189,6 +189,9 @@ module GrapeOAS
               hash["exclusiveMaximum"] = @schema.maximum
               hash.delete("maximum")
             end
+          else
+            hash["exclusiveMinimum"] = @schema.exclusive_minimum if @schema.exclusive_minimum
+            hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
           end
         end
 
