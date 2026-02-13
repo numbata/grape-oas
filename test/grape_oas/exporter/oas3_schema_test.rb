@@ -96,6 +96,44 @@ module GrapeOAS
 
         assert_equal [1.5, 2.5, 3.5], result["enum"]
       end
+
+      # === nullable_strategy tests ===
+
+      def test_keyword_strategy_emits_nullable_true
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        assert_equal "string", result["type"]
+        assert result["nullable"]
+      end
+
+      def test_keyword_strategy_does_not_emit_nullable_when_not_nullable
+        schema = ApiModel::Schema.new(type: "string")
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        assert_equal "string", result["type"]
+        refute result.key?("nullable")
+      end
+
+      def test_type_array_strategy_produces_type_array_with_null
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        assert_equal %w[string null], result["type"]
+        refute result.key?("nullable")
+      end
+
+      def test_default_strategy_is_keyword
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+
+        result = OAS3::Schema.new(schema).build
+
+        assert_equal "string", result["type"]
+        assert result["nullable"]
+      end
     end
   end
 end

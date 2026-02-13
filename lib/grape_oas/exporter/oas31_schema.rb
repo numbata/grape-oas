@@ -26,8 +26,8 @@ module GrapeOAS
         OAS31::Schema
       end
 
-      def nullable_keyword?
-        false
+      def nullable_strategy
+        @api.nullable_strategy || Constants::NullableStrategy::TYPE_ARRAY
       end
     end
   end

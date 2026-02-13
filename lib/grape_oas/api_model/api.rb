@@ -11,7 +11,7 @@ module GrapeOAS
     class API < Node
       attr_accessor :title, :version, :paths, :servers, :tag_defs, :components,
                     :host, :base_path, :schemes, :security_definitions, :security,
-                    :registered_schemas, :suppress_default_error_response
+                    :registered_schemas, :suppress_default_error_response, :nullable_strategy
 
       def initialize(title:, version:)
         super()
@@ -28,6 +28,7 @@ module GrapeOAS
         @security = []
         @registered_schemas = []
         @suppress_default_error_response = false
+        @nullable_strategy = nil
       end
 
       def add_path(path)

@@ -19,7 +19,7 @@ module GrapeOAS
           "servers" => build_servers,
           "tags" => build_tags,
           "paths" => OAS3::Paths.new(@api, @ref_tracker,
-                                     nullable_keyword: nullable_keyword?,
+                                     nullable_strategy: nullable_strategy,
                                      suppress_default_error_response: @api.suppress_default_error_response,).build,
           "components" => build_components,
           "security" => build_security
@@ -92,7 +92,7 @@ module GrapeOAS
           schema = find_schema_by_canonical_name(canonical_name)
           if schema
             schemas[ref_name] =
-              schema_builder.new(schema, @ref_tracker, nullable_keyword: nullable_keyword?).build
+              schema_builder.new(schema, @ref_tracker, nullable_strategy: nullable_strategy).build
           end
           collect_refs(schema, pending) if schema
 
@@ -119,8 +119,8 @@ module GrapeOAS
         []
       end
 
-      def nullable_keyword?
-        true
+      def nullable_strategy
+        @api.nullable_strategy || Constants::NullableStrategy::KEYWORD
       end
     end
   end

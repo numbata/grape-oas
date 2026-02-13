@@ -18,9 +18,10 @@ module GrapeOAS
           "uuid" => { type: Constants::SchemaTypes::STRING, format: "uuid" }
         }.freeze
 
-        def initialize(operation, ref_tracker = nil)
+        def initialize(operation, ref_tracker = nil, nullable_strategy: nil)
           @op = operation
           @ref_tracker = ref_tracker
+          @nullable_strategy = nullable_strategy
         end
 
         def build
@@ -140,7 +141,7 @@ module GrapeOAS
             ref_name = schema.canonical_name.gsub("::", "_")
             { "$ref" => "#/definitions/#{ref_name}" }
           else
-            Schema.new(schema, @ref_tracker).build
+            Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
           end
         end
       end

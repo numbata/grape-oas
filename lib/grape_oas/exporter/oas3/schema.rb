@@ -4,10 +4,10 @@ module GrapeOAS
   module Exporter
     module OAS3
       class Schema
-        def initialize(schema, ref_tracker = nil, nullable_keyword: true)
+        def initialize(schema, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD)
           @schema = schema
           @ref_tracker = ref_tracker
-          @nullable_keyword = nullable_keyword
+          @nullable_strategy = nullable_strategy
         end
 
         def build
@@ -29,6 +29,7 @@ module GrapeOAS
           schema_hash["type"] = nullable_type
           schema_hash["format"] = @schema.format
           schema_hash["description"] = @schema.description.to_s if @schema.description
+          apply_nullable(schema_hash)
           props = build_properties(@schema.properties)
           schema_hash["properties"] = props if props
           schema_hash["items"] = @schema.items ? build_schema_or_ref(@schema.items) : nil
@@ -48,10 +49,10 @@ module GrapeOAS
           schema_hash.merge!(@schema.extensions) if @schema.extensions
           schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != Constants::SchemaTypes::OBJECT
           schema_hash["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
-          if !@nullable_keyword && !@schema.unevaluated_properties.nil?
+          if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY && !@schema.unevaluated_properties.nil?
             schema_hash["unevaluatedProperties"] = @schema.unevaluated_properties
           end
-          schema_hash["$defs"] = @schema.defs if !@nullable_keyword && @schema.defs && !@schema.defs.empty?
+          schema_hash["$defs"] = @schema.defs if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY && @schema.defs && !@schema.defs.empty?
           schema_hash["discriminator"] = build_discriminator if @schema.discriminator
         end
 
@@ -114,19 +115,25 @@ module GrapeOAS
           end
         end
 
+        def nullable?
+          @schema.respond_to?(:nullable) && @schema.nullable
+        end
+
         def nullable_type
-          return @schema.type unless @schema.respond_to?(:nullable) && @schema.nullable
+          return @schema.type unless nullable? && @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY
 
-          if @nullable_keyword
-            # OAS3.0 style
-            type_hash = { "type" => @schema.type, "nullable" => true }
-            return type_hash["type"] if @schema.type.nil?
-            return type_hash["type"] if @schema.type.is_a?(Array)
+          base = Array(@schema.type || Constants::SchemaTypes::STRING)
+          (base | ["null"])
+        end
 
-            type_hash["type"]
-          else
-            base = Array(@schema.type || Constants::SchemaTypes::STRING)
-            (base | ["null"])
+        def apply_nullable(schema_hash)
+          return unless nullable?
+
+          case @nullable_strategy
+          when Constants::NullableStrategy::KEYWORD
+            schema_hash["nullable"] = true
+          when Constants::NullableStrategy::EXTENSION
+            schema_hash["x-nullable"] = true
           end
         end
 
@@ -145,7 +152,7 @@ module GrapeOAS
             ref_name = schema.canonical_name.gsub("::", "_")
             { "$ref" => "#/components/schemas/#{ref_name}" }
           else
-            Schema.new(schema, @ref_tracker, nullable_keyword: @nullable_keyword).build
+            Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
           end
         end
 
@@ -170,7 +177,7 @@ module GrapeOAS
           hash["minimum"] = @schema.minimum unless @schema.minimum.nil?
           hash["maximum"] = @schema.maximum unless @schema.maximum.nil?
 
-          if @nullable_keyword
+          if @nullable_strategy != Constants::NullableStrategy::TYPE_ARRAY
             hash["exclusiveMinimum"] = @schema.exclusive_minimum if @schema.exclusive_minimum
             hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
           else

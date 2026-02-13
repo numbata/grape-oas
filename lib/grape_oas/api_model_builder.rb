@@ -19,6 +19,7 @@ module GrapeOAS
       @api.servers = build_servers(options)
       @api.registered_schemas = build_registered_schemas(options[:models])
       @api.suppress_default_error_response = options[:suppress_default_error_response] || false
+      @api.nullable_strategy = options[:nullable_strategy]
 
       @namespace_filter = options[:namespace]
       @apis = []
