@@ -4,7 +4,7 @@ module GrapeOAS
   module Exporter
     module OAS3
       class Parameter
-        def initialize(operation, ref_tracker = nil, nullable_strategy: true)
+        def initialize(operation, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD)
           @op = operation
           @ref_tracker = ref_tracker
           @nullable_strategy = nullable_strategy

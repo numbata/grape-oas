@@ -4,7 +4,7 @@ module GrapeOAS
   module Exporter
     module OAS3
       class RequestBody
-        def initialize(request_body, ref_tracker = nil, nullable_strategy: true)
+        def initialize(request_body, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD)
           @request_body = request_body
           @ref_tracker = ref_tracker
           @nullable_strategy = nullable_strategy

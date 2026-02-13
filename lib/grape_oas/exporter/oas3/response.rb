@@ -4,7 +4,7 @@ module GrapeOAS
   module Exporter
     module OAS3
       class Response
-        def initialize(responses, ref_tracker = nil, nullable_strategy: true)
+        def initialize(responses, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD)
           @responses = responses
           @ref_tracker = ref_tracker
           @nullable_strategy = nullable_strategy
