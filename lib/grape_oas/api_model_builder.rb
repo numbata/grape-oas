@@ -19,7 +19,7 @@ module GrapeOAS
       @api.servers = build_servers(options)
       @api.registered_schemas = build_registered_schemas(options[:models])
       @api.suppress_default_error_response = options[:suppress_default_error_response] || false
-      @api.nullable_strategy = options[:nullable_strategy] || nullable_strategy_from_legacy(options)
+      @api.nullable_strategy = options[:nullable_strategy]
 
       @namespace_filter = options[:namespace]
       @apis = []
@@ -46,13 +46,6 @@ module GrapeOAS
       scheme = Array(options[:schemes]).compact.first || "https"
       url = "#{scheme}://#{options[:host]}#{normalize_base_path(options[:base_path])}"
       [{ "url" => url }]
-    end
-
-    # Backward compatibility: map legacy nullable_keyword boolean to nullable_strategy
-    def nullable_strategy_from_legacy(options)
-      return unless options.key?(:nullable_keyword)
-
-      options[:nullable_keyword] == false ? Constants::NullableStrategy::TYPE_ARRAY : Constants::NullableStrategy::KEYWORD
     end
 
     # Build schemas from pre-registered models (entities/contracts)

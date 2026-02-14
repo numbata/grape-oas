@@ -134,6 +134,18 @@ module GrapeOAS
         assert_equal "string", result["type"]
         assert result["nullable"]
       end
+
+      def test_response_builder_defaults_to_keyword_nullable_strategy
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+        media_type = ApiModel::MediaType.new(mime_type: "application/json", schema: schema)
+        response = ApiModel::Response.new(http_status: 200, description: "ok", media_types: [media_type])
+
+        result = OAS3::Response.new([response]).build
+        built_schema = result["200"]["content"]["application/json"]["schema"]
+
+        assert_equal "string", built_schema["type"]
+        assert built_schema["nullable"]
+      end
     end
   end
 end

@@ -573,6 +573,17 @@ module GrapeOAS
       assert_equal %w[string null], zip_prop["type"], "nullable_strategy should override nullable_keyword"
     end
 
+    def test_oas31_ignores_legacy_nullable_keyword_and_keeps_type_array
+      schema = GrapeOAS.generate(app: API, schema_type: :oas31, nullable_keyword: true)
+      defs = schema.dig("components", "schemas")
+
+      detail_def = defs[defs.keys.find { |k| k.include?("DetailEntity") }]
+      zip_prop = detail_def["properties"]["zip"]
+
+      assert_equal %w[string null], zip_prop["type"], "OAS3.1 should keep JSON Schema null unions"
+      refute zip_prop.key?("nullable")
+    end
+
     # ============================================================
     # Helper Methods
     # ============================================================

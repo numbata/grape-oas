@@ -132,6 +132,14 @@ module GrapeOAS
   #   # Only includes paths like /users, /users/{id}, etc.
   #
   def generate(app:, schema_type: :oas3, **options)
+    if options[:nullable_strategy].nil? && options.key?(:nullable_keyword) && %i[oas3 oas30].include?(schema_type)
+      options[:nullable_strategy] = if options[:nullable_keyword] == false
+                                      Constants::NullableStrategy::TYPE_ARRAY
+                                    else
+                                      Constants::NullableStrategy::KEYWORD
+                                    end
+    end
+
     api_model = GrapeOAS::ApiModelBuilder.new(options)
     api_model.add_app(app)
 
