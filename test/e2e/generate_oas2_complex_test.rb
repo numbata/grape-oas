@@ -535,6 +535,44 @@ module GrapeOAS
       refute zip_prop.key?("x-nullable"), "default OAS2 should not emit x-nullable"
     end
 
+    # --- backward compatibility: nullable_keyword option ---
+
+    def test_legacy_nullable_keyword_false_maps_to_type_array
+      schema = GrapeOAS.generate(app: API, schema_type: :oas3, nullable_keyword: false)
+      defs = schema.dig("components", "schemas")
+
+      detail_def = defs[defs.keys.find { |k| k.include?("DetailEntity") }]
+      zip_prop = detail_def["properties"]["zip"]
+
+      assert_equal %w[string null], zip_prop["type"], "nullable_keyword: false should produce type array"
+      refute zip_prop.key?("nullable")
+    end
+
+    def test_legacy_nullable_keyword_true_maps_to_keyword
+      schema = GrapeOAS.generate(app: API, schema_type: :oas3, nullable_keyword: true)
+      defs = schema.dig("components", "schemas")
+
+      detail_def = defs[defs.keys.find { |k| k.include?("DetailEntity") }]
+      zip_prop = detail_def["properties"]["zip"]
+
+      assert_equal "string", zip_prop["type"], "nullable_keyword: true should keep scalar type"
+      assert zip_prop["nullable"]
+    end
+
+    def test_nullable_strategy_takes_precedence_over_legacy_nullable_keyword
+      schema = GrapeOAS.generate(
+        app: API, schema_type: :oas3,
+        nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,
+        nullable_keyword: true,
+      )
+      defs = schema.dig("components", "schemas")
+
+      detail_def = defs[defs.keys.find { |k| k.include?("DetailEntity") }]
+      zip_prop = detail_def["properties"]["zip"]
+
+      assert_equal %w[string null], zip_prop["type"], "nullable_strategy should override nullable_keyword"
+    end
+
     # ============================================================
     # Helper Methods
     # ============================================================
