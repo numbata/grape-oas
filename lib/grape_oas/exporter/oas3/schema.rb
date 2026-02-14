@@ -53,8 +53,7 @@ module GrapeOAS
             schema_hash["unevaluatedProperties"] = @schema.unevaluated_properties
           end
           if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY && @schema.defs && !@schema.defs.empty?
-            schema_hash["$defs"] =
-              @schema.defs
+            schema_hash["$defs"] = @schema.defs
           end
           schema_hash["discriminator"] = build_discriminator if @schema.discriminator
         end
