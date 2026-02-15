@@ -35,6 +35,18 @@ module GrapeOAS
       ALL = [JSON, XML, FORM_URLENCODED, MULTIPART_FORM].freeze
     end
 
+    # Nullable representation strategies for different OpenAPI versions.
+    # Passed via `nullable_strategy:` option to control how nullable fields
+    # are represented in the generated schema.
+    module NullableStrategy
+      # OAS 3.0: emits `"nullable": true` alongside the type
+      KEYWORD = :keyword
+      # OAS 3.1: emits `"type": ["string", "null"]` (JSON Schema style)
+      TYPE_ARRAY = :type_array
+      # OAS 2.0: emits `"x-nullable": true` extension
+      EXTENSION = :extension
+    end
+
     # Default values for OpenAPI spec when not provided by user
     module Defaults
       LICENSE_NAME = "Proprietary"

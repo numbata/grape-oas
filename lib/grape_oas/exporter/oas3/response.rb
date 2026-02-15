@@ -4,10 +4,10 @@ module GrapeOAS
   module Exporter
     module OAS3
       class Response
-        def initialize(responses, ref_tracker = nil, nullable_keyword: true)
+        def initialize(responses, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD)
           @responses = responses
           @ref_tracker = ref_tracker
-          @nullable_keyword = nullable_keyword
+          @nullable_strategy = nullable_strategy
         end
 
         def build
@@ -76,7 +76,7 @@ module GrapeOAS
             ref_name = schema.canonical_name.gsub("::", "_")
             { "$ref" => "#/components/schemas/#{ref_name}" }
           else
-            Schema.new(schema, @ref_tracker, nullable_keyword: @nullable_keyword).build
+            Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
           end
         end
       end

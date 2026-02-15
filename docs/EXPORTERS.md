@@ -30,6 +30,7 @@ schema = GrapeOAS.generate(app: MyAPI, schema_type: :oas31)
 - Request body via `in: body` parameters
 - `definitions` for schema references
 - `host`, `basePath`, `schemes` for server info
+- No built-in nullable support; use `nullable_strategy: :extension` to emit `x-nullable: true`
 - **Composition types**: Not all composition types are natively supported. The exporter uses a fallback type while preserving schema extensions for downstream consumers
 
 #### OpenAPI 3.0
@@ -37,15 +38,17 @@ schema = GrapeOAS.generate(app: MyAPI, schema_type: :oas31)
 - Separate `requestBody` object
 - `components/schemas` for schema references
 - `servers` array for server info
-- `nullable: true` for nullable types
+- `nullable: true` for nullable types (default); configurable via `nullable_strategy`
 - **Composition types**: Native support for `oneOf`, `anyOf`, `allOf`
 
 #### OpenAPI 3.1
 - Uses `openapi: "3.1.0"` version field
 - Full JSON Schema compatibility
-- `type: ["string", "null"]` instead of `nullable`
+- `type: ["string", "null"]` instead of `nullable` (always; not configurable)
 - `examples` array instead of singular `example`
 - License requires `identifier` OR `url` (not both)
+
+See [Configuration > Nullable Strategy](CONFIGURATION.md#nullable-strategy) for details on controlling nullable representation.
 
 ## Exporter Registry
 

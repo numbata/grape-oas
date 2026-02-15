@@ -96,6 +96,56 @@ module GrapeOAS
 
         assert_equal [1.5, 2.5, 3.5], result["enum"]
       end
+
+      # === nullable_strategy tests ===
+
+      def test_keyword_strategy_emits_nullable_true
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        assert_equal "string", result["type"]
+        assert result["nullable"]
+      end
+
+      def test_keyword_strategy_does_not_emit_nullable_when_not_nullable
+        schema = ApiModel::Schema.new(type: "string")
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        assert_equal "string", result["type"]
+        refute result.key?("nullable")
+      end
+
+      def test_type_array_strategy_produces_type_array_with_null
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        assert_equal %w[string null], result["type"]
+        refute result.key?("nullable")
+      end
+
+      def test_default_strategy_is_keyword
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+
+        result = OAS3::Schema.new(schema).build
+
+        assert_equal "string", result["type"]
+        assert result["nullable"]
+      end
+
+      def test_response_builder_defaults_to_keyword_nullable_strategy
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+        media_type = ApiModel::MediaType.new(mime_type: "application/json", schema: schema)
+        response = ApiModel::Response.new(http_status: 200, description: "ok", media_types: [media_type])
+
+        result = OAS3::Response.new([response]).build
+        built_schema = result["200"]["content"]["application/json"]["schema"]
+
+        assert_equal "string", built_schema["type"]
+        assert built_schema["nullable"]
+      end
     end
   end
 end

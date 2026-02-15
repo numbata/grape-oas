@@ -8,11 +8,10 @@ module GrapeOAS
       class Paths < Base::Paths
         private
 
-        # Build OAS3-specific operation with nullable_keyword option
+        # Build OAS3-specific operation with nullable_strategy option
         def build_operation(operation)
-          nullable_keyword = @options.key?(:nullable_keyword) ? @options[:nullable_keyword] : true
           Operation.new(operation, @ref_tracker,
-                        nullable_keyword: nullable_keyword,
+                        nullable_strategy: @options[:nullable_strategy] || Constants::NullableStrategy::KEYWORD,
                         suppress_default_error_response: @options[:suppress_default_error_response],).build
         end
       end

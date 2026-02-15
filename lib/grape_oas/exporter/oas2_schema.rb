@@ -66,8 +66,13 @@ module GrapeOAS
         media_types.empty? ? [Constants::MimeTypes::JSON] : media_types
       end
 
+      def nullable_strategy
+        @api.nullable_strategy
+      end
+
       def build_paths
         OAS2::Paths.new(@api, @ref_tracker,
+                        nullable_strategy: nullable_strategy,
                         suppress_default_error_response: @api.suppress_default_error_response,).build
       end
 
@@ -82,7 +87,7 @@ module GrapeOAS
       end
 
       def build_schema(schema)
-        OAS2::Schema.new(schema, @ref_tracker).build
+        OAS2::Schema.new(schema, @ref_tracker, nullable_strategy: nullable_strategy).build
       end
 
       def build_definitions
@@ -103,7 +108,7 @@ module GrapeOAS
 
           ref_name = canonical_name.gsub("::", "_")
           schema = find_schema_by_canonical_name(canonical_name)
-          definitions[ref_name] = OAS2::Schema.new(schema, @ref_tracker).build if schema
+          definitions[ref_name] = OAS2::Schema.new(schema, @ref_tracker, nullable_strategy: nullable_strategy).build if schema
           collect_refs(schema, pending) if schema
 
           @ref_tracker.to_a.each do |cn|

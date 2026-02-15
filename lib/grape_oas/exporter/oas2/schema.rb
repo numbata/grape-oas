@@ -4,9 +4,10 @@ module GrapeOAS
   module Exporter
     module OAS2
       class Schema
-        def initialize(schema, ref_tracker = nil)
+        def initialize(schema, ref_tracker = nil, nullable_strategy: nil)
           @schema = schema
           @ref_tracker = ref_tracker
+          @nullable_strategy = nullable_strategy
         end
 
         def build
@@ -57,10 +58,15 @@ module GrapeOAS
         end
 
         def apply_extensions(schema_hash)
+          schema_hash["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
           schema_hash.merge!(@schema.extensions) if @schema.extensions
         end
 
         private
+
+        def nullable?
+          @schema.respond_to?(:nullable) && @schema.nullable
+        end
 
         # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
         # Extensions are merged to allow x-anyOf/x-oneOf for consumers that support them
@@ -100,9 +106,13 @@ module GrapeOAS
           if schema.respond_to?(:canonical_name) && schema.canonical_name
             @ref_tracker << schema.canonical_name if @ref_tracker
             ref_name = schema.canonical_name.gsub("::", "_")
-            { "$ref" => "#/definitions/#{ref_name}" }
+            result = { "$ref" => "#/definitions/#{ref_name}" }
+            if @nullable_strategy == Constants::NullableStrategy::EXTENSION && schema.respond_to?(:nullable) && schema.nullable
+              result["x-nullable"] = true
+            end
+            result
           else
-            Schema.new(schema, @ref_tracker).build
+            Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
           end
         end
 

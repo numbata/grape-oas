@@ -4,10 +4,10 @@ module GrapeOAS
   module Exporter
     module OAS3
       class Parameter
-        def initialize(operation, ref_tracker = nil, nullable_keyword: true)
+        def initialize(operation, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD)
           @op = operation
           @ref_tracker = ref_tracker
-          @nullable_keyword = nullable_keyword
+          @nullable_strategy = nullable_strategy
         end
 
         def build
@@ -19,7 +19,7 @@ module GrapeOAS
               "description" => param.description,
               "style" => param.style,
               "explode" => param.explode,
-              "schema" => Schema.new(param.schema, @ref_tracker, nullable_keyword: @nullable_keyword).build
+              "schema" => Schema.new(param.schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
             }.compact
           end.presence
         end

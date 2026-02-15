@@ -80,6 +80,63 @@ module GrapeOAS
         assert_equal "#/definitions/TypeA", result["$ref"]
         refute result.key?("type")
       end
+
+      # === nullable_strategy: Constants::NullableStrategy::EXTENSION tests ===
+
+      def test_extension_strategy_emits_x_nullable_on_nullable_schema
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+
+        result = OAS2::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
+
+        assert_equal "string", result["type"]
+        assert result["x-nullable"]
+      end
+
+      def test_extension_strategy_does_not_emit_x_nullable_when_not_nullable
+        schema = ApiModel::Schema.new(type: "string")
+
+        result = OAS2::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
+
+        assert_equal "string", result["type"]
+        refute result.key?("x-nullable")
+      end
+
+      def test_no_strategy_does_not_emit_x_nullable
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal "string", result["type"]
+        refute result.key?("x-nullable")
+      end
+
+      def test_extension_strategy_emits_x_nullable_on_ref_schema
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", nullable: true)
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS2::Schema.new(parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/definitions/MyEntity", child["$ref"]
+        assert child["x-nullable"]
+      end
+
+      def test_extension_strategy_does_not_emit_x_nullable_on_non_nullable_ref
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS2::Schema.new(parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/definitions/MyEntity", child["$ref"]
+        refute child.key?("x-nullable")
+      end
     end
   end
 end
