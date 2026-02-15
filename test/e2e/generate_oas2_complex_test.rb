@@ -584,6 +584,17 @@ module GrapeOAS
       refute zip_prop.key?("nullable")
     end
 
+    def test_oas31_ignores_explicit_nullable_strategy_keyword
+      schema = GrapeOAS.generate(app: API, schema_type: :oas31, nullable_strategy: Constants::NullableStrategy::KEYWORD)
+      defs = schema.dig("components", "schemas")
+
+      detail_def = defs[defs.keys.find { |k| k.include?("DetailEntity") }]
+      zip_prop = detail_def["properties"]["zip"]
+
+      assert_equal %w[string null], zip_prop["type"], "OAS3.1 must use type array regardless of nullable_strategy"
+      refute zip_prop.key?("nullable"), "OAS3.1 must not emit nullable keyword"
+    end
+
     # ============================================================
     # Helper Methods
     # ============================================================

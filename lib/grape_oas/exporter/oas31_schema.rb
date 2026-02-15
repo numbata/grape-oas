@@ -27,7 +27,9 @@ module GrapeOAS
       end
 
       def nullable_strategy
-        @api.nullable_strategy || Constants::NullableStrategy::TYPE_ARRAY
+        # OAS 3.1 always uses JSON Schema null unions ("type": ["string", "null"]).
+        # The "nullable" keyword and "x-nullable" extension are not valid in OAS 3.1.
+        Constants::NullableStrategy::TYPE_ARRAY
       end
     end
   end
