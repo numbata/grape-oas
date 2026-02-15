@@ -37,8 +37,12 @@ module GrapeOAS
           return build_entity_schema(raw_type) if grape_entity?(raw_type)
           return build_elements_array_schema(spec) if array_with_elements?(raw_type, spec)
           return build_multi_type_schema(raw_type) if multi_type?(raw_type)
-          return build_typed_array_schema(raw_type) if typed_array?(raw_type)
           return build_simple_array_schema if simple_array?(raw_type)
+
+          # Use TypeResolvers registry for arrays, Dry::Types, and primitives
+          # This resolves stringified types back to actual classes and extracts rich metadata
+          resolved_schema = GrapeOAS.type_resolvers.build_schema(raw_type)
+          return resolved_schema if resolved_schema
 
           build_primitive_schema(raw_type, doc)
         end
@@ -170,27 +174,9 @@ module GrapeOAS
           !!resolve_entity_class(type)
         end
 
-        # Checks if type is a Grape typed array notation like "[String]"
-        def typed_array?(type)
-          type.is_a?(String) && type.match?(TYPED_ARRAY_PATTERN)
-        end
-
         # Checks if type is a simple Array (class or string)
         def simple_array?(type)
           type == Array || type.to_s == "Array"
-        end
-
-        # Builds schema for Grape's typed array notation like "[String]", "[Integer]"
-        def build_typed_array_schema(type)
-          member_type = extract_typed_array_member(type)
-          items_type = resolve_schema_type(member_type)
-          ApiModel::Schema.new(
-            type: Constants::SchemaTypes::ARRAY,
-            items: ApiModel::Schema.new(
-              type: items_type,
-              format: Constants.format_for_type(member_type),
-            ),
-          )
         end
 
         def resolve_entity_class(type)
