@@ -58,13 +58,15 @@ module GrapeOAS
         end
 
         def apply_extensions(schema_hash)
-          if @nullable_strategy == Constants::NullableStrategy::EXTENSION && @schema.respond_to?(:nullable) && @schema.nullable
-            schema_hash["x-nullable"] = true
-          end
+          schema_hash["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
           schema_hash.merge!(@schema.extensions) if @schema.extensions
         end
 
         private
+
+        def nullable?
+          @schema.respond_to?(:nullable) && @schema.nullable
+        end
 
         # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
         # Extensions are merged to allow x-anyOf/x-oneOf for consumers that support them

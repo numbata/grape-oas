@@ -49,11 +49,9 @@ module GrapeOAS
           schema_hash.merge!(@schema.extensions) if @schema.extensions
           schema_hash.delete("properties") if schema_hash["properties"]&.empty? || @schema.type != Constants::SchemaTypes::OBJECT
           schema_hash["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
-          if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY && !@schema.unevaluated_properties.nil?
-            schema_hash["unevaluatedProperties"] = @schema.unevaluated_properties
-          end
-          if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY && @schema.defs && !@schema.defs.empty?
-            schema_hash["$defs"] = @schema.defs
+          if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY
+            schema_hash["unevaluatedProperties"] = @schema.unevaluated_properties unless @schema.unevaluated_properties.nil?
+            schema_hash["$defs"] = @schema.defs if @schema.defs && !@schema.defs.empty?
           end
           schema_hash["discriminator"] = build_discriminator if @schema.discriminator
         end
