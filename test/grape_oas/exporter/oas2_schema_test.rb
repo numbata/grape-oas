@@ -120,7 +120,7 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal "#/definitions/MyEntity", child["$ref"]
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], child["allOf"]
         assert child["x-nullable"]
       end
 
@@ -136,6 +136,53 @@ module GrapeOAS
 
         assert_equal "#/definitions/MyEntity", child["$ref"]
         refute child.key?("x-nullable")
+      end
+
+      # === $ref + allOf wrapping tests ===
+
+      def test_ref_with_description_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", description: "A related entity")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS2::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], child["allOf"]
+        assert_equal "A related entity", child["description"]
+        refute child.key?("$ref")
+      end
+
+      def test_ref_without_description_stays_plain
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS2::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/definitions/MyEntity", child["$ref"]
+        refute child.key?("allOf")
+      end
+
+      def test_ref_with_description_and_nullable_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", description: "A related entity", nullable: true)
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS2::Schema.new(parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], child["allOf"]
+        assert_equal "A related entity", child["description"]
+        assert child["x-nullable"]
+        refute child.key?("$ref")
       end
     end
   end

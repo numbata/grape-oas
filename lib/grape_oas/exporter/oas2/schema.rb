@@ -106,11 +106,18 @@ module GrapeOAS
           if schema.respond_to?(:canonical_name) && schema.canonical_name
             @ref_tracker << schema.canonical_name if @ref_tracker
             ref_name = schema.canonical_name.gsub("::", "_")
-            result = { "$ref" => "#/definitions/#{ref_name}" }
+            ref_hash = { "$ref" => "#/definitions/#{ref_name}" }
+            result = {}
             if @nullable_strategy == Constants::NullableStrategy::EXTENSION && schema.respond_to?(:nullable) && schema.nullable
               result["x-nullable"] = true
             end
-            result
+            result["description"] = schema.description.to_s if schema.description
+            if result.empty?
+              ref_hash
+            else
+              result["allOf"] = [ref_hash]
+              result
+            end
           else
             Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
           end
