@@ -29,7 +29,8 @@ module GrapeOAS
         # @param doc [Hash] the documentation hash
         # @return [Boolean] true if nullable
         def self.extract_nullable(spec, doc)
-          spec[:allow_nil] || spec[:nullable] || doc[:nullable] || false
+          spec[:allow_nil] || spec[:nullable] || doc[:nullable] ||
+            (doc[:x].is_a?(Hash) && doc[:x][:nullable]) || false
         end
 
         class << self

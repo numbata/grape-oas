@@ -479,6 +479,77 @@ module GrapeOAS
         assert_includes param_names, "options[force]"
       end
 
+      # === Nullable nested hash via documentation: { x: { nullable: true } } ===
+
+      def test_nested_hash_with_x_nullable_documentation_sets_nullable
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :response_settings, type: Hash, documentation: { x: { nullable: true } } do
+              requires :format, type: String
+              requires :policy, type: String
+            end
+          end
+          post "choices" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        response_settings = body_schema.properties["response_settings"]
+
+        assert_equal "object", response_settings.type
+        assert response_settings.nullable, "Expected response_settings schema to be nullable"
+      end
+
+      def test_nested_hash_without_nullable_documentation_is_not_nullable
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :settings, type: Hash do
+              requires :key, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        settings = body_schema.properties["settings"]
+
+        assert_equal "object", settings.type
+        refute settings.nullable, "Expected settings schema to NOT be nullable"
+      end
+
+      def test_nested_hash_with_direct_nullable_documentation_sets_nullable
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :metadata, type: Hash, documentation: { nullable: true } do
+              requires :key, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        metadata = body_schema.properties["metadata"]
+
+        assert metadata.nullable, "Expected metadata schema to be nullable"
+      end
+
       def test_head_request_flattens_nested_to_query_by_default
         api_class = Class.new(Grape::API) do
           format :json
