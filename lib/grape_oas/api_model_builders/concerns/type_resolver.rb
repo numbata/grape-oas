@@ -13,10 +13,10 @@ module GrapeOAS
       # Used by request builders and introspectors to avoid duplicated type switching logic.
       module TypeResolver
         # Regex to match Grape's typed array notation like "[String]", "[Integer]", "[MyModule::MyType]"
-        TYPED_ARRAY_PATTERN = /^\[(\w+(?:::\w+)*)\]$/
+        TYPED_ARRAY_PATTERN = /\A\[(\w+(?:::\w+)*)\]\z/
 
         # Regex to match Grape's multi-type notation like "[String, Integer]", "[String, Float]"
-        MULTI_TYPE_PATTERN = /^\[(\w+(?:::\w+)*(?:,\s*\w+(?:::\w+)*)+)\]$/
+        MULTI_TYPE_PATTERN = /\A\[(\w+(?:::\w+)*(?:,\s*\w+(?:::\w+)*)+)\]\z/
 
         # Resolves a Ruby class or type name to its OpenAPI schema type string.
         # Handles both Ruby classes (Integer, Float) and string type names ("integer", "float").

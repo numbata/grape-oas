@@ -62,35 +62,10 @@ module GrapeOAS
           # (e.g., Grape::Entity, Dry::Schema, custom types)
           return GrapeOAS.introspectors.build_schema(klass, stack: [], registry: {}) if GrapeOAS.introspectors.handles?(klass)
 
-          # Handle Dry::Types
-          if klass.respond_to?(:primitive)
-            build_dry_type_schema(klass)
-          else
-            build_primitive_schema(klass)
-          end
-        end
+          # Delegate Dry::Types (including constrained wrappers) to DryTypeResolver
+          return DryTypeResolver.build_schema(klass) if DryTypeResolver.handles?(klass)
 
-        def build_dry_type_schema(dry_type)
-          primitive = dry_type.primitive
-          schema_type = primitive_to_schema_type(primitive)
-          format = extract_dry_type_format(dry_type)
-
-          ApiModel::Schema.new(
-            type: schema_type,
-            format: format,
-          )
-        end
-
-        def extract_dry_type_format(dry_type)
-          # Check meta for explicit format
-          if dry_type.respond_to?(:meta)
-            meta = dry_type.meta
-            return meta[:format] if meta[:format]
-          end
-
-          # Infer format from type name
-          type_name = dry_type.respond_to?(:name) ? dry_type.name.to_s : dry_type.to_s
-          infer_format_from_name(type_name)
+          build_primitive_schema(klass)
         end
 
         def build_primitive_schema(klass)

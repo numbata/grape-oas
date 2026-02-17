@@ -5,6 +5,25 @@ require "test_helper"
 module GrapeOAS
   module TypeResolvers
     class ArrayResolverTest < Minitest::Test
+      # Mock constrained Dry::Type — has .type but no .primitive
+      class MockConstrainedDryType
+        attr_reader :type
+
+        def initialize(type)
+          @type = type
+        end
+      end
+
+      # Mock Dry::Type with .primitive
+      class MockDryType
+        attr_reader :primitive, :meta
+
+        def initialize(primitive:, meta: {})
+          @primitive = primitive
+          @meta = meta
+        end
+      end
+
       # === handles? tests ===
 
       def test_handles_string_array_notation
@@ -144,6 +163,23 @@ module GrapeOAS
 
         assert_equal Constants::SchemaTypes::ARRAY, schema.type
         assert_equal "uri", schema.items.format
+      end
+
+      # === Constrained Dry::Type as array item ===
+
+      def test_builds_array_of_constrained_dry_type
+        # A constrained Dry type wraps the actual type — .primitive is on the inner type,
+        # not on the constrained wrapper. ArrayResolver must unwrap before accessing primitive.
+        inner_type = MockDryType.new(primitive: Integer)
+        constrained = MockConstrainedDryType.new(inner_type)
+
+        # Stub Object.const_get to return the constrained type for our test class name
+        ArrayResolver.stub(:resolve_class, ->(_name) { constrained }) do
+          schema = ArrayResolver.build_schema("[SomeModule::ConstrainedAge]")
+
+          assert_equal Constants::SchemaTypes::ARRAY, schema.type
+          assert_equal Constants::SchemaTypes::INTEGER, schema.items.type
+        end
       end
 
       def test_build_schema_does_not_raise_when_bigdecimal_constant_is_missing
