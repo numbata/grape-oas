@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#38](https://github.com/numbata/grape-oas/pull/38): Wrap `$ref` in `allOf` when `description` or `nullable` is present — fixes sibling properties being ignored per OpenAPI spec - [@numbata](https://github.com/numbata).
 - [#37](https://github.com/numbata/grape-oas/pull/37): Fix OAS 3.0 `nullable` keyword being constructed but not emitted in the generated output - [@numbata](https://github.com/numbata).
 
 ## [1.1.0] - 2026-01-23

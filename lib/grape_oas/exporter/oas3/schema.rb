@@ -173,6 +173,10 @@ module GrapeOAS
             result["nullable"] = true
           when Constants::NullableStrategy::EXTENSION
             result["x-nullable"] = true
+          when Constants::NullableStrategy::TYPE_ARRAY
+            # TYPE_ARRAY encodes nullability via the "type" field, which cannot be
+            # applied to a $ref schema. For refs we intentionally do nothing.
+            nil
           end
         end
 
