@@ -195,6 +195,21 @@ module GrapeOAS
         assert schema.nullable
       end
 
+      # === build_schema with string input ===
+
+      def test_builds_schema_from_string_that_resolves_to_dry_type
+        # When build_schema receives a string (not a Dry::Type object),
+        # it should resolve the class via resolve_class and build the schema.
+        dry_type = MockDryType.new(primitive: String, meta: { format: "uuid" })
+
+        DryTypeResolver.stub(:resolve_class, ->(_name) { dry_type }) do
+          schema = DryTypeResolver.build_schema("SomeModule::UUID")
+
+          assert_equal Constants::SchemaTypes::STRING, schema.type
+          assert_equal "uuid", schema.format
+        end
+      end
+
       # === Constrained type unwrapping ===
 
       def test_unwraps_constrained_type_to_get_primitive

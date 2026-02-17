@@ -182,6 +182,37 @@ module GrapeOAS
         end
       end
 
+      # === build_schema tests for string_to_schema_type fallback branches ===
+      # When resolve_class returns nil, string_to_schema_type infers the type from the name.
+
+      def test_builds_array_of_unresolvable_integer_type_via_string_fallback
+        schema = ArrayResolver.build_schema("[Nonexistent::Integer]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::INTEGER, schema.items.type
+      end
+
+      def test_builds_array_of_unresolvable_boolean_type_via_string_fallback
+        schema = ArrayResolver.build_schema("[Nonexistent::Boolean]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::BOOLEAN, schema.items.type
+      end
+
+      def test_builds_array_of_unresolvable_hash_type_via_string_fallback
+        schema = ArrayResolver.build_schema("[Nonexistent::Hash]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::OBJECT, schema.items.type
+      end
+
+      def test_builds_array_of_unresolvable_array_type_via_string_fallback
+        schema = ArrayResolver.build_schema("[Nonexistent::Array]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::ARRAY, schema.items.type
+      end
+
       def test_build_schema_for_bigdecimal_array_when_constant_is_missing
         original_bigdecimal = Object.const_get(:BigDecimal) if Object.const_defined?(:BigDecimal)
 
