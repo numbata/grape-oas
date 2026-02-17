@@ -182,15 +182,16 @@ module GrapeOAS
         end
       end
 
-      def test_build_schema_does_not_raise_when_bigdecimal_constant_is_missing
+      def test_build_schema_for_bigdecimal_array_when_constant_is_missing
         original_bigdecimal = Object.const_get(:BigDecimal) if Object.const_defined?(:BigDecimal)
 
         Object.send(:remove_const, :BigDecimal) if Object.const_defined?(:BigDecimal)
 
-        schema = ArrayResolver.build_schema("[Float]")
+        schema = ArrayResolver.build_schema("[BigDecimal]")
 
         assert_equal Constants::SchemaTypes::ARRAY, schema.type
         assert_equal Constants::SchemaTypes::NUMBER, schema.items.type
+        assert_equal "double", schema.items.format
       ensure
         Object.const_set(:BigDecimal, original_bigdecimal) if original_bigdecimal && !Object.const_defined?(:BigDecimal)
       end

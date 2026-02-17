@@ -81,7 +81,7 @@ module GrapeOAS
         def build_schema_from_string(type_name)
           # Can't resolve class - fall back to string parsing
           schema_type = string_to_schema_type(type_name)
-          format = infer_format_from_name(type_name)
+          format = Constants.format_for_type(type_name) || infer_format_from_name(type_name)
 
           ApiModel::Schema.new(
             type: schema_type,
