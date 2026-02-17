@@ -173,13 +173,15 @@ module GrapeOAS
         inner_type = MockDryType.new(primitive: Integer)
         constrained = MockConstrainedDryType.new(inner_type)
 
-        # Stub Object.const_get to return the constrained type for our test class name
-        ArrayResolver.stub(:resolve_class, ->(_name) { constrained }) do
-          schema = ArrayResolver.build_schema("[SomeModule::ConstrainedAge]")
+        # Define a real constant so resolve_class can find it via Object.const_get
+        self.class.const_set(:ConstrainedAge, constrained)
 
-          assert_equal Constants::SchemaTypes::ARRAY, schema.type
-          assert_equal Constants::SchemaTypes::INTEGER, schema.items.type
-        end
+        schema = ArrayResolver.build_schema("[#{self.class.name}::ConstrainedAge]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::INTEGER, schema.items.type
+      ensure
+        self.class.send(:remove_const, :ConstrainedAge) if self.class.const_defined?(:ConstrainedAge)
       end
 
       # === build_schema tests for string_to_schema_type fallback branches ===

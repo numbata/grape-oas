@@ -202,12 +202,15 @@ module GrapeOAS
         # it should resolve the class via resolve_class and build the schema.
         dry_type = MockDryType.new(primitive: String, meta: { format: "uuid" })
 
-        DryTypeResolver.stub(:resolve_class, ->(_name) { dry_type }) do
-          schema = DryTypeResolver.build_schema("SomeModule::UUID")
+        # Define a real constant so resolve_class can find it via Object.const_get
+        self.class.const_set(:ResolvableUUID, dry_type)
 
-          assert_equal Constants::SchemaTypes::STRING, schema.type
-          assert_equal "uuid", schema.format
-        end
+        schema = DryTypeResolver.build_schema("#{self.class.name}::ResolvableUUID")
+
+        assert_equal Constants::SchemaTypes::STRING, schema.type
+        assert_equal "uuid", schema.format
+      ensure
+        self.class.send(:remove_const, :ResolvableUUID) if self.class.const_defined?(:ResolvableUUID)
       end
 
       # === Constrained type unwrapping ===
