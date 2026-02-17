@@ -150,9 +150,33 @@ module GrapeOAS
           if schema.respond_to?(:canonical_name) && schema.canonical_name
             @ref_tracker << schema.canonical_name if @ref_tracker
             ref_name = schema.canonical_name.gsub("::", "_")
-            { "$ref" => "#/components/schemas/#{ref_name}" }
+            ref_hash = { "$ref" => "#/components/schemas/#{ref_name}" }
+            result = {}
+            result["description"] = schema.description.to_s if schema.description
+            apply_nullable_to_ref(result, schema)
+            if result.empty?
+              ref_hash
+            else
+              result["allOf"] = [ref_hash]
+              result
+            end
           else
             Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+          end
+        end
+
+        def apply_nullable_to_ref(result, schema)
+          return unless schema.respond_to?(:nullable) && schema.nullable
+
+          case @nullable_strategy
+          when Constants::NullableStrategy::KEYWORD
+            result["nullable"] = true
+          when Constants::NullableStrategy::EXTENSION
+            result["x-nullable"] = true
+          when Constants::NullableStrategy::TYPE_ARRAY
+            # TYPE_ARRAY encodes nullability via the "type" field, which cannot be
+            # applied to a $ref schema. For refs we intentionally do nothing.
+            nil
           end
         end
 
