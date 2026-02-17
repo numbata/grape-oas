@@ -11,7 +11,7 @@ module GrapeOAS
         # @param spec [Hash] the parameter specification
         # @param doc [Hash] the documentation hash
         def self.apply(schema, spec, doc)
-          nullable = extract_nullable(spec, doc)
+          nullable = extract_nullable(doc)
 
           schema.description ||= doc[:desc]
           # Preserve existing nullable: true (e.g., from [Type, Nil] optimization)
@@ -23,14 +23,12 @@ module GrapeOAS
           apply_values(schema, spec)
         end
 
-        # Extracts nullable flag from spec and documentation.
+        # Extracts nullable flag from a documentation hash.
         #
-        # @param spec [Hash] the parameter specification
         # @param doc [Hash] the documentation hash
         # @return [Boolean] true if nullable
-        def self.extract_nullable(spec, doc)
-          spec[:allow_nil] || spec[:nullable] || doc[:nullable] ||
-            (doc[:x].is_a?(Hash) && doc[:x][:nullable]) || false
+        def self.extract_nullable(doc)
+          doc[:nullable] || (doc[:x].is_a?(Hash) && doc[:x][:nullable]) || false
         end
 
         class << self
