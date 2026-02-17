@@ -148,7 +148,7 @@ module GrapeOAS
           schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
           schema.format = doc[:format] if doc[:format]
           schema.examples = doc[:example] if doc[:example]
-          nullable = SchemaEnhancer.extract_nullable(parent_spec, doc)
+          nullable = SchemaEnhancer.extract_nullable(doc)
           schema.nullable = (schema.nullable || nullable) if schema.respond_to?(:nullable=)
         end
       end

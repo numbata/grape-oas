@@ -194,7 +194,7 @@ module GrapeOAS
         assert_equal "The user name", name_param.description
       end
 
-      def test_sets_nullable_from_allow_nil
+      def test_sets_nullable_from_documentation_nullable
         api_class = Class.new(Grape::API) do
           format :json
           params do
