@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#36](https://github.com/numbata/grape-oas/pull/36): Add extensible TypeResolvers for resolving Grape's stringified parameter types to OpenAPI schemas with rich metadata (format, enum, nullable) - [@numbata](https://github.com/numbata).
 - [#37](https://github.com/numbata/grape-oas/pull/37): Replace boolean `nullable_keyword` with configurable `nullable_strategy` - [@numbata](https://github.com/numbata).
 
 ### Fixed
