@@ -27,6 +27,14 @@ module GrapeOAS
           # Handle boolean Sum types (TrueClass | FalseClass)
           return [TrueClass, nil] if boolean_sum_type?(dry_type)
 
+          # Handle nullable Sum types (NilClass | SomeType) from maybe()
+          # Sum uses Composition (.left/.right), not Decorator (.type),
+          # so unwrap() can't traverse it. Extract the non-nil branch instead.
+          if nullable_sum_type?(dry_type)
+            non_nil = dry_type.respond_to?(:right) && !nil_type?(dry_type.right) ? dry_type.right : dry_type.left
+            return derive_primitive_and_member(non_nil)
+          end
+
           core = unwrap(dry_type)
 
           return [Array, core.type.member] if array_member_type?(core)
@@ -140,6 +148,13 @@ module GrapeOAS
             core.primitive == Array
         end
         private_class_method :array_with_member?
+
+        def nullable_sum_type?(dry_type)
+          return false unless dry_type.respond_to?(:left) && dry_type.respond_to?(:right)
+
+          nil_type?(dry_type.left) || nil_type?(dry_type.right)
+        end
+        private_class_method :nullable_sum_type?
 
         def boolean_sum_type?(dry_type)
           return false unless dry_type.respond_to?(:left) && dry_type.respond_to?(:right)

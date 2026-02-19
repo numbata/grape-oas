@@ -56,6 +56,32 @@ module GrapeOAS
         assert_equal "string", priority_param.schema.type # Symbol -> string
       end
 
+      # === Set values (Grape internally stores values: as Set) ===
+
+      def test_set_enum_values
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :sort_order, type: Symbol, values: Set[:asc, :desc]
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        sort_param = params.find { |p| p.name == "sort_order" }
+
+        refute_nil sort_param
+        assert_equal "string", sort_param.schema.type
+        assert_includes sort_param.schema.enum, :asc
+        assert_includes sort_param.schema.enum, :desc
+        assert_equal 2, sort_param.schema.enum.size
+      end
+
       # === Integer values ===
 
       def test_integer_enum_values
