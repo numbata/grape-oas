@@ -255,6 +255,88 @@ module GrapeOAS
         refute child.key?("$ref")
         refute child.key?("type")
       end
+
+      # === Array items: description/nullable hoisting tests ===
+
+      def test_array_ref_items_description_hoisted_to_outer_array
+        ref_tracker = Set.new
+        items_schema = ApiModel::Schema.new(canonical_name: "ItemEntity", description: "An item")
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema, ref_tracker).build
+
+        assert_equal "array", result["type"]
+        assert_equal "An item", result["description"]
+        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
+      end
+
+      def test_array_ref_items_nullable_keyword_hoisted_to_outer_array
+        ref_tracker = Set.new
+        items_schema = ApiModel::Schema.new(canonical_name: "ItemEntity", nullable: true)
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        assert_equal "array", result["type"]
+        assert result["nullable"], "nullable should be on the outer array"
+        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
+      end
+
+      def test_array_ref_items_nullable_extension_hoisted_to_outer_array
+        ref_tracker = Set.new
+        items_schema = ApiModel::Schema.new(canonical_name: "ItemEntity", nullable: true)
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
+
+        assert_equal "array", result["type"]
+        assert result["x-nullable"], "x-nullable should be on the outer array"
+        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
+      end
+
+      def test_array_ref_items_nullable_type_array_hoisted_to_outer_array
+        ref_tracker = Set.new
+        items_schema = ApiModel::Schema.new(canonical_name: "ItemEntity", nullable: true)
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        assert_equal %w[array null], result["type"]
+        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
+      end
+
+      def test_array_ref_items_description_does_not_overwrite_outer
+        ref_tracker = Set.new
+        items_schema = ApiModel::Schema.new(canonical_name: "ItemEntity", description: "Item desc")
+        array_schema = ApiModel::Schema.new(type: "array", description: "Array desc", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema, ref_tracker).build
+
+        assert_equal "Array desc", result["description"], "Outer array description should take precedence"
+        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
+      end
+
+      def test_array_inline_items_description_hoisted_to_outer_array
+        items_schema = ApiModel::Schema.new(type: "string", description: "A string item")
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema).build
+
+        assert_equal "array", result["type"]
+        assert_equal "A string item", result["description"]
+        refute result["items"].key?("description"), "Description should not remain on items"
+      end
+
+      def test_array_inline_items_nullable_stripped_and_hoisted
+        items_schema = ApiModel::Schema.new(type: "string", nullable: true)
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema, nil, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        assert_equal "array", result["type"]
+        assert result["nullable"], "nullable should be on the outer array"
+        refute result["items"].key?("nullable"), "nullable should not remain on items"
+      end
     end
   end
 end

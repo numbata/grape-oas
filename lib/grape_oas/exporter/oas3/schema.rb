@@ -32,7 +32,22 @@ module GrapeOAS
           apply_nullable(schema_hash)
           props = build_properties(@schema.properties)
           schema_hash["properties"] = props if props
-          schema_hash["items"] = @schema.items ? build_schema_or_ref(@schema.items) : nil
+          if @schema.items
+            schema_hash["items"] = build_schema_or_ref(@schema.items, include_metadata: false)
+            if !schema_hash["description"] && @schema.items.respond_to?(:description) && @schema.items.description
+              schema_hash["description"] = @schema.items.description.to_s
+            end
+            if @schema.items.respond_to?(:nullable) && @schema.items.nullable
+              case @nullable_strategy
+              when Constants::NullableStrategy::KEYWORD
+                schema_hash["nullable"] = true
+              when Constants::NullableStrategy::EXTENSION
+                schema_hash["x-nullable"] = true
+              when Constants::NullableStrategy::TYPE_ARRAY
+                schema_hash["type"] = (Array(schema_hash["type"]) | ["null"])
+              end
+            end
+          end
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
           schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"]) if @schema.enum
           schema_hash
@@ -146,11 +161,13 @@ module GrapeOAS
           end
         end
 
-        def build_schema_or_ref(schema)
+        def build_schema_or_ref(schema, include_metadata: true)
           if schema.respond_to?(:canonical_name) && schema.canonical_name
             @ref_tracker << schema.canonical_name if @ref_tracker
             ref_name = schema.canonical_name.gsub("::", "_")
             ref_hash = { "$ref" => "#/components/schemas/#{ref_name}" }
+            return ref_hash unless include_metadata
+
             result = {}
             result["description"] = schema.description.to_s if schema.description
             apply_nullable_to_ref(result, schema)
@@ -161,8 +178,20 @@ module GrapeOAS
               result
             end
           else
-            Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            built = Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            strip_items_metadata(built) unless include_metadata
+            built
           end
+        end
+
+        def strip_items_metadata(hash)
+          hash.delete("description")
+          hash.delete("nullable")
+          hash.delete("x-nullable")
+          return unless hash["type"].is_a?(Array)
+
+          types = hash["type"] - ["null"]
+          hash["type"] = types.length == 1 ? types.first : types
         end
 
         def apply_nullable_to_ref(result, schema)
