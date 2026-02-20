@@ -138,6 +138,34 @@ module GrapeOAS
         refute_includes operation.request_body.media_types.first.schema.required, "tags"
       end
 
+      # === Coercible types with maybe() ===
+
+      def test_maybe_coercible_integer_resolves_to_nullable_integer
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract Dry::Schema.Params do
+            optional(:slide_number).maybe(Dry::Types["coercible.integer"].constrained(gt: 0))
+          end
+
+          post "/slides" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
+
+        Request.new(api: api, route: route, operation: operation).build
+
+        slide_number = operation.request_body.media_types.first.schema.properties["slide_number"]
+
+        assert_equal "integer", slide_number.type
+        assert slide_number.nullable
+        assert_equal 0, slide_number.minimum, "gt: 0 constraint should propagate as minimum"
+        assert slide_number.exclusive_minimum, "gt: 0 should set exclusive_minimum"
+      end
+
       # === Multiple routes with different contracts ===
 
       def test_multiple_routes_with_different_contracts_use_correct_schemas
