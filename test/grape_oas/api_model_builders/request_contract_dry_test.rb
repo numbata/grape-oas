@@ -162,6 +162,8 @@ module GrapeOAS
 
         assert_equal "integer", slide_number.type
         assert slide_number.nullable
+        assert_equal 0, slide_number.minimum, "gt: 0 constraint should propagate as minimum"
+        assert slide_number.exclusive_minimum, "gt: 0 should set exclusive_minimum"
       end
 
       # === Multiple routes with different contracts ===

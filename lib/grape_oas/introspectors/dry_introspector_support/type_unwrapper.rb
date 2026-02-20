@@ -31,7 +31,7 @@ module GrapeOAS
           # Sum uses Composition (.left/.right), not Decorator (.type),
           # so unwrap() can't traverse it. Extract the non-nil branch instead.
           if nullable_sum_type?(dry_type)
-            non_nil = dry_type.respond_to?(:right) && !nil_type?(dry_type.right) ? dry_type.right : dry_type.left
+            non_nil = nil_type?(dry_type.right) ? dry_type.left : dry_type.right
             return derive_primitive_and_member(non_nil)
           end
 
