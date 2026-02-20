@@ -252,6 +252,52 @@ module GrapeOAS
         assert_equal "object", inner.type
         assert_includes inner.properties.keys, "inner_value"
       end
+
+      # === Entity with :description field (naming collision) ===
+
+      class EntityWithDescriptionField < Grape::Entity
+        expose :title, documentation: { type: String }
+        expose :description, documentation: { type: String, desc: "A text description" }
+      end
+
+      def test_description_field_does_not_leak_as_entity_description
+        schema = EntityIntrospector.new(EntityWithDescriptionField).build_schema
+
+        # The entity-level description must be nil (not the Hash for the :description field)
+        assert_nil schema.description, "Entity description should be nil, not field documentation Hash"
+
+        # The :description field should still appear as a property
+        assert_includes schema.properties.keys, "description"
+        assert_equal "string", schema.properties["description"].type
+      end
+
+      # === PropertyExtractor.extract_description unit tests ===
+
+      def test_extract_description_returns_string_description
+        doc = { description: "A string description" }
+
+        assert_equal "A string description",
+                     EntityIntrospectorSupport::PropertyExtractor.extract_description(doc)
+      end
+
+      def test_extract_description_returns_nil_for_hash_description
+        doc = { description: { type: String, desc: "field docs" } }
+
+        assert_nil EntityIntrospectorSupport::PropertyExtractor.extract_description(doc)
+      end
+
+      def test_extract_description_falls_back_to_desc_key
+        doc = { desc: "Fallback description" }
+
+        assert_equal "Fallback description",
+                     EntityIntrospectorSupport::PropertyExtractor.extract_description(doc)
+      end
+
+      def test_extract_description_returns_nil_when_no_description
+        doc = { type: String }
+
+        assert_nil EntityIntrospectorSupport::PropertyExtractor.extract_description(doc)
+      end
     end
   end
 end

@@ -12,7 +12,8 @@ module GrapeOAS
           # @param hash [Hash] the documentation hash
           # @return [String, nil] the description value
           def extract_description(hash)
-            hash[:description] || hash[:desc]
+            desc = hash[:description] || hash[:desc]
+            desc.is_a?(String) ? desc : nil
           end
 
           # Extracts nullable flag from a documentation hash.
