@@ -33,9 +33,18 @@ module GrapeOAS
             "format" => @schema.format,
             "description" => @schema.description&.to_s,
             "properties" => build_properties(@schema.properties),
-            "items" => (@schema.items ? build_schema_or_ref(@schema.items) : nil),
             "enum" => normalize_enum(@schema.enum, @schema.type)
           }
+          if @schema.items
+            schema_hash["items"] = build_schema_or_ref(@schema.items, include_metadata: false)
+            if !schema_hash["description"] && @schema.items.respond_to?(:description) && @schema.items.description
+              schema_hash["description"] = @schema.items.description.to_s
+            end
+            if @nullable_strategy == Constants::NullableStrategy::EXTENSION &&
+               @schema.items.respond_to?(:nullable) && @schema.items.nullable
+              schema_hash["x-nullable"] = true
+            end
+          end
           if schema_hash["properties"].nil? || schema_hash["properties"].empty? || @schema.type != Constants::SchemaTypes::OBJECT
             schema_hash.delete("properties")
           end
@@ -102,11 +111,13 @@ module GrapeOAS
           end
         end
 
-        def build_schema_or_ref(schema)
+        def build_schema_or_ref(schema, include_metadata: true)
           if schema.respond_to?(:canonical_name) && schema.canonical_name
             @ref_tracker << schema.canonical_name if @ref_tracker
             ref_name = schema.canonical_name.gsub("::", "_")
             ref_hash = { "$ref" => "#/definitions/#{ref_name}" }
+            return ref_hash unless include_metadata
+
             result = {}
             if @nullable_strategy == Constants::NullableStrategy::EXTENSION && schema.respond_to?(:nullable) && schema.nullable
               result["x-nullable"] = true
@@ -119,7 +130,12 @@ module GrapeOAS
               result
             end
           else
-            Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            built = Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            unless include_metadata
+              built.delete("description")
+              built.delete("x-nullable")
+            end
+            built
           end
         end
 
