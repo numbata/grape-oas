@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#42](https://github.com/numbata/grape-oas/pull/42): Fix array items `description` and `nullable` placement — hoist to outer array schema instead of wrapping `items` in `allOf`; fix `:description` field naming collision in `PropertyExtractor` - [@numbata](https://github.com/numbata).
 - [#41](https://github.com/numbata/grape-oas/pull/41): Fix `Set` enum values being silently dropped and `maybe(Coercible::Integer)` resolving to `string` instead of `integer` - [@numbata](https://github.com/numbata).
 - [#40](https://github.com/numbata/grape-oas/pull/40): Remove dead `spec[:allow_nil]` and `spec[:nullable]` checks from `extract_nullable` — these values were never set by Grape or grape-swagger - [@numbata](https://github.com/numbata).
 - [#39](https://github.com/numbata/grape-oas/pull/39): Support `documentation: { x: { nullable: true } }` on nested Hash params — nullable flag was ignored for object container schemas - [@numbata](https://github.com/numbata).
