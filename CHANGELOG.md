@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-* Your contribution here
+* [#44](https://github.com/numbata/grape-oas/pull/44): Fix RuboCop 1.85 offenses - [@numbata](https://github.com/numbata).
 
 ## [1.2.0] - 2026-03-02
 
