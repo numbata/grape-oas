@@ -244,13 +244,13 @@ module GrapeOAS
           when Constants::SchemaTypes::ARRAY, Constants::SchemaTypes::OBJECT, nil
             hash.delete("enum")
           when Constants::SchemaTypes::INTEGER
-            hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(Integer) }
+            hash.delete("enum") unless enum_vals.all?(Integer)
           when Constants::SchemaTypes::NUMBER
-            hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(Numeric) }
+            hash.delete("enum") unless enum_vals.all?(Numeric)
           when Constants::SchemaTypes::BOOLEAN
             hash.delete("enum") unless enum_vals.all? { |v| [true, false].include?(v) }
           else # string and fallback
-            hash.delete("enum") unless enum_vals.all? { |v| v.is_a?(String) }
+            hash.delete("enum") unless enum_vals.all?(String)
           end
         end
 

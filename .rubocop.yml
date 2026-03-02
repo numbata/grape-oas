@@ -103,5 +103,10 @@ Naming/VariableNumber:
   Exclude:
     - test/**/*
 
+Style/OneClassPerFile:
+  Exclude:
+    - test/**/*
+    - benchmark/**/*
+
 Minitest/MultipleAssertions:
   Enabled: false

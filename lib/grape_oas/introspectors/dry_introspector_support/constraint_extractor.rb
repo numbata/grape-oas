@@ -7,25 +7,16 @@ module GrapeOAS
       # Delegates AST walking to AstWalker and merging to ConstraintMerger.
       class ConstraintExtractor
         # Value object holding all possible constraints extracted from a Dry contract.
-        ConstraintSet = Struct.new(
-          :enum,
-          :nullable,
-          :min_size,
-          :max_size,
-          :minimum,
-          :maximum,
-          :exclusive_minimum,
-          :exclusive_maximum,
-          :pattern,
-          :excluded_values,
-          :unhandled_predicates,
-          :required,
-          :type_predicate,
-          :parity,
-          :format,
-          :extensions,
-          keyword_init: true,
-        )
+        class ConstraintSet
+          attr_accessor :enum, :nullable, :min_size, :max_size,
+                        :minimum, :maximum, :exclusive_minimum, :exclusive_maximum,
+                        :pattern, :excluded_values, :unhandled_predicates,
+                        :required, :type_predicate, :parity, :format, :extensions
+
+          def initialize(**attrs)
+            attrs.each { |k, v| public_send(:"#{k}=", v) }
+          end
+        end
 
         def self.extract(contract)
           new(contract).extract
