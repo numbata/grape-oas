@@ -121,7 +121,11 @@ module GrapeOAS
         end
 
         def add_property_from_exposure(schema, exposure, doc)
-          prop_schema = schema_for_exposure(exposure, doc)
+          prop_schema = if nesting_exposure?(exposure)
+                          build_nesting_exposure_schema(exposure, doc)
+                        else
+                          schema_for_exposure(exposure, doc)
+                        end
           required = determine_required(doc, exposure)
           prop_schema = wrap_in_array_if_needed(prop_schema, doc)
           schema.add_property(exposure.key.to_s, prop_schema, required: required)
@@ -161,6 +165,31 @@ module GrapeOAS
           else
             schema_for_type(type) || ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
           end
+        end
+
+        # Detects block-based nesting exposures (Grape::Entity::Exposure::NestingExposure).
+        # These wrap child exposures that should become properties of an inline object schema.
+        # Only triggers when no entity class is referenced via `using:`.
+        def nesting_exposure?(exposure)
+          return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
+
+          # If using: points to an entity class, let the normal entity introspection handle it
+          opts = exposure.instance_variable_get(:@options) || {}
+          !resolve_entity_from_opts(exposure, exposure.documentation || {}) && !opts[:using]
+        end
+
+        # Builds an inline object schema from a NestingExposure's child exposures.
+        # Recursively processes children, preserving their enum values and other properties.
+        def build_nesting_exposure_schema(exposure, doc)
+          schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+
+          exposure.nested_exposures.each do |child_exposure|
+            add_exposure_to_schema(schema, child_exposure)
+          end
+
+          apply_exposure_properties(schema, doc)
+          apply_exposure_constraints(schema, doc)
+          schema
         end
 
         def apply_exposure_properties(schema, doc)
