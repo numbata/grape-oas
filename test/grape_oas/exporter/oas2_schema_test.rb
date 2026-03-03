@@ -233,6 +233,17 @@ module GrapeOAS
         assert_equal "A string item", result["description"]
         refute result["items"].key?("description"), "Description should not remain on items"
       end
+
+      def test_array_inline_items_nullable_preserved_on_items
+        items_schema = ApiModel::Schema.new(type: "string", nullable: true)
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS2::Schema.new(array_schema, nil, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
+
+        assert_equal "array", result["type"]
+        refute result["x-nullable"], "x-nullable should NOT be on the outer array for inline items"
+        assert result["items"]["x-nullable"], "x-nullable should remain on inline items"
+      end
     end
   end
 end

@@ -37,7 +37,8 @@ module GrapeOAS
             if !schema_hash["description"] && @schema.items.respond_to?(:description) && @schema.items.description
               schema_hash["description"] = @schema.items.description.to_s
             end
-            if @schema.items.respond_to?(:nullable) && @schema.items.nullable
+            if @schema.items.respond_to?(:canonical_name) && @schema.items.canonical_name &&
+               @schema.items.respond_to?(:nullable) && @schema.items.nullable
               case @nullable_strategy
               when Constants::NullableStrategy::KEYWORD
                 schema_hash["nullable"] = true
@@ -186,12 +187,6 @@ module GrapeOAS
 
         def strip_items_metadata(hash)
           hash.delete("description")
-          hash.delete("nullable")
-          hash.delete("x-nullable")
-          return unless hash["type"].is_a?(Array)
-
-          types = hash["type"] - ["null"]
-          hash["type"] = types.length == 1 ? types.first : types
         end
 
         def apply_nullable_to_ref(result, schema)

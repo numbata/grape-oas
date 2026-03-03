@@ -40,7 +40,8 @@ module GrapeOAS
             if !schema_hash["description"] && @schema.items.respond_to?(:description) && @schema.items.description
               schema_hash["description"] = @schema.items.description.to_s
             end
-            if @nullable_strategy == Constants::NullableStrategy::EXTENSION &&
+            if @schema.items.respond_to?(:canonical_name) && @schema.items.canonical_name &&
+               @nullable_strategy == Constants::NullableStrategy::EXTENSION &&
                @schema.items.respond_to?(:nullable) && @schema.items.nullable
               schema_hash["x-nullable"] = true
             end
@@ -131,10 +132,7 @@ module GrapeOAS
             end
           else
             built = Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
-            unless include_metadata
-              built.delete("description")
-              built.delete("x-nullable")
-            end
+            built.delete("description") unless include_metadata
             built
           end
         end
