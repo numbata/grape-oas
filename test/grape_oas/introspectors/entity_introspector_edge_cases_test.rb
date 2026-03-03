@@ -210,6 +210,22 @@ module GrapeOAS
         assert_nil score.enum
       end
 
+      # === Entity with exclusive numeric Range ===
+
+      class ExclusiveRangeEntity < Grape::Entity
+        expose :index, documentation: { type: Integer, values: 0...10 }
+      end
+
+      def test_entity_with_exclusive_numeric_range
+        schema = EntityIntrospector.new(ExclusiveRangeEntity).build_schema
+
+        index = schema.properties["index"]
+
+        assert_equal 0, index.minimum
+        assert_equal 10, index.maximum
+        assert index.exclusive_maximum
+      end
+
       # === Entity with non-numeric Range values ===
 
       class LetterRangeEntity < Grape::Entity
@@ -220,6 +236,19 @@ module GrapeOAS
         schema = EntityIntrospector.new(LetterRangeEntity).build_schema
 
         assert_equal %w[a b c d e f], schema.properties["grade"].enum
+      end
+
+      # === Entity with non-discrete Range (e.g. Time) does not crash ===
+
+      class NonDiscreteRangeEntity < Grape::Entity
+        expose :window, documentation: { type: String, values: Time.new(2024, 1, 1)..Time.new(2024, 12, 31) }
+      end
+
+      def test_entity_with_non_discrete_range_does_not_crash
+        schema = EntityIntrospector.new(NonDiscreteRangeEntity).build_schema
+
+        # Should not raise, and enum should be nil since Time range can't be expanded
+        assert_nil schema.properties["window"].enum
       end
 
       # === Entity with Set values ===
