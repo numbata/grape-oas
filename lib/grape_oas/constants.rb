@@ -47,6 +47,10 @@ module GrapeOAS
       EXTENSION = :extension
     end
 
+    # Maximum number of elements to expand from a non-numeric Range into an enum array.
+    # Prevents OOM on wide string ranges (e.g. "a".."zzzzzz").
+    MAX_ENUM_RANGE_SIZE = 100
+
     # Default values for OpenAPI spec when not provided by user
     module Defaults
       LICENSE_NAME = "Proprietary"

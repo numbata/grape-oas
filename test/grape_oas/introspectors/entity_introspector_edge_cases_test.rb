@@ -238,6 +238,19 @@ module GrapeOAS
         assert_equal %w[a b c d e f], schema.properties["grade"].enum
       end
 
+      # === Entity with wide non-numeric Range (capped expansion) ===
+
+      class WideStringRangeEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: "a".."zzzzzz" }
+      end
+
+      def test_entity_with_wide_string_range_does_not_expand
+        schema = EntityIntrospector.new(WideStringRangeEntity).build_schema
+
+        # Range too wide (>256 elements) — should be silently skipped, not OOM
+        assert_nil schema.properties["code"].enum
+      end
+
       # === Entity with non-discrete Range (e.g. Time) does not crash ===
 
       class NonDiscreteRangeEntity < Grape::Entity

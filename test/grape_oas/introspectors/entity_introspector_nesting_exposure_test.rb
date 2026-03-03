@@ -141,6 +141,34 @@ module GrapeOAS
         assert_includes nested.properties.keys, "value"
       end
 
+      # === Duplicate-key nested exposures (conditional branches) ===
+
+      class DuplicateKeyNestingEntity < Grape::Entity
+        expose :meta do
+          expose :info do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :info do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_duplicate_key_children_merge_object_properties
+        schema = EntityIntrospector.new(DuplicateKeyNestingEntity).build_schema
+
+        meta = schema.properties["meta"]
+
+        assert_equal "object", meta.type
+
+        info = meta.properties["info"]
+
+        assert_equal "object", info.type
+        # Both branches should be merged — alpha from first, beta from second
+        assert_includes info.properties.keys, "alpha"
+        assert_includes info.properties.keys, "beta"
+      end
+
       # === Conditional exposure inside nesting block ===
 
       class ConditionalNestingEntity < Grape::Entity
