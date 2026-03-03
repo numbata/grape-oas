@@ -291,6 +291,24 @@ module GrapeOAS
         assert_nil schema.properties["code"].enum
       end
 
+      # === Entity with callable object without arity (e.g. custom validator class) ===
+
+      CallableValidator = Class.new do
+        def self.call(value) # rubocop:disable Naming/PredicateMethod
+          value.to_s.length.positive?
+        end
+      end
+
+      class CallableValidatorEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: CallableValidator }
+      end
+
+      def test_entity_with_callable_without_arity_does_not_crash
+        schema = EntityIntrospector.new(CallableValidatorEntity).build_schema
+
+        assert_nil schema.properties["code"].enum
+      end
+
       # === Entity with values on using: reference (canonical_name guard) ===
 
       class ReferencedEntity < Grape::Entity
