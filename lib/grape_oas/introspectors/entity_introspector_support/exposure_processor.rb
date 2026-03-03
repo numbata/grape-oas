@@ -235,8 +235,9 @@ module GrapeOAS
           if first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
             schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
             schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
+            schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
           elsif first_val && last_val && schema.respond_to?(:enum=)
-            schema.enum = range.to_a
+            schema.enum = range.to_a rescue nil # rubocop:disable Style/RescueModifier
           end
         end
 
