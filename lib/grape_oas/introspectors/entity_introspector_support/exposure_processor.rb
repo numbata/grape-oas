@@ -121,7 +121,11 @@ module GrapeOAS
         end
 
         def add_property_from_exposure(schema, exposure, doc)
-          prop_schema = schema_for_exposure(exposure, doc)
+          prop_schema = if nesting_exposure?(exposure)
+                          build_nesting_exposure_schema(exposure, doc)
+                        else
+                          schema_for_exposure(exposure, doc)
+                        end
           required = determine_required(doc, exposure)
           prop_schema = wrap_in_array_if_needed(prop_schema, doc)
           schema.add_property(exposure.key.to_s, prop_schema, required: required)
@@ -163,9 +167,34 @@ module GrapeOAS
           end
         end
 
+        # Detects block-based nesting exposures (Grape::Entity::Exposure::NestingExposure).
+        # These wrap child exposures that should become properties of an inline object schema.
+        # Only triggers when no entity class is referenced via `using:`.
+        def nesting_exposure?(exposure)
+          return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
+
+          # If using: points to an entity class, let the normal entity introspection handle it
+          opts = exposure.instance_variable_get(:@options) || {}
+          !resolve_entity_from_opts(exposure, exposure.documentation || {}) && !opts[:using]
+        end
+
+        # Builds an inline object schema from a NestingExposure's child exposures.
+        # Recursively processes children, preserving their enum values and other properties.
+        def build_nesting_exposure_schema(exposure, doc)
+          schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+
+          exposure.nested_exposures.each do |child_exposure|
+            add_exposure_to_schema(schema, child_exposure)
+          end
+
+          apply_exposure_properties(schema, doc)
+          apply_exposure_constraints(schema, doc)
+          schema
+        end
+
         def apply_exposure_properties(schema, doc)
           schema.nullable = doc[:nullable] || doc["nullable"] || false
-          schema.enum = doc[:values] || doc["values"] if doc[:values] || doc["values"]
+          apply_exposure_values(schema, doc[:values] || doc["values"])
           schema.description = doc[:desc] || doc["desc"] if doc[:desc] || doc["desc"]
           schema.format = doc[:format] || doc["format"] if doc[:format] || doc["format"]
           schema.examples = doc[:example] || doc["example"] if schema.respond_to?(:examples=) && (doc[:example] || doc["example"])
@@ -175,6 +204,40 @@ module GrapeOAS
           schema.defs = defs if defs.is_a?(Hash)
           x_ext = extract_extensions(doc)
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
+        end
+
+        # Normalizes values from entity documentation into enum arrays or min/max constraints.
+        # Handles Array, Range, Set, and arity-0 Proc/Lambda.
+        # Skips schemas with canonical_name to avoid mutating cached entity schemas.
+        def apply_exposure_values(schema, values)
+          return unless values
+          return if schema.respond_to?(:canonical_name) && schema.canonical_name
+
+          # Evaluate arity-0 procs (they return enum arrays); skip validators (arity > 0)
+          if values.respond_to?(:call)
+            return if values.arity != 0
+
+            values = values.call
+          end
+
+          if values.is_a?(Range)
+            apply_range_values(schema, values)
+          else
+            enum_values = defined?(Set) && values.is_a?(Set) ? values.to_a : values
+            schema.enum = enum_values if enum_values.is_a?(Array) && enum_values.any?
+          end
+        end
+
+        def apply_range_values(schema, range)
+          first_val = range.begin
+          last_val = range.end
+
+          if first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
+            schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
+            schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
+          elsif first_val && last_val && schema.respond_to?(:enum=)
+            schema.enum = range.to_a
+          end
         end
 
         def apply_exposure_constraints(schema, doc)
