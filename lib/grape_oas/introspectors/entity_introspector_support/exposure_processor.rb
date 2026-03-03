@@ -214,8 +214,9 @@ module GrapeOAS
           return if schema.respond_to?(:canonical_name) && schema.canonical_name
 
           # Evaluate arity-0 procs (they return enum arrays); skip validators (arity > 0)
+          # Skip callable objects that don't respond to arity (e.g. custom validator classes)
           if values.respond_to?(:call)
-            return if values.arity != 0
+            return unless values.respond_to?(:arity) && values.arity.zero?
 
             values = values.call
           end
