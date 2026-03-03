@@ -180,16 +180,37 @@ module GrapeOAS
 
         # Builds an inline object schema from a NestingExposure's child exposures.
         # Recursively processes children, preserving their enum values and other properties.
+        # When multiple children share the same key (conditional branches), their object
+        # properties are merged rather than overwritten.
         def build_nesting_exposure_schema(exposure, doc)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
 
           exposure.nested_exposures.each do |child_exposure|
+            key = child_exposure.key.to_s
+            prev = schema.properties[key]
             add_exposure_to_schema(schema, child_exposure)
+            merge_duplicate_object_property(schema, key, prev)
           end
 
           apply_exposure_properties(schema, doc)
           apply_exposure_constraints(schema, doc)
           schema
+        end
+
+        # Merges properties from a newly-added object schema into a pre-existing object
+        # schema for the same key. This handles NestingExposure children that share a key
+        # (e.g. conditional branches) — grape merges those at serialization time.
+        def merge_duplicate_object_property(schema, key, prev)
+          return unless prev
+          return unless prev.type == Constants::SchemaTypes::OBJECT
+
+          current = schema.properties[key]
+          return if current.equal?(prev) || current.type != Constants::SchemaTypes::OBJECT
+
+          current.properties.each do |n, s|
+            prev.add_property(n, s, required: current.required.include?(n))
+          end
+          schema.properties[key] = prev
         end
 
         def apply_exposure_properties(schema, doc)
@@ -238,7 +259,8 @@ module GrapeOAS
             schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
             schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
           elsif first_val && last_val && schema.respond_to?(:enum=)
-            schema.enum = range.to_a rescue nil # rubocop:disable Style/RescueModifier
+            expanded = range.first(Constants::MAX_ENUM_RANGE_SIZE + 1) rescue nil # rubocop:disable Style/RescueModifier
+            schema.enum = expanded if expanded.is_a?(Array) && expanded.length <= Constants::MAX_ENUM_RANGE_SIZE
           end
         end
 
