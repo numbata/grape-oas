@@ -187,6 +187,100 @@ module GrapeOAS
         assert_equal [1, 2, 3], schema.properties["priority"].enum
       end
 
+      # === Entity with Range values (numeric) ===
+
+      class RangeEntity < Grape::Entity
+        expose :offset, documentation: { type: Integer, values: -2..2 }
+        expose :score, documentation: { type: Integer, values: 0..100 }
+      end
+
+      def test_entity_with_numeric_range_values
+        schema = EntityIntrospector.new(RangeEntity).build_schema
+
+        offset = schema.properties["offset"]
+
+        assert_equal(-2, offset.minimum)
+        assert_equal 2, offset.maximum
+        assert_nil offset.enum
+
+        score = schema.properties["score"]
+
+        assert_equal 0, score.minimum
+        assert_equal 100, score.maximum
+        assert_nil score.enum
+      end
+
+      # === Entity with non-numeric Range values ===
+
+      class LetterRangeEntity < Grape::Entity
+        expose :grade, documentation: { type: String, values: "a".."f" }
+      end
+
+      def test_entity_with_non_numeric_range_values
+        schema = EntityIntrospector.new(LetterRangeEntity).build_schema
+
+        assert_equal %w[a b c d e f], schema.properties["grade"].enum
+      end
+
+      # === Entity with Set values ===
+
+      class SetEntity < Grape::Entity
+        expose :color, documentation: { type: String, values: Set.new(%w[red green blue]) }
+      end
+
+      def test_entity_with_set_values
+        schema = EntityIntrospector.new(SetEntity).build_schema
+
+        assert_instance_of Array, schema.properties["color"].enum
+        assert_equal 3, schema.properties["color"].enum.length
+        assert_includes schema.properties["color"].enum, "red"
+        assert_includes schema.properties["color"].enum, "green"
+        assert_includes schema.properties["color"].enum, "blue"
+      end
+
+      # === Entity with Proc values (arity 0) ===
+
+      class ProcEntity < Grape::Entity
+        expose :status, documentation: { type: String, values: -> { %w[open closed] } }
+      end
+
+      def test_entity_with_arity_zero_proc_values
+        schema = EntityIntrospector.new(ProcEntity).build_schema
+
+        assert_equal %w[open closed], schema.properties["status"].enum
+      end
+
+      # === Entity with Proc values (arity > 0, validator) ===
+
+      class ValidatorProcEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: ->(v) { v.match?(/^[A-Z]+$/) } }
+      end
+
+      def test_entity_with_validator_proc_skips_enum
+        schema = EntityIntrospector.new(ValidatorProcEntity).build_schema
+
+        assert_nil schema.properties["code"].enum
+      end
+
+      # === Entity with values on using: reference (canonical_name guard) ===
+
+      class ReferencedEntity < Grape::Entity
+        expose :name, documentation: { type: String }
+      end
+
+      class ParentWithValuesOnRefEntity < Grape::Entity
+        expose :child, using: ReferencedEntity, documentation: { type: ReferencedEntity, values: %w[should not appear] }
+      end
+
+      def test_entity_values_on_using_ref_does_not_mutate_cached_schema
+        schema = EntityIntrospector.new(ParentWithValuesOnRefEntity).build_schema
+
+        child = schema.properties["child"]
+
+        # The referenced entity schema should NOT have enum set on it
+        assert_nil child.enum
+      end
+
       # === Entity with min/max constraints ===
 
       class ConstrainedEntity < Grape::Entity
