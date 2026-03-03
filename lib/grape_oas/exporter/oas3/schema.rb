@@ -88,6 +88,7 @@ module GrapeOAS
 
           result = { "allOf" => all_of_items }
           result["description"] = @schema.description.to_s if @schema.description
+          apply_nullable(result)
           result
         end
 
@@ -100,6 +101,7 @@ module GrapeOAS
           result = { "oneOf" => one_of_items }
           result["description"] = @schema.description.to_s if @schema.description
           result["discriminator"] = build_discriminator if @schema.discriminator
+          apply_nullable(result)
           result
         end
 
@@ -112,6 +114,7 @@ module GrapeOAS
           result = { "anyOf" => any_of_items }
           result["description"] = @schema.description.to_s if @schema.description
           result["discriminator"] = build_discriminator if @schema.discriminator
+          apply_nullable(result)
           result
         end
 

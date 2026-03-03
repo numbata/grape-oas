@@ -100,6 +100,7 @@ module GrapeOAS
 
           result = { "allOf" => all_of_items }
           result["description"] = @schema.description.to_s if @schema.description
+          result["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
           result
         end
 

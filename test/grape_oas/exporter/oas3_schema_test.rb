@@ -337,6 +337,32 @@ module GrapeOAS
         refute result["nullable"], "nullable should NOT be on the outer array for inline items"
         assert result["items"]["nullable"], "nullable should remain on inline items"
       end
+
+      def test_array_inline_allof_items_nullable_preserved
+        child = ApiModel::Schema.new(type: "object")
+        items_schema = ApiModel::Schema.new(all_of: [child], nullable: true)
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema, nil, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        assert_equal "array", result["type"]
+        refute result["nullable"], "nullable should NOT be on the outer array"
+        assert result["items"]["nullable"], "nullable should be on the composed items schema"
+        assert result["items"]["allOf"], "allOf should be present on items"
+      end
+
+      def test_array_inline_oneof_items_nullable_preserved
+        variant = ApiModel::Schema.new(type: "string")
+        items_schema = ApiModel::Schema.new(one_of: [variant], nullable: true)
+        array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
+
+        result = OAS3::Schema.new(array_schema, nil, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
+
+        assert_equal "array", result["type"]
+        refute result["x-nullable"], "x-nullable should NOT be on the outer array"
+        assert result["items"]["x-nullable"], "x-nullable should be on the composed items schema"
+        assert result["items"]["oneOf"], "oneOf should be present on items"
+      end
     end
   end
 end
