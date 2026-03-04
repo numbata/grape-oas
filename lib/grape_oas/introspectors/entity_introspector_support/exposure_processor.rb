@@ -188,8 +188,9 @@ module GrapeOAS
           exposure.nested_exposures.each do |child_exposure|
             key = child_exposure.key.to_s
             prev = schema.properties[key]
+            prev_is_nesting = prev && nesting_exposure?(child_exposure)
             add_exposure_to_schema(schema, child_exposure)
-            merge_duplicate_object_property(schema, key, prev)
+            merge_nesting_branches(schema, key, prev) if prev_is_nesting
           end
 
           apply_exposure_properties(schema, doc)
@@ -197,23 +198,23 @@ module GrapeOAS
           schema
         end
 
-        # Merges properties from a newly-added object schema into a pre-existing object
-        # schema for the same key. This handles NestingExposure children that share a key
-        # (e.g. conditional branches) — grape merges those at serialization time.
+        # Merges two nesting-exposure branches for the same key into a single object
+        # schema. Only called when both branches are block-based nesting exposures.
+        # Uses required intersection — a field is only required if present in both branches.
         # Creates a fresh schema to avoid mutating cached canonical schemas.
-        def merge_duplicate_object_property(schema, key, prev)
-          return unless prev
+        def merge_nesting_branches(schema, key, prev)
           return unless prev.type == Constants::SchemaTypes::OBJECT
 
           current = schema.properties[key]
           return if current.equal?(prev) || current.type != Constants::SchemaTypes::OBJECT
 
+          shared_required = prev.required & current.required
           merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           prev.properties.each do |n, s|
-            merged.add_property(n, s, required: prev.required.include?(n))
+            merged.add_property(n, s, required: shared_required.include?(n))
           end
           current.properties.each do |n, s|
-            merged.add_property(n, s, required: current.required.include?(n))
+            merged.add_property(n, s, required: shared_required.include?(n))
           end
           schema.properties[key] = merged
         end

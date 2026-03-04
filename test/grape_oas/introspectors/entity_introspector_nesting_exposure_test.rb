@@ -167,6 +167,9 @@ module GrapeOAS
         # Both branches should be merged — alpha from first, beta from second
         assert_includes info.properties.keys, "alpha"
         assert_includes info.properties.keys, "beta"
+        # Branch-specific fields are NOT required (only shared fields would be)
+        refute_includes info.required, "alpha"
+        refute_includes info.required, "beta"
       end
 
       # === Conditional exposure inside nesting block ===
