@@ -185,15 +185,17 @@ module GrapeOAS
         def build_nesting_exposure_schema(exposure, doc)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
 
-          nesting_keys = Set.new
+          # Accumulate nesting-branch schemas per key so interleaved non-nesting
+          # exposures don't discard earlier nesting properties.
+          nesting_accum = {}
           exposure.nested_exposures.each do |child_exposure|
             key = child_exposure.key.to_s
-            prev = schema.properties[key]
-            is_nesting = nesting_exposure?(child_exposure)
             add_exposure_to_schema(schema, child_exposure)
-            # Only merge when both previous and current are nesting exposures
-            merge_nesting_branches(schema, key, prev) if prev && is_nesting && nesting_keys.include?(key)
-            nesting_keys.add(key) if is_nesting
+            next unless nesting_exposure?(child_exposure)
+
+            current = schema.properties[key]
+            nesting_accum[key] = merge_nesting_branch(nesting_accum[key], current)
+            schema.properties[key] = nesting_accum[key]
           end
 
           apply_exposure_properties(schema, doc)
@@ -201,25 +203,24 @@ module GrapeOAS
           schema
         end
 
-        # Merges two nesting-exposure branches for the same key into a single object
-        # schema. Only called when both branches are block-based nesting exposures.
-        # Uses required intersection — a field is only required if present in both branches.
+        # Folds a new nesting-branch object schema into the accumulated result.
+        # Uses required intersection so branch-specific fields stay optional.
         # Creates a fresh schema to avoid mutating cached canonical schemas.
-        def merge_nesting_branches(schema, key, prev)
-          return unless prev.type == Constants::SchemaTypes::OBJECT
+        def merge_nesting_branch(accum, current)
+          return current unless accum
+          return accum unless current&.type == Constants::SchemaTypes::OBJECT
+          return current unless accum.type == Constants::SchemaTypes::OBJECT
+          return accum if current.equal?(accum)
 
-          current = schema.properties[key]
-          return if current.equal?(prev) || current.type != Constants::SchemaTypes::OBJECT
-
-          shared_required = prev.required & current.required
+          shared_required = accum.required & current.required
           merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-          prev.properties.each do |n, s|
+          accum.properties.each do |n, s|
             merged.add_property(n, s, required: shared_required.include?(n))
           end
           current.properties.each do |n, s|
             merged.add_property(n, s, required: shared_required.include?(n))
           end
-          schema.properties[key] = merged
+          merged
         end
 
         def apply_exposure_properties(schema, doc)
