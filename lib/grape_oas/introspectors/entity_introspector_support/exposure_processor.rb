@@ -218,7 +218,12 @@ module GrapeOAS
             merged.add_property(n, s, required: shared_required.include?(n))
           end
           current.properties.each do |n, s|
-            merged.add_property(n, s, required: shared_required.include?(n))
+            existing = merged.properties[n]
+            if existing && existing.type == Constants::SchemaTypes::OBJECT && s.type == Constants::SchemaTypes::OBJECT
+              merged.properties[n] = merge_nesting_branch(existing, s)
+            else
+              merged.add_property(n, s, required: shared_required.include?(n))
+            end
           end
           merged
         end
@@ -264,7 +269,8 @@ module GrapeOAS
           first_val = range.begin
           last_val = range.end
 
-          if first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
+          numeric_type = [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].include?(schema.type)
+          if numeric_type && (first_val.is_a?(Numeric) || last_val.is_a?(Numeric))
             # Skip descending numeric ranges (e.g. 10..1)
             return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
 
