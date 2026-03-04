@@ -185,12 +185,15 @@ module GrapeOAS
         def build_nesting_exposure_schema(exposure, doc)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
 
+          nesting_keys = Set.new
           exposure.nested_exposures.each do |child_exposure|
             key = child_exposure.key.to_s
             prev = schema.properties[key]
-            prev_is_nesting = prev && nesting_exposure?(child_exposure)
+            is_nesting = nesting_exposure?(child_exposure)
             add_exposure_to_schema(schema, child_exposure)
-            merge_nesting_branches(schema, key, prev) if prev_is_nesting
+            # Only merge when both previous and current are nesting exposures
+            merge_nesting_branches(schema, key, prev) if prev && is_nesting && nesting_keys.include?(key)
+            nesting_keys.add(key) if is_nesting
           end
 
           apply_exposure_properties(schema, doc)
