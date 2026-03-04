@@ -187,6 +187,22 @@ module GrapeOAS
         assert_equal [1, 2, 3], schema.properties["priority"].enum
       end
 
+      # === Numeric range on non-numeric type is skipped ===
+
+      class NumericRangeOnStringEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: 1..5 }
+      end
+
+      def test_numeric_range_on_string_type_does_not_set_min_max
+        schema = EntityIntrospector.new(NumericRangeOnStringEntity).build_schema
+
+        prop = schema.properties["code"]
+
+        assert_equal "string", prop.type
+        assert_nil prop.minimum
+        assert_nil prop.maximum
+      end
+
       # === Entity with Range values (numeric) ===
 
       class RangeEntity < Grape::Entity
