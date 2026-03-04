@@ -185,12 +185,15 @@ module GrapeOAS
         def build_nesting_exposure_schema(exposure, doc)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
 
+          nesting_keys = Set.new
           exposure.nested_exposures.each do |child_exposure|
             key = child_exposure.key.to_s
             prev = schema.properties[key]
-            prev_is_nesting = prev && nesting_exposure?(child_exposure)
+            is_nesting = nesting_exposure?(child_exposure)
             add_exposure_to_schema(schema, child_exposure)
-            merge_nesting_branches(schema, key, prev) if prev_is_nesting
+            # Only merge when both previous and current are nesting exposures
+            merge_nesting_branches(schema, key, prev) if prev && is_nesting && nesting_keys.include?(key)
+            nesting_keys.add(key) if is_nesting
           end
 
           apply_exposure_properties(schema, doc)
@@ -261,12 +264,17 @@ module GrapeOAS
           last_val = range.end
 
           if first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
+            # Skip descending numeric ranges (e.g. 10..1)
+            return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
+
             schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
             schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
             schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
           elsif first_val && last_val && schema.respond_to?(:enum=)
             expanded = range.first(Constants::MAX_ENUM_RANGE_SIZE + 1) rescue nil # rubocop:disable Style/RescueModifier
-            schema.enum = expanded if expanded.is_a?(Array) && expanded.length <= Constants::MAX_ENUM_RANGE_SIZE
+            if expanded.is_a?(Array) && expanded.length.positive? && expanded.length <= Constants::MAX_ENUM_RANGE_SIZE
+              schema.enum = expanded
+            end
           end
         end
 

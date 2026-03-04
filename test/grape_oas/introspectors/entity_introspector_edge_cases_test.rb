@@ -251,6 +251,31 @@ module GrapeOAS
         assert_nil schema.properties["code"].enum
       end
 
+      # === Entity with descending numeric Range (e.g. 10..1) ===
+
+      class DescendingNumericRangeEntity < Grape::Entity
+        expose :level, documentation: { type: Integer, values: 10..1 }
+      end
+
+      def test_entity_with_descending_numeric_range_is_skipped
+        schema = EntityIntrospector.new(DescendingNumericRangeEntity).build_schema
+
+        assert_nil schema.properties["level"].minimum
+        assert_nil schema.properties["level"].maximum
+      end
+
+      # === Entity with descending string Range (e.g. "z".."a") ===
+
+      class DescendingStringRangeEntity < Grape::Entity
+        expose :letter, documentation: { type: String, values: "z".."a" }
+      end
+
+      def test_entity_with_descending_string_range_is_skipped
+        schema = EntityIntrospector.new(DescendingStringRangeEntity).build_schema
+
+        assert_nil schema.properties["letter"].enum
+      end
+
       # === Entity with non-discrete Range (e.g. Time) does not crash ===
 
       class NonDiscreteRangeEntity < Grape::Entity
