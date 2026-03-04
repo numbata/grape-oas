@@ -200,6 +200,7 @@ module GrapeOAS
         # Merges properties from a newly-added object schema into a pre-existing object
         # schema for the same key. This handles NestingExposure children that share a key
         # (e.g. conditional branches) — grape merges those at serialization time.
+        # Creates a fresh schema to avoid mutating cached canonical schemas.
         def merge_duplicate_object_property(schema, key, prev)
           return unless prev
           return unless prev.type == Constants::SchemaTypes::OBJECT
@@ -207,10 +208,14 @@ module GrapeOAS
           current = schema.properties[key]
           return if current.equal?(prev) || current.type != Constants::SchemaTypes::OBJECT
 
-          current.properties.each do |n, s|
-            prev.add_property(n, s, required: current.required.include?(n))
+          merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+          prev.properties.each do |n, s|
+            merged.add_property(n, s, required: prev.required.include?(n))
           end
-          schema.properties[key] = prev
+          current.properties.each do |n, s|
+            merged.add_property(n, s, required: current.required.include?(n))
+          end
+          schema.properties[key] = merged
         end
 
         def apply_exposure_properties(schema, doc)
