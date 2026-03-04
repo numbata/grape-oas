@@ -218,7 +218,12 @@ module GrapeOAS
             merged.add_property(n, s, required: shared_required.include?(n))
           end
           current.properties.each do |n, s|
-            merged.add_property(n, s, required: shared_required.include?(n))
+            existing = merged.properties[n]
+            if existing && existing.type == Constants::SchemaTypes::OBJECT && s.type == Constants::SchemaTypes::OBJECT
+              merged.properties[n] = merge_nesting_branch(existing, s)
+            else
+              merged.add_property(n, s, required: shared_required.include?(n))
+            end
           end
           merged
         end

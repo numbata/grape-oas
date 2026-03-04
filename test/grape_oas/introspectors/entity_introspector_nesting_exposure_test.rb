@@ -172,6 +172,33 @@ module GrapeOAS
         refute_includes info.required, "beta"
       end
 
+      # === Deep duplicate-key merge (recursive) ===
+
+      class DeepDuplicateKeyEntity < Grape::Entity
+        expose :meta do
+          expose :info do
+            expose :details do
+              expose :x, documentation: { type: String }
+            end
+          end
+          expose :info do
+            expose :details do
+              expose :y, documentation: { type: Integer }
+            end
+          end
+        end
+      end
+
+      def test_deep_duplicate_key_merge_preserves_nested_properties
+        schema = EntityIntrospector.new(DeepDuplicateKeyEntity).build_schema
+
+        details = schema.properties["meta"].properties["info"].properties["details"]
+
+        assert_equal "object", details.type
+        assert_includes details.properties.keys, "x"
+        assert_includes details.properties.keys, "y"
+      end
+
       # === Conditional exposure inside nesting block ===
 
       class ConditionalNestingEntity < Grape::Entity
