@@ -8,6 +8,9 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
+        # Maximum recursion depth for merging nested object branches.
+        MAX_MERGE_DEPTH = 10
+
         def initialize(entity_class, stack:, registry:)
           @entity_class = entity_class
           @stack = stack
@@ -206,7 +209,7 @@ module GrapeOAS
         # Folds a new nesting-branch object schema into the accumulated result.
         # Uses required intersection so branch-specific fields stay optional.
         # Creates a fresh schema to avoid mutating cached canonical schemas.
-        def merge_nesting_branch(accum, current)
+        def merge_nesting_branch(accum, current, depth = 0)
           return current unless accum
           return accum unless current&.type == Constants::SchemaTypes::OBJECT
           return current unless accum.type == Constants::SchemaTypes::OBJECT
@@ -219,8 +222,9 @@ module GrapeOAS
           end
           current.properties.each do |n, s|
             existing = merged.properties[n]
-            if existing && existing.type == Constants::SchemaTypes::OBJECT && s.type == Constants::SchemaTypes::OBJECT
-              merged.properties[n] = merge_nesting_branch(existing, s)
+            if existing && depth < MAX_MERGE_DEPTH &&
+               existing.type == Constants::SchemaTypes::OBJECT && s.type == Constants::SchemaTypes::OBJECT
+              merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
             else
               merged.add_property(n, s, required: shared_required.include?(n))
             end
@@ -261,7 +265,7 @@ module GrapeOAS
             apply_range_values(schema, values)
           else
             enum_values = defined?(Set) && values.is_a?(Set) ? values.to_a : values
-            schema.enum = enum_values if enum_values.is_a?(Array) && enum_values.any?
+            schema.enum = enum_values if enum_values.is_a?(Array) && !enum_values.empty?
           end
         end
 
@@ -269,15 +273,17 @@ module GrapeOAS
           first_val = range.begin
           last_val = range.end
 
+          numeric_range = first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
           numeric_type = [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].include?(schema.type)
-          if numeric_type && (first_val.is_a?(Numeric) || last_val.is_a?(Numeric))
+
+          if numeric_range && numeric_type
             # Skip descending numeric ranges (e.g. 10..1)
             return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
 
             schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
             schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
             schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
-          elsif first_val && last_val && schema.respond_to?(:enum=)
+          elsif !numeric_range && first_val && last_val && schema.respond_to?(:enum=)
             expanded = range.first(Constants::MAX_ENUM_RANGE_SIZE + 1) rescue nil # rubocop:disable Style/RescueModifier
             if expanded.is_a?(Array) && expanded.length.positive? && expanded.length <= Constants::MAX_ENUM_RANGE_SIZE
               schema.enum = expanded

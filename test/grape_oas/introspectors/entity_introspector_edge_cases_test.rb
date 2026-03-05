@@ -187,6 +187,18 @@ module GrapeOAS
         assert_equal [1, 2, 3], schema.properties["priority"].enum
       end
 
+      # === Entity with false-only enum ===
+
+      class FalseOnlyEnumEntity < Grape::Entity
+        expose :locked, documentation: { type: "Boolean", values: [false] }
+      end
+
+      def test_entity_with_false_only_enum
+        schema = EntityIntrospector.new(FalseOnlyEnumEntity).build_schema
+
+        assert_equal [false], schema.properties["locked"].enum
+      end
+
       # === Numeric range on non-numeric type is skipped ===
 
       class NumericRangeOnStringEntity < Grape::Entity
