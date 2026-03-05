@@ -375,6 +375,34 @@ module GrapeOAS
         assert_nil schema.properties["code"].enum
       end
 
+      # === Entity with optional-arg validator proc (arity 0 but not enum) ===
+
+      class OptionalArgValidatorEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: proc { |v = nil| v.to_s.length < 10 } }
+      end
+
+      def test_entity_with_optional_arg_validator_proc_skips_enum
+        schema = EntityIntrospector.new(OptionalArgValidatorEntity).build_schema
+
+        assert_nil schema.properties["code"].enum
+      end
+
+      # === Explicit maximum overrides range-derived exclusive_maximum ===
+
+      class ExplicitMaxOverrideEntity < Grape::Entity
+        expose :score, documentation: { type: Integer, values: 0...10, maximum: 5 }
+      end
+
+      def test_explicit_maximum_clears_exclusive_maximum
+        schema = EntityIntrospector.new(ExplicitMaxOverrideEntity).build_schema
+
+        prop = schema.properties["score"]
+
+        assert_equal 0, prop.minimum
+        assert_equal 5, prop.maximum
+        assert_nil prop.exclusive_maximum
+      end
+
       # === Entity with values on using: reference (canonical_name guard) ===
 
       class ReferencedEntity < Grape::Entity
