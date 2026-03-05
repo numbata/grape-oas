@@ -13,8 +13,8 @@ module GrapeOAS
         LITERAL_TAGS = %i[value val literal class left right].freeze
         # AST node tags for regex patterns
         PATTERN_TAGS = %i[regexp regex].freeze
-        # Maximum size for converting ranges to enum arrays
-        MAX_ENUM_RANGE_SIZE = 100
+        # @see Constants::MAX_ENUM_RANGE_SIZE
+        MAX_ENUM_RANGE_SIZE = Constants::MAX_ENUM_RANGE_SIZE
 
         def extract_numeric(arg)
           return arg if arg.is_a?(Numeric)
