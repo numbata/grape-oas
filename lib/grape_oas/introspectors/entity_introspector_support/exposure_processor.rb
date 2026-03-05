@@ -8,6 +8,9 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
+        # Maximum recursion depth for merging nested object branches.
+        MAX_MERGE_DEPTH = 10
+
         def initialize(entity_class, stack:, registry:)
           @entity_class = entity_class
           @stack = stack
@@ -206,7 +209,7 @@ module GrapeOAS
         # Folds a new nesting-branch object schema into the accumulated result.
         # Uses required intersection so branch-specific fields stay optional.
         # Creates a fresh schema to avoid mutating cached canonical schemas.
-        def merge_nesting_branch(accum, current)
+        def merge_nesting_branch(accum, current, depth = 0)
           return current unless accum
           return accum unless current&.type == Constants::SchemaTypes::OBJECT
           return current unless accum.type == Constants::SchemaTypes::OBJECT
@@ -219,8 +222,9 @@ module GrapeOAS
           end
           current.properties.each do |n, s|
             existing = merged.properties[n]
-            if existing && existing.type == Constants::SchemaTypes::OBJECT && s.type == Constants::SchemaTypes::OBJECT
-              merged.properties[n] = merge_nesting_branch(existing, s)
+            if existing && depth < MAX_MERGE_DEPTH &&
+               existing.type == Constants::SchemaTypes::OBJECT && s.type == Constants::SchemaTypes::OBJECT
+              merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
             else
               merged.add_property(n, s, required: shared_required.include?(n))
             end
