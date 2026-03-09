@@ -248,6 +248,51 @@ module GrapeOAS
         assert_equal "Second branch", info.description
         assert info.nullable
       end
+
+      # === Duplicate-key array-wrapped nesting branches merge items ===
+
+      class ArrayDuplicateKeyEntity < Grape::Entity
+        expose :data do
+          expose :items, documentation: { is_array: true } do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :items, documentation: { is_array: true } do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_duplicate_key_array_nesting_merges_items
+        schema = EntityIntrospector.new(ArrayDuplicateKeyEntity).build_schema
+
+        items = schema.properties["data"].properties["items"]
+
+        assert_equal "array", items.type
+        assert_equal "object", items.items.type
+        assert_includes items.items.properties.keys, "alpha"
+        assert_includes items.items.properties.keys, "beta"
+      end
+
+      # === Nullable override from later branch (last-wins false) ===
+
+      class NullableOverrideEntity < Grape::Entity
+        expose :meta do
+          expose :info, documentation: { nullable: true } do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :info, documentation: { nullable: false } do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_nullable_false_overrides_true_in_merge
+        schema = EntityIntrospector.new(NullableOverrideEntity).build_schema
+
+        info = schema.properties["meta"].properties["info"]
+
+        refute info.nullable
+      end
     end
   end
 end
