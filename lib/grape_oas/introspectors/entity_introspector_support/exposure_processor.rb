@@ -217,6 +217,8 @@ module GrapeOAS
 
           shared_required = accum.required & current.required
           merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+          copy_branch_metadata(merged, accum)
+          copy_branch_metadata(merged, current)
           accum.properties.each do |n, s|
             merged.add_property(n, s, required: shared_required.include?(n))
           end
@@ -230,6 +232,16 @@ module GrapeOAS
             end
           end
           merged
+        end
+
+        # Copies non-property scalar metadata from a branch schema to the merged result.
+        # Called twice (accum then current) so later branch values win (last-one-wins).
+        def copy_branch_metadata(merged, source)
+          merged.description = source.description if source.description
+          merged.nullable = source.nullable if source.nullable
+          merged.format = source.format if source.format
+          merged.examples = source.examples if source.respond_to?(:examples) && source.examples
+          merged.extensions = source.extensions if source.respond_to?(:extensions) && source.extensions
         end
 
         def apply_exposure_properties(schema, doc)
