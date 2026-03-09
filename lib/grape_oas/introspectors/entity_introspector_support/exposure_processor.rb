@@ -211,9 +211,17 @@ module GrapeOAS
         # Creates a fresh schema to avoid mutating cached canonical schemas.
         def merge_nesting_branch(accum, current, depth = 0)
           return current unless accum
+          return accum if current.equal?(accum)
+
+          # Unwrap array schemas to merge their items, then re-wrap
+          if accum.type == Constants::SchemaTypes::ARRAY && current&.type == Constants::SchemaTypes::ARRAY &&
+             accum.items&.type == Constants::SchemaTypes::OBJECT && current.items&.type == Constants::SchemaTypes::OBJECT
+            merged_items = merge_nesting_branch(accum.items, current.items, depth)
+            return ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: merged_items)
+          end
+
           return accum unless current&.type == Constants::SchemaTypes::OBJECT
           return current unless accum.type == Constants::SchemaTypes::OBJECT
-          return accum if current.equal?(accum)
 
           shared_required = accum.required & current.required
           merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
@@ -238,7 +246,7 @@ module GrapeOAS
         # Called twice (accum then current) so later branch values win (last-one-wins).
         def copy_branch_metadata(merged, source)
           merged.description = source.description if source.description
-          merged.nullable = source.nullable if source.nullable
+          merged.nullable = source.nullable unless source.nullable.nil?
           merged.format = source.format if source.format
           merged.examples = source.examples if source.respond_to?(:examples) && source.examples
           merged.extensions = source.extensions if source.respond_to?(:extensions) && source.extensions
