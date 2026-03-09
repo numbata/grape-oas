@@ -232,8 +232,7 @@ module GrapeOAS
           end
           current.properties.each do |n, s|
             existing = merged.properties[n]
-            if existing && depth < MAX_MERGE_DEPTH &&
-               existing.type == Constants::SchemaTypes::OBJECT && s.type == Constants::SchemaTypes::OBJECT
+            if existing && depth < MAX_MERGE_DEPTH && mergeable_schemas?(existing, s)
               merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
             else
               merged.add_property(n, s, required: shared_required.include?(n))
@@ -250,6 +249,15 @@ module GrapeOAS
           merged.format = source.format if source.format
           merged.examples = source.examples if source.respond_to?(:examples) && source.examples
           merged.extensions = source.extensions if source.respond_to?(:extensions) && source.extensions
+        end
+
+        # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
+        def mergeable_schemas?(left, right)
+          return true if left.type == Constants::SchemaTypes::OBJECT && right.type == Constants::SchemaTypes::OBJECT
+          return true if left.type == Constants::SchemaTypes::ARRAY && right.type == Constants::SchemaTypes::ARRAY &&
+                         left.items&.type == Constants::SchemaTypes::OBJECT && right.items&.type == Constants::SchemaTypes::OBJECT
+
+          false
         end
 
         def apply_exposure_properties(schema, doc)
