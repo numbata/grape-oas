@@ -222,6 +222,32 @@ module GrapeOAS
         refute_includes data.required, "sometimes"
         assert_includes data.required, "always"
       end
+
+      # === Duplicate-key nesting with branch metadata (desc, nullable) ===
+
+      class MetadataBranchEntity < Grape::Entity
+        expose :meta do
+          expose :info, documentation: { desc: "First branch" } do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :info, documentation: { desc: "Second branch", nullable: true } do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_duplicate_key_merge_preserves_branch_metadata
+        schema = EntityIntrospector.new(MetadataBranchEntity).build_schema
+
+        info = schema.properties["meta"].properties["info"]
+
+        assert_equal "object", info.type
+        assert_includes info.properties.keys, "alpha"
+        assert_includes info.properties.keys, "beta"
+        # Last branch wins for scalar metadata
+        assert_equal "Second branch", info.description
+        assert info.nullable
+      end
     end
   end
 end

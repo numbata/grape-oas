@@ -533,6 +533,18 @@ module GrapeOAS
 
         assert_nil EntityIntrospectorSupport::PropertyExtractor.extract_description(doc)
       end
+
+      # === Entity with raising arity-0 proc (should not crash) ===
+
+      class RaisingProcEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: proc { raise ArgumentError, "boom" } }
+      end
+
+      def test_entity_with_raising_proc_does_not_crash
+        schema = EntityIntrospector.new(RaisingProcEntity).build_schema
+
+        assert_nil schema.properties["code"].enum
+      end
     end
   end
 end
