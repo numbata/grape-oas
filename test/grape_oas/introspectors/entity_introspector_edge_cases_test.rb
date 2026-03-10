@@ -187,6 +187,241 @@ module GrapeOAS
         assert_equal [1, 2, 3], schema.properties["priority"].enum
       end
 
+      # === Entity with false-only enum ===
+
+      class FalseOnlyEnumEntity < Grape::Entity
+        expose :locked, documentation: { type: "Boolean", values: [false] }
+      end
+
+      def test_entity_with_false_only_enum
+        schema = EntityIntrospector.new(FalseOnlyEnumEntity).build_schema
+
+        assert_equal [false], schema.properties["locked"].enum
+      end
+
+      # === Numeric range on non-numeric type is skipped ===
+
+      class NumericRangeOnStringEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: 1..5 }
+      end
+
+      def test_numeric_range_on_string_type_does_not_set_min_max
+        schema = EntityIntrospector.new(NumericRangeOnStringEntity).build_schema
+
+        prop = schema.properties["code"]
+
+        assert_equal "string", prop.type
+        assert_nil prop.minimum
+        assert_nil prop.maximum
+      end
+
+      # === Entity with Range values (numeric) ===
+
+      class RangeEntity < Grape::Entity
+        expose :offset, documentation: { type: Integer, values: -2..2 }
+        expose :score, documentation: { type: Integer, values: 0..100 }
+      end
+
+      def test_entity_with_numeric_range_values
+        schema = EntityIntrospector.new(RangeEntity).build_schema
+
+        offset = schema.properties["offset"]
+
+        assert_equal(-2, offset.minimum)
+        assert_equal 2, offset.maximum
+        assert_nil offset.enum
+
+        score = schema.properties["score"]
+
+        assert_equal 0, score.minimum
+        assert_equal 100, score.maximum
+        assert_nil score.enum
+      end
+
+      # === Entity with exclusive numeric Range ===
+
+      class ExclusiveRangeEntity < Grape::Entity
+        expose :index, documentation: { type: Integer, values: 0...10 }
+      end
+
+      def test_entity_with_exclusive_numeric_range
+        schema = EntityIntrospector.new(ExclusiveRangeEntity).build_schema
+
+        index = schema.properties["index"]
+
+        assert_equal 0, index.minimum
+        assert_equal 10, index.maximum
+        assert index.exclusive_maximum
+      end
+
+      # === Entity with non-numeric Range values ===
+
+      class LetterRangeEntity < Grape::Entity
+        expose :grade, documentation: { type: String, values: "a".."f" }
+      end
+
+      def test_entity_with_non_numeric_range_values
+        schema = EntityIntrospector.new(LetterRangeEntity).build_schema
+
+        assert_equal %w[a b c d e f], schema.properties["grade"].enum
+      end
+
+      # === Entity with wide non-numeric Range (capped expansion) ===
+
+      class WideStringRangeEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: "a".."zzzzzz" }
+      end
+
+      def test_entity_with_wide_string_range_does_not_expand
+        schema = EntityIntrospector.new(WideStringRangeEntity).build_schema
+
+        # Range too wide (>256 elements) — should be silently skipped, not OOM
+        assert_nil schema.properties["code"].enum
+      end
+
+      # === Entity with descending numeric Range (e.g. 10..1) ===
+
+      class DescendingNumericRangeEntity < Grape::Entity
+        expose :level, documentation: { type: Integer, values: 10..1 }
+      end
+
+      def test_entity_with_descending_numeric_range_is_skipped
+        schema = EntityIntrospector.new(DescendingNumericRangeEntity).build_schema
+
+        assert_nil schema.properties["level"].minimum
+        assert_nil schema.properties["level"].maximum
+      end
+
+      # === Entity with descending string Range (e.g. "z".."a") ===
+
+      class DescendingStringRangeEntity < Grape::Entity
+        expose :letter, documentation: { type: String, values: "z".."a" }
+      end
+
+      def test_entity_with_descending_string_range_is_skipped
+        schema = EntityIntrospector.new(DescendingStringRangeEntity).build_schema
+
+        assert_nil schema.properties["letter"].enum
+      end
+
+      # === Entity with non-discrete Range (e.g. Time) does not crash ===
+
+      class NonDiscreteRangeEntity < Grape::Entity
+        expose :window, documentation: { type: String, values: Time.new(2024, 1, 1)..Time.new(2024, 12, 31) }
+      end
+
+      def test_entity_with_non_discrete_range_does_not_crash
+        schema = EntityIntrospector.new(NonDiscreteRangeEntity).build_schema
+
+        # Should not raise, and enum should be nil since Time range can't be expanded
+        assert_nil schema.properties["window"].enum
+      end
+
+      # === Entity with Set values ===
+
+      class SetEntity < Grape::Entity
+        expose :color, documentation: { type: String, values: Set.new(%w[red green blue]) }
+      end
+
+      def test_entity_with_set_values
+        schema = EntityIntrospector.new(SetEntity).build_schema
+
+        assert_instance_of Array, schema.properties["color"].enum
+        assert_equal 3, schema.properties["color"].enum.length
+        assert_includes schema.properties["color"].enum, "red"
+        assert_includes schema.properties["color"].enum, "green"
+        assert_includes schema.properties["color"].enum, "blue"
+      end
+
+      # === Entity with Proc values (arity 0) ===
+
+      class ProcEntity < Grape::Entity
+        expose :status, documentation: { type: String, values: -> { %w[open closed] } }
+      end
+
+      def test_entity_with_arity_zero_proc_values
+        schema = EntityIntrospector.new(ProcEntity).build_schema
+
+        assert_equal %w[open closed], schema.properties["status"].enum
+      end
+
+      # === Entity with Proc values (arity > 0, validator) ===
+
+      class ValidatorProcEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: ->(v) { v.match?(/^[A-Z]+$/) } }
+      end
+
+      def test_entity_with_validator_proc_skips_enum
+        schema = EntityIntrospector.new(ValidatorProcEntity).build_schema
+
+        assert_nil schema.properties["code"].enum
+      end
+
+      # === Entity with callable object without arity (e.g. custom validator class) ===
+
+      CallableValidator = Class.new do
+        def self.call(value) # rubocop:disable Naming/PredicateMethod
+          value.to_s.length.positive?
+        end
+      end
+
+      class CallableValidatorEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: CallableValidator }
+      end
+
+      def test_entity_with_callable_without_arity_does_not_crash
+        schema = EntityIntrospector.new(CallableValidatorEntity).build_schema
+
+        assert_nil schema.properties["code"].enum
+      end
+
+      # === Entity with optional-arg validator proc (arity 0 but not enum) ===
+
+      class OptionalArgValidatorEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: proc { |v = nil| v.to_s.length < 10 } }
+      end
+
+      def test_entity_with_optional_arg_validator_proc_skips_enum
+        schema = EntityIntrospector.new(OptionalArgValidatorEntity).build_schema
+
+        assert_nil schema.properties["code"].enum
+      end
+
+      # === Explicit maximum overrides range-derived exclusive_maximum ===
+
+      class ExplicitMaxOverrideEntity < Grape::Entity
+        expose :score, documentation: { type: Integer, values: 0...10, maximum: 5 }
+      end
+
+      def test_explicit_maximum_clears_exclusive_maximum
+        schema = EntityIntrospector.new(ExplicitMaxOverrideEntity).build_schema
+
+        prop = schema.properties["score"]
+
+        assert_equal 0, prop.minimum
+        assert_equal 5, prop.maximum
+        assert_nil prop.exclusive_maximum
+      end
+
+      # === Entity with values on using: reference (canonical_name guard) ===
+
+      class ReferencedEntity < Grape::Entity
+        expose :name, documentation: { type: String }
+      end
+
+      class ParentWithValuesOnRefEntity < Grape::Entity
+        expose :child, using: ReferencedEntity, documentation: { type: ReferencedEntity, values: %w[should not appear] }
+      end
+
+      def test_entity_values_on_using_ref_does_not_mutate_cached_schema
+        schema = EntityIntrospector.new(ParentWithValuesOnRefEntity).build_schema
+
+        child = schema.properties["child"]
+
+        # The referenced entity schema should NOT have enum set on it
+        assert_nil child.enum
+      end
+
       # === Entity with min/max constraints ===
 
       class ConstrainedEntity < Grape::Entity
@@ -297,6 +532,18 @@ module GrapeOAS
         doc = { type: String }
 
         assert_nil EntityIntrospectorSupport::PropertyExtractor.extract_description(doc)
+      end
+
+      # === Entity with raising arity-0 proc (should not crash) ===
+
+      class RaisingProcEntity < Grape::Entity
+        expose :code, documentation: { type: String, values: proc { raise ArgumentError, "boom" } }
+      end
+
+      def test_entity_with_raising_proc_does_not_crash
+        schema = EntityIntrospector.new(RaisingProcEntity).build_schema
+
+        assert_nil schema.properties["code"].enum
       end
     end
   end

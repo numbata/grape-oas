@@ -8,6 +8,9 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
+        # Maximum recursion depth for merging nested object branches.
+        MAX_MERGE_DEPTH = 10
+
         def initialize(entity_class, stack:, registry:)
           @entity_class = entity_class
           @stack = stack
@@ -121,7 +124,11 @@ module GrapeOAS
         end
 
         def add_property_from_exposure(schema, exposure, doc)
-          prop_schema = schema_for_exposure(exposure, doc)
+          prop_schema = if nesting_exposure?(exposure)
+                          build_nesting_exposure_schema(exposure, doc)
+                        else
+                          schema_for_exposure(exposure, doc)
+                        end
           required = determine_required(doc, exposure)
           prop_schema = wrap_in_array_if_needed(prop_schema, doc)
           schema.add_property(exposure.key.to_s, prop_schema, required: required)
@@ -163,9 +170,99 @@ module GrapeOAS
           end
         end
 
+        # Detects block-based nesting exposures (Grape::Entity::Exposure::NestingExposure).
+        # These wrap child exposures that should become properties of an inline object schema.
+        # Only triggers when no entity class is referenced via `using:`.
+        def nesting_exposure?(exposure)
+          return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
+
+          # If using: points to an entity class, let the normal entity introspection handle it
+          opts = exposure.instance_variable_get(:@options) || {}
+          !resolve_entity_from_opts(exposure, exposure.documentation || {}) && !opts[:using]
+        end
+
+        # Builds an inline object schema from a NestingExposure's child exposures.
+        # Recursively processes children, preserving their enum values and other properties.
+        # When multiple children share the same key (conditional branches), their object
+        # properties are merged rather than overwritten.
+        def build_nesting_exposure_schema(exposure, doc)
+          schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+
+          # Accumulate nesting-branch schemas per key so interleaved non-nesting
+          # exposures don't discard earlier nesting properties.
+          nesting_accum = {}
+          exposure.nested_exposures.each do |child_exposure|
+            key = child_exposure.key.to_s
+            add_exposure_to_schema(schema, child_exposure)
+            next unless nesting_exposure?(child_exposure)
+
+            current = schema.properties[key]
+            nesting_accum[key] = merge_nesting_branch(nesting_accum[key], current)
+            schema.properties[key] = nesting_accum[key]
+          end
+
+          apply_exposure_properties(schema, doc)
+          apply_exposure_constraints(schema, doc)
+          schema
+        end
+
+        # Folds a new nesting-branch object schema into the accumulated result.
+        # Uses required intersection so branch-specific fields stay optional.
+        # Creates a fresh schema to avoid mutating cached canonical schemas.
+        def merge_nesting_branch(accum, current, depth = 0)
+          return current unless accum
+          return accum if current.equal?(accum)
+
+          # Unwrap array schemas to merge their items, then re-wrap
+          if accum.type == Constants::SchemaTypes::ARRAY && current&.type == Constants::SchemaTypes::ARRAY &&
+             accum.items&.type == Constants::SchemaTypes::OBJECT && current.items&.type == Constants::SchemaTypes::OBJECT
+            merged_items = merge_nesting_branch(accum.items, current.items, depth)
+            return ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: merged_items)
+          end
+
+          return accum unless current&.type == Constants::SchemaTypes::OBJECT
+          return current unless accum.type == Constants::SchemaTypes::OBJECT
+
+          shared_required = accum.required & current.required
+          merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+          copy_branch_metadata(merged, accum)
+          copy_branch_metadata(merged, current)
+          accum.properties.each do |n, s|
+            merged.add_property(n, s, required: shared_required.include?(n))
+          end
+          current.properties.each do |n, s|
+            existing = merged.properties[n]
+            if existing && depth < MAX_MERGE_DEPTH && mergeable_schemas?(existing, s)
+              merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
+            else
+              merged.add_property(n, s, required: shared_required.include?(n))
+            end
+          end
+          merged
+        end
+
+        # Copies non-property scalar metadata from a branch schema to the merged result.
+        # Called twice (accum then current) so later branch values win (last-one-wins).
+        def copy_branch_metadata(merged, source)
+          merged.description = source.description if source.description
+          merged.nullable = source.nullable unless source.nullable.nil?
+          merged.format = source.format if source.format
+          merged.examples = source.examples if source.respond_to?(:examples) && source.examples
+          merged.extensions = source.extensions if source.respond_to?(:extensions) && source.extensions
+        end
+
+        # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
+        def mergeable_schemas?(left, right)
+          return true if left.type == Constants::SchemaTypes::OBJECT && right.type == Constants::SchemaTypes::OBJECT
+          return true if left.type == Constants::SchemaTypes::ARRAY && right.type == Constants::SchemaTypes::ARRAY &&
+                         left.items&.type == Constants::SchemaTypes::OBJECT && right.items&.type == Constants::SchemaTypes::OBJECT
+
+          false
+        end
+
         def apply_exposure_properties(schema, doc)
           schema.nullable = doc[:nullable] || doc["nullable"] || false
-          schema.enum = doc[:values] || doc["values"] if doc[:values] || doc["values"]
+          apply_exposure_values(schema, doc[:values] || doc["values"])
           schema.description = doc[:desc] || doc["desc"] if doc[:desc] || doc["desc"]
           schema.format = doc[:format] || doc["format"] if doc[:format] || doc["format"]
           schema.examples = doc[:example] || doc["example"] if schema.respond_to?(:examples=) && (doc[:example] || doc["example"])
@@ -177,9 +274,65 @@ module GrapeOAS
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
         end
 
+        # Normalizes values from entity documentation into enum arrays or min/max constraints.
+        # Handles Array, Range, Set, and arity-0 Proc/Lambda.
+        # Skips schemas with canonical_name to avoid mutating cached entity schemas.
+        def apply_exposure_values(schema, values)
+          return unless values
+          return if schema.respond_to?(:canonical_name) && schema.canonical_name
+
+          # Evaluate arity-0 procs (they return enum arrays); skip validators (arity > 0)
+          # Skip callable objects that don't respond to arity (e.g. custom validator classes)
+          if values.respond_to?(:call)
+            return unless values.respond_to?(:arity) && values.arity.zero?
+
+            begin
+              values = values.call
+            rescue StandardError
+              return
+            end
+            # Guard against optional-arg validators (proc { |v = nil| ... }) that
+            # report arity 0 but return non-enum results when called without args.
+            return unless values.is_a?(Array) || values.is_a?(Range) || (defined?(Set) && values.is_a?(Set))
+          end
+
+          if values.is_a?(Range)
+            apply_range_values(schema, values)
+          else
+            enum_values = defined?(Set) && values.is_a?(Set) ? values.to_a : values
+            schema.enum = enum_values if enum_values.is_a?(Array) && !enum_values.empty?
+          end
+        end
+
+        def apply_range_values(schema, range)
+          first_val = range.begin
+          last_val = range.end
+
+          numeric_range = first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
+          numeric_type = [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].include?(schema.type)
+
+          if numeric_range && numeric_type
+            # Skip descending numeric ranges (e.g. 10..1)
+            return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
+
+            schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
+            schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
+            schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
+          elsif !numeric_range && first_val && last_val && schema.respond_to?(:enum=)
+            expanded = range.first(Constants::MAX_ENUM_RANGE_SIZE + 1) rescue nil # rubocop:disable Style/RescueModifier
+            if expanded.is_a?(Array) && expanded.length.positive? && expanded.length <= Constants::MAX_ENUM_RANGE_SIZE
+              schema.enum = expanded
+            end
+          end
+        end
+
         def apply_exposure_constraints(schema, doc)
           schema.minimum = doc[:minimum] if doc.key?(:minimum) && schema.respond_to?(:minimum=)
-          schema.maximum = doc[:maximum] if doc.key?(:maximum) && schema.respond_to?(:maximum=)
+          if doc.key?(:maximum) && schema.respond_to?(:maximum=)
+            schema.maximum = doc[:maximum]
+            # Clear range-derived exclusivity when explicit maximum overrides it
+            schema.exclusive_maximum = nil if schema.respond_to?(:exclusive_maximum=)
+          end
           schema.min_length = doc[:min_length] if doc.key?(:min_length) && schema.respond_to?(:min_length=)
           schema.max_length = doc[:max_length] if doc.key?(:max_length) && schema.respond_to?(:max_length=)
           schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
