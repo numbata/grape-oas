@@ -232,8 +232,13 @@ module GrapeOAS
           end
           current.properties.each do |n, s|
             existing = merged.properties[n]
-            if existing && depth < MAX_MERGE_DEPTH && mergeable_schemas?(existing, s)
-              merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
+            if existing && mergeable_schemas?(existing, s)
+              if depth < MAX_MERGE_DEPTH
+                merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
+              else
+                warn "[grape-oas] Maximum nesting merge depth (#{MAX_MERGE_DEPTH}) exceeded for property '#{n}'; skipping deep merge"
+                merged.add_property(n, s, required: shared_required.include?(n))
+              end
             else
               merged.add_property(n, s, required: shared_required.include?(n))
             end
@@ -248,7 +253,7 @@ module GrapeOAS
           merged.nullable = source.nullable unless source.nullable.nil?
           merged.format = source.format if source.format
           merged.examples = source.examples if source.respond_to?(:examples) && source.examples
-          merged.extensions = source.extensions if source.respond_to?(:extensions) && source.extensions
+          merged.extensions = source.extensions.dup if source.respond_to?(:extensions) && source.extensions
         end
 
         # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
