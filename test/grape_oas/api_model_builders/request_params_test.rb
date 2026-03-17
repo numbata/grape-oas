@@ -264,6 +264,27 @@ module GrapeOAS
         assert_empty params
       end
 
+      def test_is_array_with_primitive_type_in_body
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :colors, type: String, documentation: { type: "string", is_array: true, param_type: "body" }
+          end
+          post "designs" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        colors = body_schema.properties["colors"]
+
+        assert_equal "array", colors.type
+        assert_equal "string", colors.items.type
+      end
+
       # === Additional type scenarios ===
 
       def test_typed_array_string_notation
