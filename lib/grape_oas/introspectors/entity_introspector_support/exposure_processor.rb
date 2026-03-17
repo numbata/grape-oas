@@ -253,7 +253,9 @@ module GrapeOAS
           merged.nullable = source.nullable unless source.nullable.nil?
           merged.format = source.format if source.format
           merged.examples = source.examples if source.respond_to?(:examples) && source.examples
-          merged.extensions = source.extensions.dup if source.respond_to?(:extensions) && source.extensions
+          return unless source.respond_to?(:extensions) && source.extensions
+
+          merged.extensions = source.extensions.transform_values { |v| v.is_a?(Hash) ? v.dup : v }
         end
 
         # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
