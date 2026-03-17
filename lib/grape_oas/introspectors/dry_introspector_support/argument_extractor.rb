@@ -49,28 +49,9 @@ module GrapeOAS
         end
 
         # Converts a non-numeric bounded Range to an array for enum values.
-        # Returns nil for numeric ranges (should use min/max instead).
-        # Returns nil for unbounded (endless/beginless) or excessively large ranges.
+        # Delegates to Constants.expand_range_to_enum for shared logic.
         def range_to_enum_array(range)
-          # Reject unbounded ranges (endless/beginless)
-          return nil if range.begin.nil? || range.end.nil?
-
-          # Numeric ranges should use min/max constraints, not enum
-          return nil if range.begin.is_a?(Numeric) || range.end.is_a?(Numeric)
-
-          # Use bounded iteration to avoid memory exhaustion on large ranges.
-          # Take one more than max to detect oversized ranges without full enumeration.
-          begin
-            array = range.take(MAX_ENUM_RANGE_SIZE + 1)
-          rescue TypeError
-            # Range can't be iterated (e.g., non-discrete types)
-            return nil
-          end
-
-          # Reject ranges exceeding the size limit
-          return nil if array.size > MAX_ENUM_RANGE_SIZE
-
-          array
+          Constants.expand_range_to_enum(range)
         end
 
         def extract_literal(arg)

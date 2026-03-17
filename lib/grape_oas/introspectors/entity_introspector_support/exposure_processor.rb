@@ -232,8 +232,13 @@ module GrapeOAS
           end
           current.properties.each do |n, s|
             existing = merged.properties[n]
-            if existing && depth < MAX_MERGE_DEPTH && mergeable_schemas?(existing, s)
-              merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
+            if existing && mergeable_schemas?(existing, s)
+              if depth < MAX_MERGE_DEPTH
+                merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
+              else
+                warn "[grape-oas] Maximum nesting merge depth (#{MAX_MERGE_DEPTH}) exceeded for property '#{n}'; skipping deep merge"
+                merged.add_property(n, s, required: shared_required.include?(n))
+              end
             else
               merged.add_property(n, s, required: shared_required.include?(n))
             end
@@ -248,7 +253,7 @@ module GrapeOAS
           merged.nullable = source.nullable unless source.nullable.nil?
           merged.format = source.format if source.format
           merged.examples = source.examples if source.respond_to?(:examples) && source.examples
-          merged.extensions = source.extensions if source.respond_to?(:extensions) && source.extensions
+          merged.extensions = source.extensions.dup if source.respond_to?(:extensions) && source.extensions
         end
 
         # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
@@ -288,7 +293,8 @@ module GrapeOAS
 
             begin
               values = values.call
-            rescue StandardError
+            rescue StandardError => e
+              warn "[grape-oas] Proc evaluation failed for exposure values: #{e.message}"
               return
             end
             # Guard against optional-arg validators (proc { |v = nil| ... }) that
@@ -319,10 +325,8 @@ module GrapeOAS
             schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
             schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
           elsif !numeric_range && first_val && last_val && schema.respond_to?(:enum=)
-            expanded = range.first(Constants::MAX_ENUM_RANGE_SIZE + 1) rescue nil # rubocop:disable Style/RescueModifier
-            if expanded.is_a?(Array) && expanded.length.positive? && expanded.length <= Constants::MAX_ENUM_RANGE_SIZE
-              schema.enum = expanded
-            end
+            expanded = Constants.expand_range_to_enum(range)
+            schema.enum = expanded if expanded
           end
         end
 
