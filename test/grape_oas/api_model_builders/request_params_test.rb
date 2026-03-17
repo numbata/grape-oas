@@ -264,7 +264,7 @@ module GrapeOAS
         assert_empty params
       end
 
-      def test_is_array_with_primitive_type_in_body
+      def test_is_array_with_primitive_doc_type_in_body
         api_class = Class.new(Grape::API) do
           format :json
           params do
@@ -283,6 +283,50 @@ module GrapeOAS
 
         assert_equal "array", colors.type
         assert_equal "string", colors.items.type
+      end
+
+      def test_is_array_with_integer_doc_type_in_body
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :ids, type: Integer, documentation: { type: "integer", is_array: true, param_type: "body" }
+          end
+          post "batch" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        ids = body_schema.properties["ids"]
+
+        assert_equal "array", ids.type
+        assert_equal "integer", ids.items.type
+        assert_equal "int32", ids.items.format
+      end
+
+      def test_is_array_falls_back_to_raw_type_when_no_doc_type
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :ids, type: Integer, documentation: { is_array: true, param_type: "body" }
+          end
+          post "batch" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        ids = body_schema.properties["ids"]
+
+        assert_equal "array", ids.type
+        assert_equal "integer", ids.items.type
+        assert_equal "int32", ids.items.format
       end
 
       # === Additional type scenarios ===

@@ -33,7 +33,7 @@ module GrapeOAS
 
           return build_entity_array_schema(spec, raw_type, doc_type) if entity_array_type?(type_source, doc_type, spec)
           return build_doc_entity_array_schema(doc_type) if doc[:is_array] && grape_entity?(doc_type)
-          return build_primitive_array_schema(doc_type) if doc[:is_array]
+          return build_primitive_array_schema(doc_type, raw_type) if doc[:is_array]
           return build_entity_schema(doc_type) if grape_entity?(doc_type)
           return build_entity_schema(raw_type) if grape_entity?(raw_type)
           return build_elements_array_schema(spec) if array_with_elements?(raw_type, spec)
@@ -93,11 +93,12 @@ module GrapeOAS
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: items_schema)
         end
 
-        def build_primitive_array_schema(doc_type)
-          item_type = resolve_schema_type(doc_type) || Constants::SchemaTypes::STRING
+        def build_primitive_array_schema(doc_type, raw_type)
+          type_source = doc_type || raw_type
+          item_type = resolve_schema_type(type_source)
           ApiModel::Schema.new(
             type: Constants::SchemaTypes::ARRAY,
-            items: ApiModel::Schema.new(type: item_type),
+            items: ApiModel::Schema.new(type: item_type, format: Constants.format_for_type(type_source)),
           )
         end
 
