@@ -253,7 +253,9 @@ module GrapeOAS
           merged.nullable = source.nullable unless source.nullable.nil?
           merged.format = source.format if source.format
           merged.examples = source.examples if source.respond_to?(:examples) && source.examples
-          merged.extensions = source.extensions.dup if source.respond_to?(:extensions) && source.extensions
+          return unless source.respond_to?(:extensions) && source.extensions
+
+          merged.extensions = source.extensions.transform_values { |v| v.is_a?(Hash) ? v.dup : v }
         end
 
         # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
@@ -293,7 +295,7 @@ module GrapeOAS
 
             begin
               values = values.call
-            rescue StandardError => e
+            rescue ArgumentError, RuntimeError => e
               warn "[grape-oas] Proc evaluation failed for exposure values: #{e.message}"
               return
             end
@@ -325,7 +327,7 @@ module GrapeOAS
             schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
             schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
           elsif !numeric_range && first_val && last_val && schema.respond_to?(:enum=)
-            expanded = Constants.expand_range_to_enum(range)
+            expanded = RangeUtils.expand_range_to_enum(range)
             schema.enum = expanded if expanded
           end
         end

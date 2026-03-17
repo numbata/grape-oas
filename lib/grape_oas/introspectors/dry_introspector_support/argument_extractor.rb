@@ -13,8 +13,6 @@ module GrapeOAS
         LITERAL_TAGS = %i[value val literal class left right].freeze
         # AST node tags for regex patterns
         PATTERN_TAGS = %i[regexp regex].freeze
-        # @see Constants::MAX_ENUM_RANGE_SIZE
-        MAX_ENUM_RANGE_SIZE = Constants::MAX_ENUM_RANGE_SIZE
 
         def extract_numeric(arg)
           return arg if arg.is_a?(Numeric)
@@ -49,9 +47,9 @@ module GrapeOAS
         end
 
         # Converts a non-numeric bounded Range to an array for enum values.
-        # Delegates to Constants.expand_range_to_enum for shared logic.
+        # Delegates to RangeUtils.expand_range_to_enum for shared logic.
         def range_to_enum_array(range)
-          Constants.expand_range_to_enum(range)
+          RangeUtils.expand_range_to_enum(range)
         end
 
         def extract_literal(arg)

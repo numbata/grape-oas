@@ -293,6 +293,43 @@ module GrapeOAS
 
         refute info.nullable
       end
+
+      # === MAX_MERGE_DEPTH exceeded emits warning and degrades gracefully ===
+
+      def test_max_merge_depth_emits_warning_and_does_not_crash
+        max_depth = EntityIntrospectorSupport::ExposureProcessor::MAX_MERGE_DEPTH
+
+        # Build two deeply nested object schemas that share the same key at every level,
+        # forcing merge_nesting_branch to recurse past MAX_MERGE_DEPTH.
+        schema_a = ApiModel::Schema.new(type: "string")
+        schema_b = ApiModel::Schema.new(type: "integer")
+        (max_depth + 2).times do
+          wrapper_a = ApiModel::Schema.new(type: "object")
+          wrapper_a.add_property("deep", schema_a, required: true)
+          schema_a = wrapper_a
+
+          wrapper_b = ApiModel::Schema.new(type: "object")
+          wrapper_b.add_property("deep", schema_b, required: true)
+          schema_b = wrapper_b
+        end
+
+        # Use a dummy entity to get a processor instance, then test merge directly
+        dummy = Class.new(Grape::Entity) { expose :x, documentation: { type: String } }
+        processor = EntityIntrospectorSupport::ExposureProcessor.new(
+          dummy, stack: Set.new, registry: GrapeOAS::Introspectors::Registry.new,
+        )
+
+        _stdout, stderr = capture_io do
+          @merged = processor.send(:merge_nesting_branch, schema_a, schema_b)
+        end
+
+        # Should not crash and should produce a merged schema
+        assert_equal "object", @merged.type
+        assert_includes @merged.properties.keys, "deep"
+
+        # Should have emitted the depth-exceeded warning
+        assert_match(/Maximum nesting merge depth/, stderr)
+      end
     end
   end
 end
