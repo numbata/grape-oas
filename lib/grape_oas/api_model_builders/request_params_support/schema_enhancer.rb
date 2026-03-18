@@ -93,7 +93,7 @@ module GrapeOAS
           end
 
           def one_of_schema?(schema)
-            schema.respond_to?(:one_of) && schema.one_of.is_a?(Array) && schema.one_of.any?
+            schema.respond_to?(:one_of) && schema.one_of.is_a?(Array) && !schema.one_of.empty?
           end
 
           def null_type_schema?(schema)
