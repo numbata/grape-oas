@@ -16,10 +16,10 @@ module GrapeOAS
       assert_equal 1..10, ValuesNormalizer.normalize(1..10)
     end
 
-    def test_passes_through_set
+    def test_converts_set_to_array
       result = ValuesNormalizer.normalize(Set.new(%w[x y]))
 
-      assert_instance_of Set, result
+      assert_instance_of Array, result
       assert_equal 2, result.size
     end
 
@@ -86,10 +86,11 @@ module GrapeOAS
       assert_equal "a".."z", result
     end
 
-    def test_proc_returning_set
+    def test_proc_returning_set_converts_to_array
       result = ValuesNormalizer.normalize(proc { Set.new([1, 2]) })
 
-      assert_instance_of Set, result
+      assert_instance_of Array, result
+      assert_equal 2, result.size
     end
   end
 end

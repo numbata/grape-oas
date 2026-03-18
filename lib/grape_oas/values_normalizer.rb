@@ -6,13 +6,14 @@ module GrapeOAS
   # Handles Proc/Lambda evaluation, arity checking, callable validation,
   # and optional-arg validator guarding.
   module ValuesNormalizer
-    # Resolves a values specification into an Array, Range, Set, or nil.
-    # Evaluates arity-0 procs, skips validators (arity > 0), and guards
-    # against callable objects without arity and optional-arg validators.
+    # Resolves a values specification into an Array, Range, or nil.
+    # Evaluates arity-0 procs, skips validators (arity > 0), guards
+    # against callable objects without arity and optional-arg validators,
+    # and converts Sets to Arrays.
     #
     # @param values [Object] raw values from spec or documentation
     # @param context [String] description for warning messages (e.g. "parameter 'status'")
-    # @return [Array, Range, Set, nil] normalized values or nil if not applicable
+    # @return [Array, Range, nil] normalized values or nil if not applicable
     def self.normalize(values, context: "values")
       return nil unless values
 
@@ -32,6 +33,9 @@ module GrapeOAS
         # report arity 0 but return non-enum results when called without args.
         return nil unless values.is_a?(Array) || values.is_a?(Range) || (defined?(Set) && values.is_a?(Set))
       end
+
+      # Convert Sets to Arrays for consistent downstream handling
+      values = values.to_a if defined?(Set) && values.is_a?(Set)
 
       values
     end

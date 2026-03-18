@@ -34,11 +34,13 @@ module GrapeOAS
       numeric_type = NUMERIC_TYPES.include?(schema.type)
 
       if numeric_range && numeric_type
+        # Skip mixed-type ranges (e.g. 1.."z") — both endpoints must be numeric or nil
+        return if first_val && last_val && (first_val.is_a?(Numeric) != last_val.is_a?(Numeric))
         # Skip descending numeric ranges (e.g. 10..1)
         return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
 
-        schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
-        schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
+        schema.minimum = first_val if first_val.is_a?(Numeric) && schema.respond_to?(:minimum=)
+        schema.maximum = last_val if last_val.is_a?(Numeric) && schema.respond_to?(:maximum=)
         schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
       elsif numeric_range && !numeric_type
         # Numeric range on non-numeric type (e.g. values: 1..5 on type: String) — skip with warning
