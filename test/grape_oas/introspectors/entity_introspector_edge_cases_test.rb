@@ -206,13 +206,16 @@ module GrapeOAS
       end
 
       def test_numeric_range_on_string_type_does_not_set_min_max
-        schema = EntityIntrospector.new(NumericRangeOnStringEntity).build_schema
+        _stdout, stderr = capture_io do
+          @schema = EntityIntrospector.new(NumericRangeOnStringEntity).build_schema
+        end
 
-        prop = schema.properties["code"]
+        prop = @schema.properties["code"]
 
         assert_equal "string", prop.type
         assert_nil prop.minimum
         assert_nil prop.maximum
+        assert_match(/Numeric range.*ignored on non-numeric/, stderr)
       end
 
       # === Entity with Range values (numeric) ===
@@ -541,9 +544,12 @@ module GrapeOAS
       end
 
       def test_entity_with_raising_proc_does_not_crash
-        schema = EntityIntrospector.new(RaisingProcEntity).build_schema
+        _stdout, stderr = capture_io do
+          @schema = EntityIntrospector.new(RaisingProcEntity).build_schema
+        end
 
-        assert_nil schema.properties["code"].enum
+        assert_nil @schema.properties["code"].enum
+        assert_match(/Proc evaluation failed/, stderr)
       end
     end
   end

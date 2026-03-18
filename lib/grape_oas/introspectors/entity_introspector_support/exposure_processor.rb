@@ -230,24 +230,10 @@ module GrapeOAS
         # Handles Array, Range, Set, and arity-0 Proc/Lambda.
         # Skips schemas with canonical_name to avoid mutating cached entity schemas.
         def apply_exposure_values(schema, values)
-          return unless values
           return if schema.respond_to?(:canonical_name) && schema.canonical_name
 
-          # Evaluate arity-0 procs (they return enum arrays); skip validators (arity > 0)
-          # Skip callable objects that don't respond to arity (e.g. custom validator classes)
-          if values.respond_to?(:call)
-            return unless values.respond_to?(:arity) && values.arity.zero?
-
-            begin
-              values = values.call
-            rescue StandardError => e
-              warn "[grape-oas] Proc evaluation failed for exposure values (#{e.class}): #{e.message}"
-              return
-            end
-            # Guard against optional-arg validators (proc { |v = nil| ... }) that
-            # report arity 0 but return non-enum results when called without args.
-            return unless values.is_a?(Array) || values.is_a?(Range) || (defined?(Set) && values.is_a?(Set))
-          end
+          values = ValuesNormalizer.normalize(values, context: "exposure values")
+          return unless values
 
           if values.is_a?(Range)
             apply_range_values(schema, values)

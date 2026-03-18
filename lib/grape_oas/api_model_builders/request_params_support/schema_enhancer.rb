@@ -64,30 +64,8 @@ module GrapeOAS
           # For array schemas, applies enum to items (since values constrain array elements).
           # For oneOf schemas, applies enum to each non-null variant.
           def apply_values(schema, spec)
-            values = spec[:values]
+            values = ValuesNormalizer.normalize(spec[:values], context: "parameter values")
             return unless values
-
-            # Handle Hash format { value: ..., message: ... } - extract the value
-            values = values[:value] if values.is_a?(Hash) && values.key?(:value)
-
-            # Handle Proc/Lambda and callable objects
-            if values.respond_to?(:call)
-              # Skip callable objects without arity (e.g. custom validator classes)
-              return unless values.respond_to?(:arity)
-              # Skip validators (arity > 0) - they validate individual values
-              return if values.arity != 0
-
-              # Evaluate arity-0 procs - they return enum arrays
-              begin
-                values = values.call
-              rescue StandardError => e
-                warn "[grape-oas] Proc evaluation failed for parameter values (#{e.class}): #{e.message}"
-                return
-              end
-              # Guard against optional-arg validators (proc { |v = nil| ... }) that
-              # report arity 0 but return non-enum results when called without args.
-              return unless values.is_a?(Array) || values.is_a?(Range) || (defined?(Set) && values.is_a?(Set))
-            end
 
             if values.is_a?(Range)
               apply_range_values(schema, values)
