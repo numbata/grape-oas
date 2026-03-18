@@ -173,8 +173,10 @@ module GrapeOAS
         def nesting_exposure?(exposure)
           return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
 
-          # If using: points to an entity class, let the normal entity introspection handle it
           opts = exposure.instance_variable_get(:@options) || {}
+          # resolve_entity_from_opts returns nil when using: is absent or not a Grape::Entity subclass.
+          # The extra !opts[:using] check catches using: set to a non-entity class (e.g. String),
+          # which should still be handled by normal entity introspection, not inline nesting.
           !resolve_entity_from_opts(exposure, exposure.documentation || {}) && !opts[:using]
         end
 

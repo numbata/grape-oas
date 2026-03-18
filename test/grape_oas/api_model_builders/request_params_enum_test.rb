@@ -312,6 +312,7 @@ module GrapeOAS
         field_param = params.find { |p| p.name == "field" }
 
         refute_nil field_param
+        assert_nil field_param.schema.enum
       end
 
       # === Single value enum ===
@@ -334,6 +335,7 @@ module GrapeOAS
         constant_param = params.find { |p| p.name == "constant" }
 
         refute_nil constant_param
+        assert_equal ["fixed"], constant_param.schema.enum
       end
 
       # === Values in nested hash ===
