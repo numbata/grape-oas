@@ -273,9 +273,11 @@ module GrapeOAS
         assert_includes items.items.properties.keys, "beta"
       end
 
-      # === Nullable override from later branch (last-wins false) ===
+      # === Nullable uses OR semantics across branches ===
+      # If any branch is nullable, the merged result is nullable,
+      # since conditional branches represent alternatives.
 
-      class NullableOverrideEntity < Grape::Entity
+      class NullableOrEntity < Grape::Entity
         expose :meta do
           expose :info, documentation: { nullable: true } do
             expose :alpha, documentation: { type: String }
@@ -286,12 +288,12 @@ module GrapeOAS
         end
       end
 
-      def test_nullable_false_overrides_true_in_merge
-        schema = EntityIntrospector.new(NullableOverrideEntity).build_schema
+      def test_nullable_true_from_any_branch_makes_merged_nullable
+        schema = EntityIntrospector.new(NullableOrEntity).build_schema
 
         info = schema.properties["meta"].properties["info"]
 
-        refute info.nullable
+        assert info.nullable
       end
 
       # === MAX_MERGE_DEPTH exceeded emits warning and degrades gracefully ===

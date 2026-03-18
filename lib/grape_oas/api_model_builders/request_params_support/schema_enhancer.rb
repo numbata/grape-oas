@@ -70,8 +70,10 @@ module GrapeOAS
             # Handle Hash format { value: ..., message: ... } - extract the value
             values = values[:value] if values.is_a?(Hash) && values.key?(:value)
 
-            # Handle Proc/Lambda
+            # Handle Proc/Lambda and callable objects
             if values.respond_to?(:call)
+              # Skip callable objects without arity (e.g. custom validator classes)
+              return unless values.respond_to?(:arity)
               # Skip validators (arity > 0) - they validate individual values
               return if values.arity != 0
 
@@ -159,18 +161,24 @@ module GrapeOAS
             end
           end
 
-          # Converts a Range to minimum/maximum constraints.
-          # For numeric ranges (Integer, Float), uses min/max.
-          # For other ranges (e.g., 'a'..'z'), expands to enum array via RangeUtils.
-          # Handles endless/beginless ranges (e.g., 1.., ..10).
+          # Converts a Range to minimum/maximum constraints or enum array.
+          # Numeric ranges on numeric schema types set min/max (with exclusive_maximum for ... ranges).
+          # Non-numeric ranges expand to enum via RangeUtils.
+          # Skips numeric ranges on non-numeric types and descending numeric ranges.
           def apply_range_values(schema, range)
             first_val = range.begin
             last_val = range.end
+            numeric_range = first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
+            numeric_type = [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].include?(schema.type)
 
-            if first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
+            if numeric_range && numeric_type
+              # Skip descending numeric ranges (e.g. 10..1)
+              return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
+
               schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
               schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
-            elsif schema.respond_to?(:enum=)
+              schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
+            elsif !numeric_range && schema.respond_to?(:enum=)
               expanded = RangeUtils.expand_range_to_enum(range)
               schema.enum = expanded if expanded
             end
