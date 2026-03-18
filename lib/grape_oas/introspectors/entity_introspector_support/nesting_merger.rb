@@ -61,14 +61,14 @@ module GrapeOAS
         end
 
         # Copies non-property scalar metadata from a branch schema to the merged result.
-        # Called twice (accum then current) so later branch values win for most fields.
-        # Nullable uses OR semantics: if any branch is nullable, the merged result is too,
-        # since conditional branches represent alternatives and any could produce null.
+        # Uses "first non-nil wins" for description, format, and examples to avoid
+        # order-dependent surprises. Nullable uses OR semantics: if any branch is
+        # nullable, the merged result is too (conditional branches are alternatives).
         def copy_branch_metadata(merged, source)
-          merged.description = source.description if source.description
+          merged.description ||= source.description
           merged.nullable = true if source.nullable
-          merged.format = source.format if source.format
-          merged.examples = source.examples if source.respond_to?(:examples) && source.examples
+          merged.format ||= source.format
+          merged.examples ||= source.examples if source.respond_to?(:examples)
           return unless source.respond_to?(:extensions) && source.extensions
 
           merged.extensions = deep_dup_hash(source.extensions)

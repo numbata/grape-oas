@@ -244,8 +244,8 @@ module GrapeOAS
         assert_equal "object", info.type
         assert_includes info.properties.keys, "alpha"
         assert_includes info.properties.keys, "beta"
-        # Last branch wins for scalar metadata
-        assert_equal "Second branch", info.description
+        # First non-nil wins for scalar metadata
+        assert_equal "First branch", info.description
         assert info.nullable
       end
 

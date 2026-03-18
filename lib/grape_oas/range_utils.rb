@@ -102,6 +102,9 @@ module GrapeOAS
         schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
         schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
         schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
+      elsif numeric_range && !numeric_type
+        # Numeric range on non-numeric type (e.g. values: 1..5 on type: String) — skip with warning
+        warn "[grape-oas] Numeric range #{range} ignored on non-numeric schema type '#{schema.type}'"
       elsif !numeric_range && schema.respond_to?(:enum=)
         expanded = expand_range_to_enum(range)
         schema.enum = expanded if expanded
