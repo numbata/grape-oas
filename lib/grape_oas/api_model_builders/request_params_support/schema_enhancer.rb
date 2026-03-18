@@ -71,7 +71,7 @@ module GrapeOAS
               apply_range_values(schema, values)
             else
               enum_values = defined?(Set) && values.is_a?(Set) ? values.to_a : values
-              apply_enum_values(schema, enum_values) if enum_values.is_a?(Array) && enum_values.any?
+              apply_enum_values(schema, enum_values) if enum_values.is_a?(Array) && !enum_values.empty?
             end
           end
 

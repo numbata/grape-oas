@@ -71,7 +71,8 @@ module GrapeOAS
           merged.examples ||= source.examples if source.respond_to?(:examples)
           return unless source.respond_to?(:extensions) && source.extensions
 
-          merged.extensions = deep_dup_hash(source.extensions)
+          existing = merged.extensions || {}
+          merged.extensions = existing.merge(deep_dup_hash(source.extensions))
         end
 
         # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
