@@ -84,5 +84,28 @@ module GrapeOAS
         first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
       end
     end
+
+    # Applies a Range to a schema as min/max constraints or enum values.
+    # Numeric ranges on numeric schema types set minimum/maximum (with exclusive_maximum
+    # for three-dot ranges). Non-numeric ranges expand to enum via expand_range_to_enum.
+    # Skips numeric ranges on non-numeric types and descending numeric ranges.
+    def self.apply_to_schema(schema, range)
+      first_val = range.begin
+      last_val = range.end
+      numeric_range = first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
+      numeric_type = NUMERIC_TYPES.include?(schema.type)
+
+      if numeric_range && numeric_type
+        # Skip descending numeric ranges (e.g. 10..1)
+        return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
+
+        schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
+        schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
+        schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
+      elsif !numeric_range && schema.respond_to?(:enum=)
+        expanded = expand_range_to_enum(range)
+        schema.enum = expanded if expanded
+      end
+    end
   end
 end
