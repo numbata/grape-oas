@@ -8,9 +8,6 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
-        # Maximum recursion depth for merging nested object branches.
-        MAX_MERGE_DEPTH = 10
-
         def initialize(entity_class, stack:, registry:)
           @entity_class = entity_class
           @stack = stack
@@ -190,6 +187,7 @@ module GrapeOAS
 
           # Accumulate nesting-branch schemas per key so interleaved non-nesting
           # exposures don't discard earlier nesting properties.
+          merger = NestingMerger.new
           nesting_accum = {}
           nesting_required = Hash.new { |h, k| h[k] = [] }
           exposure.nested_exposures.each do |child_exposure|
@@ -199,7 +197,7 @@ module GrapeOAS
 
             nesting_required[key] << schema.required.include?(key)
             current = schema.properties[key]
-            nesting_accum[key] = merge_nesting_branch(nesting_accum[key], current)
+            nesting_accum[key] = merger.merge(nesting_accum[key], current)
             schema.properties[key] = nesting_accum[key]
           end
 
@@ -212,67 +210,6 @@ module GrapeOAS
           apply_exposure_properties(schema, doc)
           apply_exposure_constraints(schema, doc)
           schema
-        end
-
-        # Folds a new nesting-branch object schema into the accumulated result.
-        # Uses required intersection so branch-specific fields stay optional.
-        # Creates a fresh schema to avoid mutating cached canonical schemas.
-        def merge_nesting_branch(accum, current, depth = 0)
-          return current unless accum
-          return accum if current.equal?(accum)
-
-          # Unwrap array schemas to merge their items, then re-wrap
-          if accum.type == Constants::SchemaTypes::ARRAY && current&.type == Constants::SchemaTypes::ARRAY &&
-             accum.items&.type == Constants::SchemaTypes::OBJECT && current.items&.type == Constants::SchemaTypes::OBJECT
-            merged_items = merge_nesting_branch(accum.items, current.items, depth)
-            return ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: merged_items)
-          end
-
-          return accum unless current&.type == Constants::SchemaTypes::OBJECT
-          return current unless accum.type == Constants::SchemaTypes::OBJECT
-
-          shared_required = accum.required & current.required
-          merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-          copy_branch_metadata(merged, accum)
-          copy_branch_metadata(merged, current)
-          accum.properties.each do |n, s|
-            merged.add_property(n, s, required: shared_required.include?(n))
-          end
-          current.properties.each do |n, s|
-            existing = merged.properties[n]
-            if existing && mergeable_schemas?(existing, s)
-              if depth < MAX_MERGE_DEPTH
-                merged.properties[n] = merge_nesting_branch(existing, s, depth + 1)
-              else
-                warn "[grape-oas] Maximum nesting merge depth (#{MAX_MERGE_DEPTH}) exceeded for property '#{n}'; skipping deep merge"
-                merged.add_property(n, s, required: shared_required.include?(n))
-              end
-            else
-              merged.add_property(n, s, required: shared_required.include?(n))
-            end
-          end
-          merged
-        end
-
-        # Copies non-property scalar metadata from a branch schema to the merged result.
-        # Called twice (accum then current) so later branch values win (last-one-wins).
-        def copy_branch_metadata(merged, source)
-          merged.description = source.description if source.description
-          merged.nullable = source.nullable unless source.nullable.nil?
-          merged.format = source.format if source.format
-          merged.examples = source.examples if source.respond_to?(:examples) && source.examples
-          return unless source.respond_to?(:extensions) && source.extensions
-
-          merged.extensions = Marshal.load(Marshal.dump(source.extensions))
-        end
-
-        # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
-        def mergeable_schemas?(left, right)
-          return true if left.type == Constants::SchemaTypes::OBJECT && right.type == Constants::SchemaTypes::OBJECT
-          return true if left.type == Constants::SchemaTypes::ARRAY && right.type == Constants::SchemaTypes::ARRAY &&
-                         left.items&.type == Constants::SchemaTypes::OBJECT && right.items&.type == Constants::SchemaTypes::OBJECT
-
-          false
         end
 
         def apply_exposure_properties(schema, doc)
