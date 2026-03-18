@@ -173,8 +173,10 @@ module GrapeOAS
         def nesting_exposure?(exposure)
           return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
 
-          # If using: points to an entity class, let the normal entity introspection handle it
           opts = exposure.instance_variable_get(:@options) || {}
+          # resolve_entity_from_opts returns nil when using: is absent or not a Grape::Entity subclass.
+          # The extra !opts[:using] check catches using: set to a non-entity class (e.g. String),
+          # which should still be handled by normal entity introspection, not inline nesting.
           !resolve_entity_from_opts(exposure, exposure.documentation || {}) && !opts[:using]
         end
 
@@ -248,15 +250,7 @@ module GrapeOAS
         end
 
         def apply_exposure_constraints(schema, doc)
-          schema.minimum = doc[:minimum] if doc.key?(:minimum) && schema.respond_to?(:minimum=)
-          if doc.key?(:maximum) && schema.respond_to?(:maximum=)
-            schema.maximum = doc[:maximum]
-            # Clear range-derived exclusivity when explicit maximum overrides it
-            schema.exclusive_maximum = nil if schema.respond_to?(:exclusive_maximum=)
-          end
-          schema.min_length = doc[:min_length] if doc.key?(:min_length) && schema.respond_to?(:min_length=)
-          schema.max_length = doc[:max_length] if doc.key?(:max_length) && schema.respond_to?(:max_length=)
-          schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
+          SchemaConstraints.apply(schema, doc)
         end
 
         def schema_for_type(type)
