@@ -36,6 +36,9 @@ module GrapeOAS
       return nil unless values.is_a?(Array) || values.is_a?(Range)
       return nil if values.is_a?(Array) && values.empty?
 
+      # Only return types that callers can use (Array for enum, Range for min/max)
+      return nil unless values.is_a?(Array) || values.is_a?(Range)
+
       values
     end
 
