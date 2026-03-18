@@ -258,23 +258,7 @@ module GrapeOAS
         end
 
         def apply_range_values(schema, range)
-          first_val = range.begin
-          last_val = range.end
-
-          numeric_range = first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
-          numeric_type = [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].include?(schema.type)
-
-          if numeric_range && numeric_type
-            # Skip descending numeric ranges (e.g. 10..1)
-            return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
-
-            schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
-            schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
-            schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
-          elsif !numeric_range && first_val && last_val && schema.respond_to?(:enum=)
-            expanded = RangeUtils.expand_range_to_enum(range)
-            schema.enum = expanded if expanded
-          end
+          RangeUtils.apply_to_schema(schema, range)
         end
 
         def apply_exposure_constraints(schema, doc)

@@ -59,5 +59,64 @@ module GrapeOAS
     def test_handles_exclusive_string_range
       assert_equal %w[a b c d], RangeUtils.expand_range_to_enum("a"..."e")
     end
+
+    # === apply_to_schema tests ===
+
+    def test_apply_numeric_range_to_integer_schema
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_to_schema(schema, 1..10)
+
+      assert_equal 1, schema.minimum
+      assert_equal 10, schema.maximum
+      assert_nil schema.exclusive_maximum
+    end
+
+    def test_apply_exclusive_range_sets_exclusive_maximum
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_to_schema(schema, 0...10)
+
+      assert_equal 0, schema.minimum
+      assert_equal 10, schema.maximum
+      assert schema.exclusive_maximum
+    end
+
+    def test_apply_descending_numeric_range_is_skipped
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_to_schema(schema, 10..1)
+
+      assert_nil schema.minimum
+      assert_nil schema.maximum
+    end
+
+    def test_apply_numeric_range_on_string_type_is_skipped
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+      RangeUtils.apply_to_schema(schema, 1..10)
+
+      assert_nil schema.minimum
+      assert_nil schema.maximum
+      assert_nil schema.enum
+    end
+
+    def test_apply_string_range_sets_enum
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+      RangeUtils.apply_to_schema(schema, "a".."e")
+
+      assert_equal %w[a b c d e], schema.enum
+    end
+
+    def test_apply_wide_string_range_does_not_set_enum
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+      RangeUtils.apply_to_schema(schema, "a".."zzzzzz")
+
+      assert_nil schema.enum
+    end
+
+    def test_apply_endless_numeric_range_sets_minimum_only
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_to_schema(schema, 1..)
+
+      assert_equal 1, schema.minimum
+      assert_nil schema.maximum
+    end
   end
 end

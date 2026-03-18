@@ -21,7 +21,7 @@ module GrapeOAS
 
           # Unwrap array schemas to merge their items, then re-wrap
           if array_of_objects?(accum) && array_of_objects?(current)
-            merged_items = merge(accum.items, current.items, depth)
+            merged_items = merge(accum.items, current.items, depth + 1)
             return ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: merged_items)
           end
 

@@ -78,7 +78,15 @@ module GrapeOAS
               return if values.arity != 0
 
               # Evaluate arity-0 procs - they return enum arrays
-              values = values.call
+              begin
+                values = values.call
+              rescue StandardError => e
+                warn "[grape-oas] Proc evaluation failed for parameter values (#{e.class}): #{e.message}"
+                return
+              end
+              # Guard against optional-arg validators (proc { |v = nil| ... }) that
+              # report arity 0 but return non-enum results when called without args.
+              return unless values.is_a?(Array) || values.is_a?(Range) || (defined?(Set) && values.is_a?(Set))
             end
 
             if values.is_a?(Range)
@@ -161,27 +169,8 @@ module GrapeOAS
             end
           end
 
-          # Converts a Range to minimum/maximum constraints or enum array.
-          # Numeric ranges on numeric schema types set min/max (with exclusive_maximum for ... ranges).
-          # Non-numeric ranges expand to enum via RangeUtils.
-          # Skips numeric ranges on non-numeric types and descending numeric ranges.
           def apply_range_values(schema, range)
-            first_val = range.begin
-            last_val = range.end
-            numeric_range = first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
-            numeric_type = [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].include?(schema.type)
-
-            if numeric_range && numeric_type
-              # Skip descending numeric ranges (e.g. 10..1)
-              return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
-
-              schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
-              schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
-              schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
-            elsif !numeric_range && schema.respond_to?(:enum=)
-              expanded = RangeUtils.expand_range_to_enum(range)
-              schema.enum = expanded if expanded
-            end
+            RangeUtils.apply_to_schema(schema, range)
           end
 
           def extract_defs(doc)
