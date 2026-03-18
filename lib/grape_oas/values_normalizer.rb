@@ -37,6 +37,9 @@ module GrapeOAS
       # Convert Sets to Arrays for consistent downstream handling
       values = values.to_a if defined?(Set) && values.is_a?(Set)
 
+      # Only return types that callers can use (Array for enum, Range for min/max)
+      return nil unless values.is_a?(Array) || values.is_a?(Range)
+
       values
     end
   end
