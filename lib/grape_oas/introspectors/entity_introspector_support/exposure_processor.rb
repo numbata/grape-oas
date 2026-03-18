@@ -191,14 +191,22 @@ module GrapeOAS
           # Accumulate nesting-branch schemas per key so interleaved non-nesting
           # exposures don't discard earlier nesting properties.
           nesting_accum = {}
+          nesting_required = Hash.new { |h, k| h[k] = [] }
           exposure.nested_exposures.each do |child_exposure|
             key = child_exposure.key.to_s
             add_exposure_to_schema(schema, child_exposure)
             next unless nesting_exposure?(child_exposure)
 
+            nesting_required[key] << schema.required.include?(key)
             current = schema.properties[key]
             nesting_accum[key] = merge_nesting_branch(nesting_accum[key], current)
             schema.properties[key] = nesting_accum[key]
+          end
+
+          # Reconcile parent-level required for merged nesting keys:
+          # a key is required only if ALL branches agree it is required.
+          nesting_required.each do |key, flags|
+            schema.required.delete(key) unless flags.all?
           end
 
           apply_exposure_properties(schema, doc)
@@ -255,7 +263,7 @@ module GrapeOAS
           merged.examples = source.examples if source.respond_to?(:examples) && source.examples
           return unless source.respond_to?(:extensions) && source.extensions
 
-          merged.extensions = source.extensions.transform_values { |v| v.is_a?(Hash) ? v.dup : v }
+          merged.extensions = Marshal.load(Marshal.dump(source.extensions))
         end
 
         # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
@@ -295,8 +303,8 @@ module GrapeOAS
 
             begin
               values = values.call
-            rescue ArgumentError, RuntimeError => e
-              warn "[grape-oas] Proc evaluation failed for exposure values: #{e.message}"
+            rescue StandardError => e
+              warn "[grape-oas] Proc evaluation failed for exposure values (#{e.class}): #{e.message}"
               return
             end
             # Guard against optional-arg validators (proc { |v = nil| ... }) that

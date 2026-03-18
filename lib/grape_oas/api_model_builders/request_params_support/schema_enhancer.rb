@@ -161,7 +161,7 @@ module GrapeOAS
 
           # Converts a Range to minimum/maximum constraints.
           # For numeric ranges (Integer, Float), uses min/max.
-          # For other ranges (e.g., 'a'..'z'), expands to enum array.
+          # For other ranges (e.g., 'a'..'z'), expands to enum array via RangeUtils.
           # Handles endless/beginless ranges (e.g., 1.., ..10).
           def apply_range_values(schema, range)
             first_val = range.begin
@@ -170,9 +170,9 @@ module GrapeOAS
             if first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
               schema.minimum = first_val if first_val && schema.respond_to?(:minimum=)
               schema.maximum = last_val if last_val && schema.respond_to?(:maximum=)
-            elsif first_val && last_val && schema.respond_to?(:enum=)
-              # Non-numeric bounded range (e.g., 'a'..'z') - expand to enum
-              schema.enum = range.to_a
+            elsif schema.respond_to?(:enum=)
+              expanded = RangeUtils.expand_range_to_enum(range)
+              schema.enum = expanded if expanded
             end
           end
 
