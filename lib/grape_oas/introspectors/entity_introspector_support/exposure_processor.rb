@@ -184,6 +184,7 @@ module GrapeOAS
         # properties are merged rather than overwritten.
         def build_nesting_exposure_schema(exposure, doc)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+          return schema unless exposure.respond_to?(:nested_exposures)
 
           # Accumulate nesting-branch schemas per key so interleaved non-nesting
           # exposures don't discard earlier nesting properties.

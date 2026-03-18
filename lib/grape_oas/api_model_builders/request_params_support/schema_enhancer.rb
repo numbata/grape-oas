@@ -52,7 +52,11 @@ module GrapeOAS
 
           def apply_constraints(schema, doc)
             schema.minimum = doc[:minimum] if doc.key?(:minimum) && schema.respond_to?(:minimum=)
-            schema.maximum = doc[:maximum] if doc.key?(:maximum) && schema.respond_to?(:maximum=)
+            if doc.key?(:maximum) && schema.respond_to?(:maximum=)
+              schema.maximum = doc[:maximum]
+              # Clear range-derived exclusivity when explicit maximum overrides it
+              schema.exclusive_maximum = nil if schema.respond_to?(:exclusive_maximum=)
+            end
             schema.min_length = doc[:min_length] if doc.key?(:min_length) && schema.respond_to?(:min_length=)
             schema.max_length = doc[:max_length] if doc.key?(:max_length) && schema.respond_to?(:max_length=)
             schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
@@ -85,7 +89,7 @@ module GrapeOAS
                 compatible_values = filter_compatible_values(variant, values)
 
                 # Only apply enum if there are compatible values
-                variant.enum = compatible_values if compatible_values.any? && variant.respond_to?(:enum=)
+                variant.enum = compatible_values if !compatible_values.empty? && variant.respond_to?(:enum=)
               end
             elsif array_schema_with_items?(schema)
               # For array schemas, apply enum to items (values constrain array elements)

@@ -118,5 +118,13 @@ module GrapeOAS
       assert_equal 1, schema.minimum
       assert_nil schema.maximum
     end
+
+    def test_apply_beginless_numeric_range_sets_maximum_only
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_to_schema(schema, ..10)
+
+      assert_nil schema.minimum
+      assert_equal 10, schema.maximum
+    end
   end
 end
