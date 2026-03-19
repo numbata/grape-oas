@@ -41,14 +41,14 @@ module GrapeOAS
     end
 
     def test_expands_range_at_exactly_max_size
-      # Build a range of exactly MAX_ENUM_RANGE_SIZE elements
-      letters = ("a".."z").to_a
-      range_end = letters[Constants::MAX_ENUM_RANGE_SIZE - 1] || letters.last
+      # Build a string range of exactly MAX_ENUM_RANGE_SIZE (100) elements: "a".."cv"
+      all_elements = ("a".."zz").to_a
+      range_end = all_elements[Constants::MAX_ENUM_RANGE_SIZE - 1]
       range = "a"..range_end
       result = RangeUtils.expand_range_to_enum(range)
 
       refute_nil result
-      assert_operator result.length, :<=, Constants::MAX_ENUM_RANGE_SIZE
+      assert_equal Constants::MAX_ENUM_RANGE_SIZE, result.length
     end
 
     def test_returns_nil_for_range_exceeding_max_by_one
