@@ -191,7 +191,7 @@ module GrapeOAS
           merger = NestingMerger.new
           nesting_accum = {}
           nesting_required = Hash.new { |h, k| h[k] = [] }
-          exposure.nested_exposures.each do |child_exposure|
+          Array(exposure.nested_exposures).each do |child_exposure|
             key = child_exposure.key.to_s
             child_doc = child_exposure.documentation || {}
 

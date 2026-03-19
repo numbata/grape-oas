@@ -33,8 +33,8 @@ module GrapeOAS
         return if first_val && last_val && (first_val.is_a?(Numeric) != last_val.is_a?(Numeric))
         return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
 
-        schema.minimum = first_val if first_val.is_a?(Numeric) && schema.respond_to?(:minimum=)
-        schema.maximum = last_val if last_val.is_a?(Numeric) && schema.respond_to?(:maximum=)
+        schema.minimum = first_val if first_val.is_a?(Numeric) && first_val.finite? && schema.respond_to?(:minimum=)
+        schema.maximum = last_val if last_val.is_a?(Numeric) && last_val.finite? && schema.respond_to?(:maximum=)
         # Boolean here; OAS 3.1 exporter converts to numeric at serialization time
         schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
       elsif numeric_range && !numeric_type
