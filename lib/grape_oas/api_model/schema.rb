@@ -51,8 +51,9 @@ module GrapeOAS
       end
 
       def add_property(name, schema, required: false)
-        @properties[name.to_s] = schema
-        @required << name.to_s if required
+        key = name.to_s
+        @properties[key] = schema
+        @required << key if required && !@required.include?(key)
         schema
       end
     end
