@@ -55,21 +55,21 @@ module GrapeOAS
     end
 
     def test_rescues_raising_proc
-      _stdout, stderr = capture_io do
+      log = capture_grape_oas_log do
         @result = ValuesNormalizer.normalize(proc { raise ArgumentError, "boom" })
       end
 
       assert_nil @result
-      assert_match(/Proc evaluation failed/, stderr)
-      assert_match(/ArgumentError/, stderr)
+      assert_match(/Proc evaluation failed/, log)
+      assert_match(/ArgumentError/, log)
     end
 
     def test_includes_context_in_warning
-      _stdout, stderr = capture_io do
+      log = capture_grape_oas_log do
         ValuesNormalizer.normalize(proc { raise "oops" }, context: "field 'status'")
       end
 
-      assert_match(/field 'status'/, stderr)
+      assert_match(/field 'status'/, log)
     end
 
     def test_passes_through_false_only_array

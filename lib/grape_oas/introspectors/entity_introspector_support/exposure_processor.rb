@@ -121,14 +121,18 @@ module GrapeOAS
         end
 
         def add_property_from_exposure(schema, exposure, doc)
+          prop_schema = build_property_schema(exposure, doc)
+          required = determine_required(doc, exposure)
+          schema.add_property(exposure.key.to_s, prop_schema, required: required)
+        end
+
+        def build_property_schema(exposure, doc)
           prop_schema = if nesting_exposure?(exposure)
                           build_nesting_exposure_schema(exposure, doc)
                         else
                           schema_for_exposure(exposure, doc)
                         end
-          required = determine_required(doc, exposure)
-          prop_schema = wrap_in_array_if_needed(prop_schema, doc)
-          schema.add_property(exposure.key.to_s, prop_schema, required: required)
+          wrap_in_array_if_needed(prop_schema, doc)
         end
 
         def determine_required(doc, exposure)
@@ -188,20 +192,25 @@ module GrapeOAS
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           return schema unless exposure.respond_to?(:nested_exposures)
 
-          # Accumulate nesting-branch schemas per key so interleaved non-nesting
-          # exposures don't discard earlier nesting properties.
+          # Build child schemas. Non-nesting children are added directly.
+          # Nesting children with duplicate keys are merged via NestingMerger
+          # and written once (no double-write to schema.properties).
           merger = NestingMerger.new
           nesting_accum = {}
           nesting_required = Hash.new { |h, k| h[k] = [] }
           exposure.nested_exposures.each do |child_exposure|
             key = child_exposure.key.to_s
-            add_exposure_to_schema(schema, child_exposure)
-            next unless nesting_exposure?(child_exposure)
+            child_doc = child_exposure.documentation || {}
 
-            nesting_required[key] << schema.required.include?(key)
-            current = schema.properties[key]
-            nesting_accum[key] = merger.merge(nesting_accum[key], current)
-            schema.properties[key] = nesting_accum[key]
+            if nesting_exposure?(child_exposure)
+              child_schema = build_property_schema(child_exposure, child_doc)
+              required = determine_required(child_doc, child_exposure)
+              nesting_required[key] << required
+              nesting_accum[key] = merger.merge(nesting_accum[key], child_schema)
+              schema.add_property(key, nesting_accum[key], required: required)
+            else
+              add_exposure_to_schema(schema, child_exposure)
+            end
           end
 
           # Reconcile parent-level required for merged nesting keys:
@@ -210,10 +219,9 @@ module GrapeOAS
             schema.required.delete(key) unless flags.all?
           end
 
-          # Safe to apply parent doc properties here: these operate on the parent
-          # object schema, not on the per-key child schemas built above. The
-          # NestingMerger's metadata (nullable, description) lives on child schemas
-          # and is not overwritten by this step.
+          # Apply parent doc properties to the parent object schema (not children).
+          # NestingMerger metadata (nullable, description) lives on child schemas
+          # and is not affected by this step.
           apply_exposure_properties(schema, doc)
           apply_exposure_constraints(schema, doc)
           schema

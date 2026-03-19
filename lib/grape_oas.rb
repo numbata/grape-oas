@@ -41,6 +41,31 @@ module GrapeOAS
   end
   module_function :version
 
+  # Configurable logger for schema generation warnings and diagnostics.
+  # Defaults to a Logger writing to $stderr. Set to any Logger-compatible
+  # object to redirect warnings to your application's logging infrastructure.
+  #
+  # @example Redirect to Rails logger
+  #   GrapeOAS.logger = Rails.logger
+  #
+  # @example Silence all warnings
+  #   GrapeOAS.logger = Logger.new(File::NULL)
+  #
+  # @return [Logger] the current logger
+  def logger
+    @logger ||= begin
+      require "logger"
+      Logger.new($stderr, progname: "grape-oas", level: Logger::WARN)
+    end
+  end
+
+  # @param logger [Logger] a Logger-compatible object
+  def logger=(logger)
+    @logger = logger
+  end
+
+  module_function :logger, :logger=
+
   # Returns the global introspector registry.
   #
   # The registry manages introspectors that build schemas from various sources

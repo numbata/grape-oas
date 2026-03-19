@@ -318,7 +318,7 @@ module GrapeOAS
         merger = EntityIntrospectorSupport::NestingMerger.new
         merged = nil
 
-        _stdout, stderr = capture_io do
+        log = capture_grape_oas_log do
           merged = merger.merge(schema_a, schema_b)
         end
 
@@ -327,7 +327,7 @@ module GrapeOAS
         assert_includes merged.properties.keys, "deep"
 
         # Should have emitted the depth-exceeded warning
-        assert_match(/Maximum nesting merge depth/, stderr)
+        assert_match(/Maximum nesting merge depth/, log)
       end
     end
   end

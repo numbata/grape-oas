@@ -26,7 +26,7 @@ module GrapeOAS
         begin
           values = values.call
         rescue StandardError => e
-          warn "[grape-oas] Proc evaluation failed for #{context} (#{e.class}): #{e.message}"
+          GrapeOAS.logger.warn("Proc evaluation failed for #{context} (#{e.class}): #{e.message}")
           return nil
         end
         # Guard against optional-arg validators (proc { |v = nil| ... }) that

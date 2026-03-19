@@ -55,8 +55,10 @@ module GrapeOAS
               if depth < MAX_MERGE_DEPTH
                 merged.properties[n] = merge(existing, s, depth + 1)
               else
-                warn "[grape-oas] Maximum nesting merge depth (#{MAX_MERGE_DEPTH}) exceeded " \
-                     "for property '#{n}'; skipping deep merge"
+                GrapeOAS.logger.warn(
+                  "Maximum nesting merge depth (#{MAX_MERGE_DEPTH}) exceeded " \
+                  "for property '#{n}'; skipping deep merge",
+                )
                 merged.add_property(n, s, required: shared_required.include?(n))
               end
             else

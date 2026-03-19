@@ -471,14 +471,14 @@ module GrapeOAS
         route = api_class.routes.first
         builder = RequestParams.new(api: @api, route: route)
 
-        _stdout, stderr = capture_io do
+        log = capture_grape_oas_log do
           _body_schema, params = builder.build
           status_param = params.find { |p| p.name == "status" }
 
           assert_nil status_param.schema.enum
         end
 
-        assert_match(/Proc evaluation failed/, stderr)
+        assert_match(/Proc evaluation failed/, log)
       end
 
       def test_wide_string_range_is_capped
