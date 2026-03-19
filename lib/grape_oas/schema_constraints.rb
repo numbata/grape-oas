@@ -6,12 +6,15 @@ module GrapeOAS
     def self.apply(schema, doc)
       if present?(doc, :minimum)
         schema.minimum = fetch(doc, :minimum) if schema.respond_to?(:minimum=)
-        schema.exclusive_minimum = nil if schema.respond_to?(:exclusive_minimum=)
+        # Clear range-derived exclusivity unless doc explicitly sets it
+        schema.exclusive_minimum = nil if schema.respond_to?(:exclusive_minimum=) && !present?(doc, :exclusive_minimum)
       end
       if present?(doc, :maximum)
         schema.maximum = fetch(doc, :maximum) if schema.respond_to?(:maximum=)
-        schema.exclusive_maximum = nil if schema.respond_to?(:exclusive_maximum=)
+        schema.exclusive_maximum = nil if schema.respond_to?(:exclusive_maximum=) && !present?(doc, :exclusive_maximum)
       end
+      set_if_present(schema, :exclusive_minimum=, doc, :exclusive_minimum)
+      set_if_present(schema, :exclusive_maximum=, doc, :exclusive_maximum)
       set_if_present(schema, :min_length=, doc, :min_length)
       set_if_present(schema, :max_length=, doc, :max_length)
       set_if_present(schema, :pattern=, doc, :pattern)

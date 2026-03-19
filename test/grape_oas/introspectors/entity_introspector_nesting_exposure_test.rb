@@ -401,6 +401,26 @@ module GrapeOAS
         assert_includes items.items.properties.keys, "x"
         assert_includes items.items.properties.keys, "y"
       end
+
+      # === Mixed nesting/non-nesting duplicate key: nesting wins ===
+
+      class MixedDuplicateKeyEntity < Grape::Entity
+        expose :meta do
+          expose :info, documentation: { type: String }
+          expose :info do
+            expose :detail, documentation: { type: String }
+          end
+        end
+      end
+
+      def test_nesting_duplicate_key_overwrites_non_nesting
+        schema = EntityIntrospector.new(MixedDuplicateKeyEntity).build_schema
+
+        info = schema.properties["meta"].properties["info"]
+
+        assert_equal "object", info.type
+        assert_includes info.properties.keys, "detail"
+      end
     end
   end
 end
