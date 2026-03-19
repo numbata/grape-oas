@@ -49,6 +49,9 @@ Dir[File.expand_path("support/**/*.rb", __dir__)].reject { |f| f.end_with?("_tes
 # Helper to capture GrapeOAS.logger output during a block.
 # Temporarily replaces the logger with one backed by a StringIO,
 # restoring the original afterwards. Returns the captured log string.
+require "logger"
+require "stringio"
+
 module LoggerCaptureHelper
   def capture_grape_oas_log
     log_output = StringIO.new

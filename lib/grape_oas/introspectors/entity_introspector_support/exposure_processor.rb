@@ -243,6 +243,9 @@ module GrapeOAS
             apply_range_values(schema, values)
           elsif values.is_a?(Array) && !values.empty?
             target = schema.type == Constants::SchemaTypes::ARRAY && schema.items ? schema.items : schema
+            # Skip cached entity schemas referenced via items (same canonical_name guard as above)
+            return if target.respond_to?(:canonical_name) && target.canonical_name
+
             target.enum = values if target.respond_to?(:enum=)
           end
         end
