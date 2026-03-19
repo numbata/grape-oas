@@ -58,26 +58,9 @@ module GrapeOAS
             schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
           end
 
-          # Applies values from spec[:values] - converts Range to min/max,
-          # evaluates Proc (arity 0), and sets enum for arrays.
-          # Skips Proc/Lambda validators (arity > 0) used for custom validation.
-          # For array schemas, applies enum to items (since values constrain array elements).
-          # For oneOf schemas, applies enum to each non-null variant.
           def apply_values(schema, spec)
-            values = spec[:values]
+            values = ValuesNormalizer.normalize(spec[:values], context: "parameter values")
             return unless values
-
-            # Handle Hash format { value: ..., message: ... } - extract the value
-            values = values[:value] if values.is_a?(Hash) && values.key?(:value)
-
-            # Handle Proc/Lambda
-            if values.respond_to?(:call)
-              # Skip validators (arity > 0) - they validate individual values
-              return if values.arity != 0
-
-              # Evaluate arity-0 procs - they return enum arrays
-              values = values.call
-            end
 
             if values.is_a?(Range)
               if one_of_schema?(schema)
@@ -92,9 +75,8 @@ module GrapeOAS
               else
                 RangeUtils.apply_to_schema(schema, values)
               end
-            else
-              enum_values = defined?(Set) && values.is_a?(Set) ? values.to_a : values
-              apply_enum_values(schema, enum_values) if enum_values.is_a?(Array) && enum_values.any?
+            elsif values.is_a?(Array) && !values.empty?
+              apply_enum_values(schema, values)
             end
           end
 
@@ -109,7 +91,7 @@ module GrapeOAS
                 compatible_values = filter_compatible_values(variant, values)
 
                 # Only apply enum if there are compatible values
-                variant.enum = compatible_values if compatible_values.any? && variant.respond_to?(:enum=)
+                variant.enum = compatible_values if !compatible_values.empty? && variant.respond_to?(:enum=)
               end
             elsif array_schema_with_items?(schema)
               # For array schemas, apply enum to items (values constrain array elements)
@@ -121,7 +103,7 @@ module GrapeOAS
           end
 
           def one_of_schema?(schema)
-            schema.respond_to?(:one_of) && schema.one_of.is_a?(Array) && schema.one_of.any?
+            schema.respond_to?(:one_of) && schema.one_of.is_a?(Array) && !schema.one_of.empty?
           end
 
           def null_type_schema?(schema)
