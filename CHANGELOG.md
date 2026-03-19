@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#46](https://github.com/numbata/grape-oas/pull/46): Fix `is_array: true` in request param documentation being ignored for primitive types — only entity types were wrapped in array schema - [@numbata](https://github.com/numbata).
 - [#42](https://github.com/numbata/grape-oas/pull/42): Fix array items `description` and `nullable` placement — hoist to outer array schema instead of wrapping `items` in `allOf`; fix `:description` field naming collision in `PropertyExtractor` - [@numbata](https://github.com/numbata).
 - [#44](https://github.com/numbata/grape-oas/pull/44): Fix RuboCop 1.85 offenses - [@numbata](https://github.com/numbata).
+- [#47](https://github.com/numbata/grape-oas/pull/47): Fix duplicate entries in `Schema#required` array when the same property is added multiple times with `required: true` - [@numbata](https://github.com/numbata).
 
 ## [1.2.0] - 2026-03-02
 
