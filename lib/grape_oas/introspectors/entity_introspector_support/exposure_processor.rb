@@ -242,7 +242,8 @@ module GrapeOAS
           if values.is_a?(Range)
             apply_range_values(schema, values)
           elsif values.is_a?(Array) && !values.empty?
-            schema.enum = values
+            target = schema.type == Constants::SchemaTypes::ARRAY && schema.items ? schema.items : schema
+            target.enum = values if target.respond_to?(:enum=)
           end
         end
 

@@ -4,10 +4,12 @@ module GrapeOAS
   # Applies numeric and string constraints from documentation to a schema.
   module SchemaConstraints
     def self.apply(schema, doc)
-      set_if_present(schema, :minimum=, doc, :minimum)
+      if present?(doc, :minimum)
+        schema.minimum = fetch(doc, :minimum) if schema.respond_to?(:minimum=)
+        schema.exclusive_minimum = nil if schema.respond_to?(:exclusive_minimum=)
+      end
       if present?(doc, :maximum)
         schema.maximum = fetch(doc, :maximum) if schema.respond_to?(:maximum=)
-        # Clear range-derived exclusivity when explicit maximum overrides it
         schema.exclusive_maximum = nil if schema.respond_to?(:exclusive_maximum=)
       end
       set_if_present(schema, :min_length=, doc, :min_length)

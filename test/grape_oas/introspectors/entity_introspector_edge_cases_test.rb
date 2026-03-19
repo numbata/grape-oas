@@ -187,6 +187,22 @@ module GrapeOAS
         assert_equal [1, 2, 3], schema.properties["priority"].enum
       end
 
+      # === Entity with array-type enum (applied to items, not array itself) ===
+
+      class ArrayEnumEntity < Grape::Entity
+        expose :tags, documentation: { type: Array, values: %w[red green blue] }
+      end
+
+      def test_array_type_enum_applied_to_items
+        schema = EntityIntrospector.new(ArrayEnumEntity).build_schema
+
+        tags = schema.properties["tags"]
+
+        assert_equal "array", tags.type
+        assert_nil tags.enum
+        assert_equal %w[red green blue], tags.items.enum
+      end
+
       # === Entity with false-only enum ===
 
       class FalseOnlyEnumEntity < Grape::Entity
