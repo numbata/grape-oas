@@ -9,12 +9,18 @@ module GrapeOAS
       # object schemas together, preserving properties from all branches.
       class NestingMerger
         # Maximum recursion depth for merging nested object branches.
-        # Prevents stack overflow on pathological nesting structures.
+        # Grape entity nesting rarely exceeds 3-4 levels; 10 provides generous
+        # headroom while still preventing stack overflow on pathological structures.
         MAX_MERGE_DEPTH = 10
 
         # Folds a new nesting-branch object schema into the accumulated result.
         # Uses required intersection so branch-specific fields stay optional.
         # Creates a fresh schema to avoid mutating cached canonical schemas.
+        #
+        # @param accum [ApiModel::Schema, nil] accumulated schema from previous branches
+        # @param current [ApiModel::Schema] schema from the current branch
+        # @param depth [Integer] current recursion depth (guarded by MAX_MERGE_DEPTH)
+        # @return [ApiModel::Schema] merged schema
         def merge(accum, current, depth = 0)
           return current unless accum
           return accum if current.equal?(accum)
@@ -87,7 +93,9 @@ module GrapeOAS
             schema.items&.type == Constants::SchemaTypes::OBJECT
         end
 
-        # Simple recursive dup for extension hashes (string/numeric/boolean/hash/array values).
+        # Recursive dup for extension hashes. Handles nested Hashes and Arrays of Hashes.
+        # Scalar values (strings, numbers, booleans) are shared by reference, which is safe
+        # because OpenAPI extensions are JSON-compatible and typically frozen literals.
         def deep_dup_hash(hash)
           hash.each_with_object({}) do |(k, v), result|
             result[k] = case v
