@@ -190,11 +190,7 @@ module GrapeOAS
         end
 
         def apply_exposure_constraints(schema, doc)
-          schema.minimum = doc[:minimum] if doc.key?(:minimum) && schema.respond_to?(:minimum=)
-          schema.maximum = doc[:maximum] if doc.key?(:maximum) && schema.respond_to?(:maximum=)
-          schema.min_length = doc[:min_length] if doc.key?(:min_length) && schema.respond_to?(:min_length=)
-          schema.max_length = doc[:max_length] if doc.key?(:max_length) && schema.respond_to?(:max_length=)
-          schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
+          SchemaConstraints.apply(schema, doc.transform_keys(&:to_sym))
         end
 
         def schema_for_type(type)
