@@ -210,6 +210,10 @@ module GrapeOAS
             schema.required.delete(key) unless flags.all?
           end
 
+          # Safe to apply parent doc properties here: these operate on the parent
+          # object schema, not on the per-key child schemas built above. The
+          # NestingMerger's metadata (nullable, description) lives on child schemas
+          # and is not overwritten by this step.
           apply_exposure_properties(schema, doc)
           apply_exposure_constraints(schema, doc)
           schema

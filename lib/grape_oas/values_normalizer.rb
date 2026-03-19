@@ -31,16 +31,22 @@ module GrapeOAS
         end
         # Guard against optional-arg validators (proc { |v = nil| ... }) that
         # report arity 0 but return non-enum results when called without args.
-        return nil unless values.is_a?(Array) || values.is_a?(Range) || (defined?(Set) && values.is_a?(Set))
+        return nil unless values.is_a?(Array) || values.is_a?(Range) || set_instance?(values)
       end
 
       # Convert Sets to Arrays for consistent downstream handling
-      values = values.to_a if defined?(Set) && values.is_a?(Set)
+      values = values.to_a if set_instance?(values)
 
       # Only return types that callers can use (Array for enum, Range for min/max)
       return nil unless values.is_a?(Array) || values.is_a?(Range)
 
       values
     end
+
+    # Set may not be loaded in minimal Ruby environments (e.g. embedded/stripped stdlib).
+    def self.set_instance?(value)
+      defined?(Set) && value.is_a?(Set)
+    end
+    private_class_method :set_instance?
   end
 end
