@@ -66,3 +66,22 @@ Minitest::Test.include(LoggerCaptureHelper)
 
 # Load support helpers (exclude *_test.rb to avoid circular requires)
 Dir[File.expand_path("support/**/*.rb", __dir__)].reject { |f| f.end_with?("_test.rb") }.each { |f| require f }
+
+# Helper to capture GrapeOAS.logger output during a block.
+# Temporarily replaces the logger with one backed by a StringIO,
+# restoring the original afterwards. Returns the captured log string.
+module LoggerCaptureHelper
+  def capture_grape_oas_log
+    log_output = StringIO.new
+    original_logger = GrapeOAS.logger
+    GrapeOAS.logger = Logger.new(log_output, progname: "grape-oas", level: Logger::WARN)
+    begin
+      yield
+    ensure
+      GrapeOAS.logger = original_logger
+    end
+    log_output.string
+  end
+end
+
+Minitest::Test.include(LoggerCaptureHelper)
