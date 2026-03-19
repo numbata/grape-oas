@@ -171,31 +171,23 @@ module GrapeOAS
           end
         end
 
-        # Detects block-based nesting exposures (Grape::Entity::Exposure::NestingExposure).
-        # These wrap child exposures that should become properties of an inline object schema.
-        # Only triggers when no entity class is referenced via `using:`.
+        # Detects block-based nesting exposures (NestingExposure) that should become
+        # inline object schemas. Only triggers when no entity class is via `using:`.
         def nesting_exposure?(exposure)
           return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
 
           doc = exposure.documentation || {}
           opts = exposure.instance_variable_get(:@options) || {}
-          # resolve_entity_from_opts returns nil when using: is absent or not a Grape::Entity subclass.
-          # The extra !opts[:using] check catches using: set to a non-entity class (e.g. String),
-          # which should still be handled by normal entity introspection, not inline nesting.
+          # Extra !opts[:using] catches using: set to a non-entity class (e.g. String)
           !resolve_entity_from_opts_with(opts, doc) && !opts[:using]
         end
 
         # Builds an inline object schema from a NestingExposure's child exposures.
-        # Recursively processes children, preserving their enum values and other properties.
-        # When multiple children share the same key (conditional branches), their object
-        # properties are merged rather than overwritten.
+        # Duplicate-key children (conditional branches) are merged via NestingMerger.
         def build_nesting_exposure_schema(exposure, doc)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           return schema unless exposure.respond_to?(:nested_exposures)
 
-          # Build child schemas. Non-nesting children are added directly.
-          # Nesting children with duplicate keys are merged via NestingMerger
-          # and written once (no double-write to schema.properties).
           merger = NestingMerger.new
           nesting_accum = {}
           nesting_required = Hash.new { |h, k| h[k] = [] }
@@ -214,15 +206,11 @@ module GrapeOAS
             end
           end
 
-          # Reconcile parent-level required for merged nesting keys:
-          # a key is required only if ALL branches agree it is required.
+          # Required only if ALL branches agree
           nesting_required.each do |key, flags|
             schema.required.delete(key) unless flags.all?
           end
 
-          # Apply parent doc properties to the parent object schema (not children).
-          # NestingMerger metadata (nullable, description) lives on child schemas
-          # and is not affected by this step.
           apply_exposure_properties(schema, doc)
           apply_exposure_constraints(schema, doc)
           schema

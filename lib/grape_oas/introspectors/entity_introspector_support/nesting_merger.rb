@@ -3,20 +3,11 @@
 module GrapeOAS
   module Introspectors
     module EntityIntrospectorSupport
-      # Merges duplicate-key nesting exposure branches into a single schema.
-      # When a Grape entity defines multiple `expose :key do ... end` blocks
-      # with the same key (conditional branches), this class folds their
-      # object schemas together, preserving properties from all branches.
+      # Merges duplicate-key nesting exposure branches into a single schema,
+      # preserving properties from all branches.
       class NestingMerger
-        # Maximum recursion depth for merging nested object branches.
-        # Grape entity nesting rarely exceeds 3-4 levels; 10 provides generous
-        # headroom while still preventing stack overflow on pathological structures.
-        MAX_MERGE_DEPTH = 10
+        MAX_MERGE_DEPTH = 10 # Grape nesting rarely exceeds 3-4 levels
 
-        # Folds a new nesting-branch object schema into the accumulated result.
-        # Uses required intersection so branch-specific fields stay optional.
-        # Creates a fresh schema to avoid mutating cached canonical schemas.
-        #
         # @param accum [ApiModel::Schema, nil] accumulated schema from previous branches
         # @param current [ApiModel::Schema] schema from the current branch
         # @param depth [Integer] current recursion depth (guarded by MAX_MERGE_DEPTH)
@@ -68,10 +59,8 @@ module GrapeOAS
           merged
         end
 
-        # Copies non-property scalar metadata from a branch schema to the merged result.
-        # Uses "first non-nil wins" for description, format, and examples to avoid
-        # order-dependent surprises. Nullable uses OR semantics: if any branch is
-        # nullable, the merged result is too (conditional branches are alternatives).
+        # Copies scalar metadata. First non-nil wins for most fields;
+        # nullable uses OR (any nullable branch makes the result nullable).
         def copy_branch_metadata(merged, source)
           merged.description ||= source.description
           merged.nullable = true if source.nullable
@@ -83,7 +72,6 @@ module GrapeOAS
           merged.extensions = existing.merge(deep_dup_hash(source.extensions))
         end
 
-        # Checks if two schemas can be recursively merged (both objects, or both arrays of objects).
         def mergeable_schemas?(left, right)
           return true if left.type == Constants::SchemaTypes::OBJECT && right.type == Constants::SchemaTypes::OBJECT
 
@@ -95,9 +83,7 @@ module GrapeOAS
             schema.items&.type == Constants::SchemaTypes::OBJECT
         end
 
-        # Recursive dup for extension hashes. Handles nested Hashes and Arrays of Hashes.
-        # Scalar values (strings, numbers, booleans) are shared by reference, which is safe
-        # because OpenAPI extensions are JSON-compatible and typically frozen literals.
+        # Recursive dup for extension hashes. Scalars are shared (safe for frozen literals).
         def deep_dup_hash(hash)
           hash.each_with_object({}) do |(k, v), result|
             result[k] = case v
