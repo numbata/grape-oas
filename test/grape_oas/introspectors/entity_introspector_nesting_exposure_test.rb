@@ -334,7 +334,7 @@ module GrapeOAS
 
       class ExtensionBranchEntity < Grape::Entity
         expose :meta do
-          expose :info, documentation: { "x-source" => "branch-a" } do
+          expose :info, documentation: { "x-source" => "branch-a", "x-tags" => %w[internal] } do
             expose :alpha, documentation: { type: String }
           end
           expose :info, documentation: { "x-tag" => "branch-b" } do
@@ -352,6 +352,7 @@ module GrapeOAS
         assert_includes info.properties.keys, "beta"
         assert_equal "branch-a", info.extensions["x-source"]
         assert_equal "branch-b", info.extensions["x-tag"]
+        assert_equal %w[internal], info.extensions["x-tags"]
       end
 
       # === Non-object duplicate keys are not merged ===

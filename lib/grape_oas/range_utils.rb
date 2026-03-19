@@ -39,9 +39,11 @@ module GrapeOAS
         schema.exclusive_maximum = true if range.exclude_end? && last_val && schema.respond_to?(:exclusive_maximum=)
       elsif numeric_range && !numeric_type
         GrapeOAS.logger.warn("Numeric range #{range} ignored on non-numeric schema type '#{schema.type}'")
-      elsif !numeric_range && schema.respond_to?(:enum=)
+      elsif !numeric_range && !numeric_type && schema.respond_to?(:enum=)
         expanded = expand_range_to_enum(range)
         schema.enum = expanded if expanded
+      elsif !numeric_range && numeric_type
+        GrapeOAS.logger.warn("Non-numeric range #{range} ignored on numeric schema type '#{schema.type}'")
       end
     end
   end

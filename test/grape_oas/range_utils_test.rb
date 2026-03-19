@@ -126,5 +126,17 @@ module GrapeOAS
       assert_nil schema.minimum
       assert_equal 10, schema.maximum
     end
+
+    def test_apply_string_range_on_integer_type_is_skipped
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+
+      log = capture_grape_oas_log do
+        RangeUtils.apply_to_schema(schema, "a".."z")
+      end
+
+      assert_nil schema.enum
+      assert_nil schema.minimum
+      assert_match(/Non-numeric range.*ignored on numeric/, log)
+    end
   end
 end

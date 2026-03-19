@@ -408,12 +408,12 @@ module GrapeOAS
 
       # === Entity with values on using: reference (canonical_name guard) ===
 
-      class ReferencedEntity < Grape::Entity
+      class SimpleRefEntity < Grape::Entity
         expose :name, documentation: { type: String }
       end
 
       class ParentWithValuesOnRefEntity < Grape::Entity
-        expose :child, using: ReferencedEntity, documentation: { type: ReferencedEntity, values: %w[should not appear] }
+        expose :child, using: SimpleRefEntity, documentation: { type: SimpleRefEntity, values: %w[should not appear] }
       end
 
       def test_entity_values_on_using_ref_does_not_mutate_cached_schema

@@ -75,5 +75,22 @@ module GrapeOAS
       assert_equal 1, schema.minimum
       assert_equal 10, schema.maximum
     end
+
+    def test_supports_string_keys
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      SchemaConstraints.apply(schema, { "minimum" => 5, "maximum" => 50 })
+
+      assert_equal 5, schema.minimum
+      assert_equal 50, schema.maximum
+    end
+
+    def test_string_key_maximum_clears_exclusive_maximum
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      schema.exclusive_maximum = true
+      SchemaConstraints.apply(schema, { "maximum" => 10 })
+
+      assert_equal 10, schema.maximum
+      assert_nil schema.exclusive_maximum
+    end
   end
 end

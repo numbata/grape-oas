@@ -375,6 +375,10 @@ module GrapeOAS
 
         assert_equal "string", data.type, "Should fall back to string for unresolvable entity"
       end
+
+      # NOTE: param_schema_builder.rb:204 (NameError rescue in resolve_entity_class)
+      # is pre-existing defensive code that guards against race conditions in constant
+      # resolution. It is not practically triggerable without mocking const_get.
     end
   end
 end
