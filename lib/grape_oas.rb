@@ -41,17 +41,10 @@ module GrapeOAS
   end
   module_function :version
 
-  # Configurable logger for schema generation warnings and diagnostics.
-  # Defaults to a Logger writing to $stderr. Set to any Logger-compatible
-  # object to redirect warnings to your application's logging infrastructure.
+  # Configurable logger for schema generation warnings.
+  # Defaults to Logger on $stderr. Set to Rails.logger or Logger.new(File::NULL).
   #
-  # @example Redirect to Rails logger
-  #   GrapeOAS.logger = Rails.logger
-  #
-  # @example Silence all warnings
-  #   GrapeOAS.logger = Logger.new(File::NULL)
-  #
-  # @return [Logger] the current logger
+  # @return [Logger]
   def logger
     @logger ||= begin
       require "logger"

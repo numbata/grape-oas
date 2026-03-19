@@ -2,10 +2,7 @@
 
 module GrapeOAS
   # Applies numeric and string constraints from documentation to a schema.
-  # Shared between SchemaEnhancer (request params) and ExposureProcessor (entities).
   module SchemaConstraints
-    # Applies minimum, maximum, min_length, max_length, and pattern from a doc hash.
-    # Clears range-derived exclusive_maximum when an explicit maximum is provided.
     def self.apply(schema, doc)
       schema.minimum = doc[:minimum] if doc.key?(:minimum) && schema.respond_to?(:minimum=)
       if doc.key?(:maximum) && schema.respond_to?(:maximum=)
