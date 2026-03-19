@@ -177,11 +177,12 @@ module GrapeOAS
         def nesting_exposure?(exposure)
           return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
 
+          doc = exposure.documentation || {}
           opts = exposure.instance_variable_get(:@options) || {}
           # resolve_entity_from_opts returns nil when using: is absent or not a Grape::Entity subclass.
           # The extra !opts[:using] check catches using: set to a non-entity class (e.g. String),
           # which should still be handled by normal entity introspection, not inline nesting.
-          !resolve_entity_from_opts(exposure, exposure.documentation || {}) && !opts[:using]
+          !resolve_entity_from_opts_with(opts, doc) && !opts[:using]
         end
 
         # Builds an inline object schema from a NestingExposure's child exposures.
@@ -311,6 +312,10 @@ module GrapeOAS
 
         def resolve_entity_from_opts(exposure, doc)
           opts = exposure.instance_variable_get(:@options) || {}
+          resolve_entity_from_opts_with(opts, doc)
+        end
+
+        def resolve_entity_from_opts_with(opts, doc)
           type = opts[:using] || doc[:type] || doc["type"]
           return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
 
