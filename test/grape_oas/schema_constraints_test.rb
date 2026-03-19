@@ -138,5 +138,21 @@ module GrapeOAS
       assert_equal 3, schema.minimum
       assert_nil schema.exclusive_minimum
     end
+
+    def test_explicit_minimum_and_exclusive_minimum_coexist
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      SchemaConstraints.apply(schema, { minimum: 0, exclusive_minimum: true })
+
+      assert_equal 0, schema.minimum
+      assert schema.exclusive_minimum
+    end
+
+    def test_explicit_maximum_and_exclusive_maximum_coexist
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      SchemaConstraints.apply(schema, { maximum: 100, exclusive_maximum: true })
+
+      assert_equal 100, schema.maximum
+      assert schema.exclusive_maximum
+    end
   end
 end
