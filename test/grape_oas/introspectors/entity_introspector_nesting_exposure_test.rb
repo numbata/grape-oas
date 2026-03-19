@@ -329,6 +329,77 @@ module GrapeOAS
         # Should have emitted the depth-exceeded warning
         assert_match(/Maximum nesting merge depth/, log)
       end
+
+      # === Extensions preserved across merged branches ===
+
+      class ExtensionBranchEntity < Grape::Entity
+        expose :meta do
+          expose :info, documentation: { "x-source" => "branch-a" } do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :info, documentation: { "x-tag" => "branch-b" } do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_extensions_merged_from_both_branches
+        schema = EntityIntrospector.new(ExtensionBranchEntity).build_schema
+
+        info = schema.properties["meta"].properties["info"]
+
+        assert_includes info.properties.keys, "alpha"
+        assert_includes info.properties.keys, "beta"
+        assert_equal "branch-a", info.extensions["x-source"]
+        assert_equal "branch-b", info.extensions["x-tag"]
+      end
+
+      # === Non-object duplicate keys are not merged ===
+
+      class NonObjectDuplicateKeyEntity < Grape::Entity
+        expose :meta do
+          expose :tag, documentation: { type: String, values: %w[a b] }
+          expose :tag, documentation: { type: String, values: %w[c d] }
+        end
+      end
+
+      def test_non_object_duplicate_key_uses_last_value
+        schema = EntityIntrospector.new(NonObjectDuplicateKeyEntity).build_schema
+
+        tag = schema.properties["meta"].properties["tag"]
+
+        assert_equal "string", tag.type
+        assert_equal %w[c d], tag.enum
+      end
+
+      # === Deep duplicate-key with array-of-objects property merges recursively ===
+
+      class DeepArrayMergeEntity < Grape::Entity
+        expose :root do
+          expose :group do
+            expose :items, documentation: { is_array: true } do
+              expose :x, documentation: { type: String }
+            end
+          end
+          expose :group do
+            expose :items, documentation: { is_array: true } do
+              expose :y, documentation: { type: Integer }
+            end
+          end
+        end
+      end
+
+      def test_deep_array_of_objects_property_is_merged
+        schema = EntityIntrospector.new(DeepArrayMergeEntity).build_schema
+
+        group = schema.properties["root"].properties["group"]
+        items = group.properties["items"]
+
+        assert_equal "array", items.type
+        assert_equal "object", items.items.type
+        assert_includes items.items.properties.keys, "x"
+        assert_includes items.items.properties.keys, "y"
+      end
     end
   end
 end
