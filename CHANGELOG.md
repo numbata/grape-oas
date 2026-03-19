@@ -11,8 +11,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - [#43](https://github.com/numbata/grape-oas/pull/43): Bump actions/upload-artifact from 6 to 7 - [@dependabot[bot]](https://github.com/dependabot[bot]).
+- [#45](https://github.com/numbata/grape-oas/pull/45): Add inline nesting exposure support — block-based `expose :key do ... end` now produces inline object schemas with preserved enum values, min/max constraints, and metadata - [@numbata](https://github.com/numbata).
+- [#45](https://github.com/numbata/grape-oas/pull/45): Add `GrapeOAS.logger` for configurable warning output (replaces bare `warn` calls) - [@numbata](https://github.com/numbata).
+- [#45](https://github.com/numbata/grape-oas/pull/45): Extract `ValuesNormalizer`, `RangeUtils`, `SchemaConstraints`, and `NestingMerger` as shared utilities - [@numbata](https://github.com/numbata).
 
 ### Fixed
+
+- [#45](https://github.com/numbata/grape-oas/pull/45): Fix `values: [false]` enum being silently dropped (`.any?` returns false for `[false]`) - [@numbata](https://github.com/numbata).
+- [#45](https://github.com/numbata/grape-oas/pull/45): Fix OOM on wide string ranges like `"a".."zzzzzz"` — now capped at `MAX_ENUM_RANGE_SIZE` (100) - [@numbata](https://github.com/numbata).
+- [#45](https://github.com/numbata/grape-oas/pull/45): Prevent mutation of cached entity schemas when `values:` is used alongside `using:` - [@numbata](https://github.com/numbata).
 
 - [#46](https://github.com/numbata/grape-oas/pull/46): Fix `is_array: true` in request param documentation being ignored for primitive types — only entity types were wrapped in array schema - [@numbata](https://github.com/numbata).
 - [#42](https://github.com/numbata/grape-oas/pull/42): Fix array items `description` and `nullable` placement — hoist to outer array schema instead of wrapping `items` in `allOf`; fix `:description` field naming collision in `PropertyExtractor` - [@numbata](https://github.com/numbata).
