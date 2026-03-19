@@ -19,7 +19,10 @@ module GrapeOAS
           # Unwrap array schemas to merge their items, then re-wrap
           if array_of_objects?(accum) && array_of_objects?(current)
             merged_items = merge(accum.items, current.items, depth + 1)
-            return ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: merged_items)
+            merged_array = ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: merged_items)
+            copy_branch_metadata(merged_array, accum)
+            copy_branch_metadata(merged_array, current)
+            return merged_array
           end
 
           return accum unless current&.type == Constants::SchemaTypes::OBJECT
@@ -59,8 +62,8 @@ module GrapeOAS
           merged
         end
 
-        # Copies scalar metadata. First non-nil wins for most fields;
-        # nullable uses OR (any nullable branch makes the result nullable).
+        # Copies scalar metadata. First non-nil wins for description/format/examples;
+        # nullable uses OR; extensions are merged (both branches' keys preserved).
         def copy_branch_metadata(merged, source)
           merged.description ||= source.description
           merged.nullable = true if source.nullable

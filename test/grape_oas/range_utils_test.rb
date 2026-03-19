@@ -90,11 +90,15 @@ module GrapeOAS
 
     def test_apply_numeric_range_on_string_type_is_skipped
       schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
-      RangeUtils.apply_to_schema(schema, 1..10)
+
+      log = capture_grape_oas_log do
+        RangeUtils.apply_to_schema(schema, 1..10)
+      end
 
       assert_nil schema.minimum
       assert_nil schema.maximum
       assert_nil schema.enum
+      assert_match(/Numeric range.*ignored on non-numeric/, log)
     end
 
     def test_apply_string_range_sets_enum

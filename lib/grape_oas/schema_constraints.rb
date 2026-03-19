@@ -3,8 +3,6 @@
 module GrapeOAS
   # Applies numeric and string constraints from documentation to a schema.
   module SchemaConstraints
-    KEYS = %i[minimum maximum min_length max_length pattern].freeze
-
     def self.apply(schema, doc)
       set_if_present(schema, :minimum=, doc, :minimum)
       if present?(doc, :maximum)
