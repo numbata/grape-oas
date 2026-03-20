@@ -180,5 +180,37 @@ module GrapeOAS
       assert_nil schema.maximum
       assert_match(/Numeric range.*ignored on non-numeric/, stderr)
     end
+
+    # === extract_constraints tests ===
+
+    def test_extract_constraints_from_inclusive_range
+      result = RangeUtils.extract_constraints(1..10)
+
+      assert_equal 1, result[:minimum]
+      assert_equal 10, result[:maximum]
+      refute result.key?(:exclusive_maximum)
+    end
+
+    def test_extract_constraints_from_exclusive_range
+      result = RangeUtils.extract_constraints(0...10)
+
+      assert_equal 0, result[:minimum]
+      assert_equal 10, result[:maximum]
+      assert result[:exclusive_maximum]
+    end
+
+    def test_extract_constraints_skips_infinite_bounds
+      result = RangeUtils.extract_constraints(-Float::INFINITY..Float::INFINITY)
+
+      refute result.key?(:minimum)
+      refute result.key?(:maximum)
+    end
+
+    def test_extract_constraints_from_endless_range
+      result = RangeUtils.extract_constraints(1..)
+
+      assert_equal 1, result[:minimum]
+      refute result.key?(:maximum)
+    end
   end
 end

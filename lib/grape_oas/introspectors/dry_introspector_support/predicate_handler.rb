@@ -89,9 +89,10 @@ module GrapeOAS
         def apply_range_constraints(rng)
           return unless rng
 
-          constraints.minimum = rng.begin if rng.begin
-          constraints.maximum = rng.end if rng.end
-          constraints.exclusive_maximum = rng.exclude_end? if rng.end
+          extracted = RangeUtils.extract_constraints(rng)
+          constraints.minimum = extracted[:minimum] if extracted[:minimum]
+          constraints.maximum = extracted[:maximum] if extracted[:maximum]
+          constraints.exclusive_maximum = extracted[:exclusive_maximum] if extracted.key?(:exclusive_maximum)
         end
 
         def apply_excluded_from_list(args)
