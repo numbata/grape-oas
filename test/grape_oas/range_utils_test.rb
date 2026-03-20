@@ -142,5 +142,43 @@ module GrapeOAS
       assert_nil schema.minimum
       assert_match(/Non-numeric range.*ignored on numeric/, stderr)
     end
+
+    def test_apply_infinity_range_skips_infinite_bounds
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
+      RangeUtils.apply_to_schema(schema, -Float::INFINITY..Float::INFINITY)
+
+      assert_nil schema.minimum
+      assert_nil schema.maximum
+      assert_nil schema.exclusive_maximum
+    end
+
+    def test_apply_exclusive_infinity_range_does_not_set_exclusive_maximum
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_to_schema(schema, 1...Float::INFINITY)
+
+      assert_equal 1, schema.minimum
+      assert_nil schema.maximum
+      assert_nil schema.exclusive_maximum
+    end
+
+    def test_apply_numeric_range_on_number_type
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
+      RangeUtils.apply_to_schema(schema, 0.0..1.0)
+
+      assert_in_delta 0.0, schema.minimum
+      assert_in_delta 1.0, schema.maximum
+    end
+
+    def test_apply_numeric_range_on_nil_type_warns
+      schema = ApiModel::Schema.new(type: nil)
+
+      _stdout, stderr = capture_io do
+        RangeUtils.apply_to_schema(schema, 1..10)
+      end
+
+      assert_nil schema.minimum
+      assert_nil schema.maximum
+      assert_match(/Numeric range.*ignored on non-numeric/, stderr)
+    end
   end
 end
