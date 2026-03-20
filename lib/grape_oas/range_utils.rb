@@ -37,6 +37,7 @@ module GrapeOAS
     end
 
     # Applies a Range to a schema as min/max or enum.
+    # @param schema [ApiModel::Schema] must respond to #type
     def self.apply_to_schema(schema, range)
       first_val = range.begin
       last_val = range.end
