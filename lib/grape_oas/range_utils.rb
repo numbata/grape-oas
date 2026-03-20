@@ -23,11 +23,18 @@ module GrapeOAS
     end
 
     # Extracts numeric constraints from a Range.
+    # Returns :exclusive_maximum as true/false (not omitted) when :maximum is present,
+    # because PredicateHandler needs explicit false for ast_walker intersection logic.
+    # Callers that only care about truthy exclusive_maximum (like apply_to_schema)
+    # can simply check `if constraints[:exclusive_maximum]`.
     # @return [Hash] with :minimum, :maximum, :exclusive_maximum
     def self.extract_constraints(range)
       result = {}
       first_val = range.begin
       last_val = range.end
+
+      # Skip descending ranges (e.g. 10..1) — would produce minimum > maximum
+      return result if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
 
       result[:minimum] = first_val if first_val.is_a?(Numeric) && first_val.finite?
       if last_val.is_a?(Numeric) && last_val.finite?

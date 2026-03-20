@@ -213,5 +213,11 @@ module GrapeOAS
       assert_equal 1, result[:minimum]
       refute result.key?(:maximum)
     end
+
+    def test_extract_constraints_returns_empty_for_descending_range
+      result = RangeUtils.extract_constraints(10..1)
+
+      assert_empty result
+    end
   end
 end
