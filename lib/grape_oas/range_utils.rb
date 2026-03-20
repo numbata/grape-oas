@@ -46,6 +46,9 @@ module GrapeOAS
     end
 
     # Applies a Range to a schema as min/max or enum.
+    # Only sets min/max when schema.type is numeric (integer/number).
+    # This is stricter than the pre-extraction behavior which applied
+    # min/max regardless of schema type.
     # @param schema [ApiModel::Schema] must respond to #type
     def self.apply_to_schema(schema, range)
       first_val = range.begin
