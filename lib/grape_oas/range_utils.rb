@@ -1,78 +1,88 @@
 # frozen_string_literal: true
 
 module GrapeOAS
-  # Utility methods for converting Range values into OpenAPI-compatible representations.
-  module RangeUtils
+  # Converts Range values into OpenAPI-compatible representations.
+  class RangeUtils
     NUMERIC_TYPES = [Constants::SchemaTypes::INTEGER, Constants::SchemaTypes::NUMBER].freeze
 
-    # Expands a non-numeric bounded Range to an enum array.
-    # Returns nil for numeric, unbounded, empty, or oversized ranges.
-    def self.expand_range_to_enum(range)
-      return nil if range.begin.nil? || range.end.nil?
-      return nil if range.begin.is_a?(Numeric) || range.end.is_a?(Numeric)
+    class << self
+      # Expands a non-numeric bounded Range to an enum array.
+      # Returns nil for numeric, unbounded, empty, or oversized ranges.
+      def expand_range_to_enum(range)
+        return nil if range.begin.nil? || range.end.nil?
+        return nil if range.begin.is_a?(Numeric) || range.end.is_a?(Numeric)
 
-      begin
-        array = range.first(Constants::MAX_ENUM_RANGE_SIZE + 1)
-      rescue TypeError
-        return nil
+        begin
+          array = range.first(Constants::MAX_ENUM_RANGE_SIZE + 1)
+        rescue TypeError
+          return nil
+        end
+
+        return nil if array.empty? || array.size > Constants::MAX_ENUM_RANGE_SIZE
+
+        array
       end
 
-      return nil if array.empty? || array.size > Constants::MAX_ENUM_RANGE_SIZE
+      # Extracts numeric constraints from a Range.
+      # Returns :exclusive_maximum as true/false (not omitted) when :maximum is present,
+      # because PredicateHandler needs explicit false for ast_walker intersection logic.
+      # @return [Hash] with :minimum, :maximum, :exclusive_maximum
+      def extract_constraints(range)
+        first_val = range.begin
+        last_val = range.end
 
-      array
-    end
+        return {} if descending?(first_val, last_val)
 
-    # Extracts numeric constraints from a Range.
-    # Returns :exclusive_maximum as true/false (not omitted) when :maximum is present,
-    # because PredicateHandler needs explicit false for ast_walker intersection logic.
-    # Callers that only care about truthy exclusive_maximum (like apply_to_schema)
-    # can simply check `if constraints[:exclusive_maximum]`.
-    # @return [Hash] with :minimum, :maximum, :exclusive_maximum
-    def self.extract_constraints(range)
-      result = {}
-      first_val = range.begin
-      last_val = range.end
-
-      # Skip descending ranges (e.g. 10..1) — would produce minimum > maximum
-      return result if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
-
-      result[:minimum] = first_val if first_val.is_a?(Numeric) && first_val.finite?
-      if last_val.is_a?(Numeric) && last_val.finite?
-        result[:maximum] = last_val
-        result[:exclusive_maximum] = range.exclude_end?
+        result = {}
+        result[:minimum] = first_val if finite_numeric?(first_val)
+        if finite_numeric?(last_val)
+          result[:maximum] = last_val
+          result[:exclusive_maximum] = range.exclude_end?
+        end
+        result
       end
 
-      result
-    end
+      # Applies a Range to a schema as min/max or enum.
+      # Only sets min/max when schema.type is numeric (integer/number).
+      # This is stricter than the pre-extraction behavior which applied
+      # min/max regardless of schema type.
+      # @param schema [ApiModel::Schema] must respond to #type
+      def apply_to_schema(schema, range)
+        numeric_range = range.begin.is_a?(Numeric) || range.end.is_a?(Numeric)
+        numeric_type = NUMERIC_TYPES.include?(schema.type)
 
-    # Applies a Range to a schema as min/max or enum.
-    # Only sets min/max when schema.type is numeric (integer/number).
-    # This is stricter than the pre-extraction behavior which applied
-    # min/max regardless of schema type.
-    # @param schema [ApiModel::Schema] must respond to #type
-    def self.apply_to_schema(schema, range)
-      first_val = range.begin
-      last_val = range.end
-      numeric_range = first_val.is_a?(Numeric) || last_val.is_a?(Numeric)
-      numeric_type = NUMERIC_TYPES.include?(schema.type)
+        if numeric_range && numeric_type
+          apply_numeric_constraints(schema, range)
+        elsif numeric_range
+          warn "[grape-oas] Numeric range #{range} ignored on non-numeric schema type '#{schema.type}'"
+        elsif !numeric_type
+          apply_enum_from_range(schema, range)
+        else
+          warn "[grape-oas] Non-numeric range #{range} ignored on numeric schema type '#{schema.type}'"
+        end
+      end
 
-      if numeric_range && numeric_type
-        # Defensive: Ruby prevents constructing mixed-type ranges, but guard anyway
-        return if first_val && last_val && (first_val.is_a?(Numeric) != last_val.is_a?(Numeric))
-        return if first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
+      private
 
+      def apply_numeric_constraints(schema, range)
         constraints = extract_constraints(range)
         schema.minimum = constraints[:minimum] if constraints[:minimum]
         schema.maximum = constraints[:maximum] if constraints[:maximum]
         # Boolean here; OAS 3.1 exporter converts to numeric at serialization time
         schema.exclusive_maximum = true if constraints[:exclusive_maximum]
-      elsif numeric_range && !numeric_type
-        warn "[grape-oas] Numeric range #{range} ignored on non-numeric schema type '#{schema.type}'"
-      elsif !numeric_range && !numeric_type
+      end
+
+      def apply_enum_from_range(schema, range)
         expanded = expand_range_to_enum(range)
-        schema.enum = expanded if expanded && schema.respond_to?(:enum=)
-      elsif !numeric_range && numeric_type
-        warn "[grape-oas] Non-numeric range #{range} ignored on numeric schema type '#{schema.type}'"
+        schema.enum = expanded if expanded
+      end
+
+      def finite_numeric?(val)
+        val.is_a?(Numeric) && val.finite?
+      end
+
+      def descending?(first_val, last_val)
+        first_val.is_a?(Numeric) && last_val.is_a?(Numeric) && first_val > last_val
       end
     end
   end
