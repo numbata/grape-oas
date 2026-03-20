@@ -23,15 +23,17 @@ module GrapeOAS
     end
 
     # Extracts numeric constraints from a Range.
-    # @return [Hash] with :minimum, :maximum, :exclusive_maximum (nil values omitted)
+    # @return [Hash] with :minimum, :maximum, :exclusive_maximum
     def self.extract_constraints(range)
       result = {}
       first_val = range.begin
       last_val = range.end
 
       result[:minimum] = first_val if first_val.is_a?(Numeric) && first_val.finite?
-      result[:maximum] = last_val if last_val.is_a?(Numeric) && last_val.finite?
-      result[:exclusive_maximum] = true if range.exclude_end? && result.key?(:maximum)
+      if last_val.is_a?(Numeric) && last_val.finite?
+        result[:maximum] = last_val
+        result[:exclusive_maximum] = range.exclude_end?
+      end
 
       result
     end

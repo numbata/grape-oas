@@ -188,7 +188,8 @@ module GrapeOAS
 
       assert_equal 1, result[:minimum]
       assert_equal 10, result[:maximum]
-      refute result.key?(:exclusive_maximum)
+      assert result.key?(:exclusive_maximum)
+      refute result[:exclusive_maximum]
     end
 
     def test_extract_constraints_from_exclusive_range

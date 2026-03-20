@@ -342,13 +342,13 @@ module GrapeOAS
         assert constraints.exclusive_maximum
       end
 
-      def test_range_predicate_inclusive_does_not_set_exclusive_maximum
+      def test_range_predicate_inclusive_sets_exclusive_maximum_false
         ast = [:predicate, [:range?, [(1..10), [:input, nil]]]]
         constraints = constraint_extractor.new(nil).send(:walk_ast, ast)
 
         assert_equal 1, constraints.minimum
         assert_equal 10, constraints.maximum
-        assert_nil constraints.exclusive_maximum
+        refute constraints.exclusive_maximum
       end
 
       def test_uri_predicate_sets_format
