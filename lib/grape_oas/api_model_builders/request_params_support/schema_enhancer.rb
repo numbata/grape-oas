@@ -80,7 +80,7 @@ module GrapeOAS
             end
 
             if values.is_a?(Range)
-              apply_range_values(schema, values)
+              RangeUtils.apply_to_schema(schema, values)
             else
               enum_values = defined?(Set) && values.is_a?(Set) ? values.to_a : values
               apply_enum_values(schema, enum_values) if enum_values.is_a?(Array) && enum_values.any?
@@ -157,10 +157,6 @@ module GrapeOAS
             else
               true
             end
-          end
-
-          def apply_range_values(schema, range)
-            RangeUtils.apply_to_schema(schema, range)
           end
 
           def extract_defs(doc)

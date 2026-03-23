@@ -68,7 +68,7 @@ module GrapeOAS
 
       assert_equal 1, schema.minimum
       assert_equal 10, schema.maximum
-      assert_nil schema.exclusive_maximum
+      refute schema.exclusive_maximum
     end
 
     def test_apply_exclusive_range_sets_exclusive_maximum
@@ -183,41 +183,58 @@ module GrapeOAS
 
     # === extract_constraints tests ===
 
-    def test_extract_constraints_from_inclusive_range
-      result = RangeUtils.extract_constraints(1..10)
+    # === apply_numeric_range tests ===
 
-      assert_equal 1, result[:minimum]
-      assert_equal 10, result[:maximum]
-      assert result.key?(:exclusive_maximum)
-      refute result[:exclusive_maximum]
+    def test_apply_numeric_range_sets_min_max
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_numeric_range(schema, 1..10)
+
+      assert_equal 1, schema.minimum
+      assert_equal 10, schema.maximum
+      refute schema.exclusive_maximum
     end
 
-    def test_extract_constraints_from_exclusive_range
-      result = RangeUtils.extract_constraints(0...10)
+    def test_apply_numeric_range_exclusive_sets_exclusive_maximum
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_numeric_range(schema, 0...10)
 
-      assert_equal 0, result[:minimum]
-      assert_equal 10, result[:maximum]
-      assert result[:exclusive_maximum]
+      assert_equal 0, schema.minimum
+      assert_equal 10, schema.maximum
+      assert schema.exclusive_maximum
     end
 
-    def test_extract_constraints_skips_infinite_bounds
-      result = RangeUtils.extract_constraints(-Float::INFINITY..Float::INFINITY)
+    def test_apply_numeric_range_skips_infinite_bounds
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
+      RangeUtils.apply_numeric_range(schema, -Float::INFINITY..Float::INFINITY)
 
-      refute result.key?(:minimum)
-      refute result.key?(:maximum)
+      assert_nil schema.minimum
+      assert_nil schema.maximum
     end
 
-    def test_extract_constraints_from_endless_range
-      result = RangeUtils.extract_constraints(1..)
+    def test_apply_numeric_range_endless_sets_minimum_only
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_numeric_range(schema, 1..)
 
-      assert_equal 1, result[:minimum]
-      refute result.key?(:maximum)
+      assert_equal 1, schema.minimum
+      assert_nil schema.maximum
     end
 
-    def test_extract_constraints_returns_empty_for_descending_range
-      result = RangeUtils.extract_constraints(10..1)
+    def test_apply_numeric_range_skips_descending
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      RangeUtils.apply_numeric_range(schema, 10..1)
 
-      assert_empty result
+      assert_nil schema.minimum
+      assert_nil schema.maximum
+    end
+
+    def test_apply_numeric_range_works_with_constraint_set
+      # Verify it works with any object that has min/max/exclusive_maximum setters
+      constraint_set = Introspectors::DryIntrospectorSupport::ConstraintExtractor::ConstraintSet.new
+      RangeUtils.apply_numeric_range(constraint_set, 0...100)
+
+      assert_equal 0, constraint_set.minimum
+      assert_equal 100, constraint_set.maximum
+      assert constraint_set.exclusive_maximum
     end
   end
 end

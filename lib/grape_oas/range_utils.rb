@@ -23,59 +23,41 @@ module GrapeOAS
         array
       end
 
-      # Extracts numeric constraints from a Range.
-      # Returns :exclusive_maximum as true/false (not omitted) when :maximum is present,
-      # because PredicateHandler needs explicit false for ast_walker intersection logic.
-      # @return [Hash] with :minimum, :maximum, :exclusive_maximum
-      def extract_constraints(range)
+      # Writes numeric range constraints directly to any object with
+      # minimum=/maximum=/exclusive_maximum= setters (Schema, ConstraintSet, etc).
+      # Skips descending and infinite bounds.
+      def apply_numeric_range(target, range)
         first_val = range.begin
         last_val = range.end
 
-        return {} if descending?(first_val, last_val)
+        return if descending?(first_val, last_val)
 
-        result = {}
-        result[:minimum] = first_val if finite_numeric?(first_val)
-        if finite_numeric?(last_val)
-          result[:maximum] = last_val
-          result[:exclusive_maximum] = range.exclude_end?
-        end
-        result
+        target.minimum = first_val if finite_numeric?(first_val)
+        return unless finite_numeric?(last_val)
+
+        target.maximum = last_val
+        target.exclusive_maximum = range.exclude_end?
       end
 
       # Applies a Range to a schema as min/max or enum.
-      # Only sets min/max when schema.type is numeric (integer/number).
-      # This is stricter than the pre-extraction behavior which applied
-      # min/max regardless of schema type.
-      # @param schema [ApiModel::Schema] must respond to #type
+      # @param schema [ApiModel::Schema]
       def apply_to_schema(schema, range)
         numeric_range = range.begin.is_a?(Numeric) || range.end.is_a?(Numeric)
         numeric_type = NUMERIC_TYPES.include?(schema.type)
 
         if numeric_range && numeric_type
-          apply_numeric_constraints(schema, range)
+          apply_numeric_range(schema, range)
         elsif numeric_range
           warn "[grape-oas] Numeric range #{range} ignored on non-numeric schema type '#{schema.type}'"
         elsif !numeric_type
-          apply_enum_from_range(schema, range)
+          expanded = expand_range_to_enum(range)
+          schema.enum = expanded if expanded
         else
           warn "[grape-oas] Non-numeric range #{range} ignored on numeric schema type '#{schema.type}'"
         end
       end
 
       private
-
-      def apply_numeric_constraints(schema, range)
-        constraints = extract_constraints(range)
-        schema.minimum = constraints[:minimum] if constraints[:minimum]
-        schema.maximum = constraints[:maximum] if constraints[:maximum]
-        # Boolean here; OAS 3.1 exporter converts to numeric at serialization time
-        schema.exclusive_maximum = true if constraints[:exclusive_maximum]
-      end
-
-      def apply_enum_from_range(schema, range)
-        expanded = expand_range_to_enum(range)
-        schema.enum = expanded if expanded
-      end
 
       def finite_numeric?(val)
         val.is_a?(Numeric) && val.finite?

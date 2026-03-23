@@ -34,20 +34,14 @@ module GrapeOAS
         def extract_list(arg)
           if list_node?(arg)
             inner = arg[1]
-            # For non-numeric ranges (e.g., 'a'..'z'), expand to array
-            # Numeric ranges should use min/max constraints instead
-            return range_to_enum_array(inner) if inner.is_a?(Range)
+            return RangeUtils.expand_range_to_enum(inner) if inner.is_a?(Range)
 
             return inner
           end
           return arg if arg.is_a?(Array)
-          return range_to_enum_array(arg) if arg.is_a?(Range)
+          return RangeUtils.expand_range_to_enum(arg) if arg.is_a?(Range)
 
           nil
-        end
-
-        def range_to_enum_array(range)
-          RangeUtils.expand_range_to_enum(range)
         end
 
         def extract_literal(arg)
