@@ -181,8 +181,6 @@ module GrapeOAS
       assert_match(/Numeric range.*ignored on non-numeric/, stderr)
     end
 
-    # === extract_constraints tests ===
-
     # === apply_numeric_range tests ===
 
     def test_apply_numeric_range_sets_min_max

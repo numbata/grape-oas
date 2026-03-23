@@ -32,11 +32,11 @@ module GrapeOAS
 
         return if descending?(first_val, last_val)
 
-        target.minimum = first_val if finite_numeric?(first_val)
+        target.minimum = first_val if finite_numeric?(first_val) && target.respond_to?(:minimum=)
         return unless finite_numeric?(last_val)
 
-        target.maximum = last_val
-        target.exclusive_maximum = range.exclude_end?
+        target.maximum = last_val if target.respond_to?(:maximum=)
+        target.exclusive_maximum = range.exclude_end? if target.respond_to?(:exclusive_maximum=)
       end
 
       # Applies a Range to a schema as min/max or enum.

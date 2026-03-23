@@ -83,12 +83,6 @@ module GrapeOAS
           return if rng.begin && !rng.begin.is_a?(Numeric)
           return if rng.end && !rng.end.is_a?(Numeric)
 
-          apply_range_constraints(rng)
-        end
-
-        def apply_range_constraints(rng)
-          return unless rng
-
           RangeUtils.apply_numeric_range(constraints, rng)
         end
 
@@ -133,7 +127,7 @@ module GrapeOAS
 
         def handle_range(args)
           rng = ArgumentExtractor.extract_range(args.first)
-          apply_range_constraints(rng)
+          RangeUtils.apply_numeric_range(constraints, rng) if rng
         end
 
         def handle_multiple_of(args)
