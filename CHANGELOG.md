@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#49](https://github.com/numbata/grape-oas/pull/49): Extract rangeutils and fix oom on wide string range expansion - [@numbata](https://github.com/numbata).
 - [#43](https://github.com/numbata/grape-oas/pull/43): Bump actions/upload-artifact from 6 to 7 - [@dependabot[bot]](https://github.com/dependabot[bot]).
 
 ### Fixed
