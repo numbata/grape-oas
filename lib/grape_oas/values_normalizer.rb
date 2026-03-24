@@ -11,6 +11,7 @@ module GrapeOAS
       return nil unless values
 
       values = values[:value] if values.is_a?(Hash) && values.key?(:value)
+      return nil unless values
 
       if values.respond_to?(:call)
         # Two-stage defense for callable values:

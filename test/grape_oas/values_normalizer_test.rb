@@ -27,6 +27,10 @@ module GrapeOAS
       assert_equal %w[a b], ValuesNormalizer.normalize({ value: %w[a b], message: "pick one" })
     end
 
+    def test_returns_nil_for_hash_with_nil_value
+      assert_nil ValuesNormalizer.normalize({ value: nil, message: "pick one" })
+    end
+
     def test_evaluates_arity_zero_proc
       assert_equal %w[open closed], ValuesNormalizer.normalize(proc { %w[open closed] })
     end
