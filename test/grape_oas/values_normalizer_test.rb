@@ -101,5 +101,10 @@ module GrapeOAS
       assert_instance_of Array, result
       assert_equal 2, result.size
     end
+
+    def test_returns_nil_for_proc_returning_scalar
+      assert_nil ValuesNormalizer.normalize(proc { 42 })
+      assert_nil ValuesNormalizer.normalize(proc { "hello" })
+    end
   end
 end

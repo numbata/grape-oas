@@ -168,7 +168,11 @@ module GrapeOAS
           raw_values = doc[:values] || doc["values"]
           if raw_values
             normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
-            schema.enum = normalized if normalized.is_a?(Array) && !normalized.empty?
+            if normalized.is_a?(Array) && !normalized.empty?
+              schema.enum = normalized
+            elsif normalized.is_a?(Range)
+              RangeUtils.apply_to_schema(schema, normalized)
+            end
           end
           schema.description = doc[:desc] || doc["desc"] if doc[:desc] || doc["desc"]
           schema.format = doc[:format] || doc["format"] if doc[:format] || doc["format"]

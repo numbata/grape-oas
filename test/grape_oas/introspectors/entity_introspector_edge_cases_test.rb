@@ -298,6 +298,30 @@ module GrapeOAS
 
         assert_nil EntityIntrospectorSupport::PropertyExtractor.extract_description(doc)
       end
+
+      # === Entity exposure values: Range and [false] ===
+
+      class RangeValuesEntity < Grape::Entity
+        expose :level, documentation: { type: Integer, values: 1..5 }
+        expose :flag, documentation: { type: "boolean", values: [false] }
+      end
+
+      def test_entity_exposure_range_values_apply_min_max
+        schema = EntityIntrospector.new(RangeValuesEntity).build_schema
+        level = schema.properties["level"]
+
+        refute_nil level
+        assert_equal 1, level.minimum
+        assert_equal 5, level.maximum
+      end
+
+      def test_entity_exposure_false_only_enum_not_dropped
+        schema = EntityIntrospector.new(RangeValuesEntity).build_schema
+        flag = schema.properties["flag"]
+
+        refute_nil flag
+        assert_equal [false], flag.enum
+      end
     end
   end
 end

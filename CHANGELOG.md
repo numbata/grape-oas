@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#50](https://github.com/numbata/grape-oas/pull/50): Extract valuesnormalizer and fix [false] enum silently dropped - [@numbata](https://github.com/numbata).
+- [#50](https://github.com/numbata/grape-oas/pull/50): Extract ValuesNormalizer and fix [false] enum silently dropped - [@numbata](https://github.com/numbata).
 - [#43](https://github.com/numbata/grape-oas/pull/43): Bump actions/upload-artifact from 6 to 7 - [@dependabot[bot]](https://github.com/dependabot[bot]).
 
 ### Fixed
