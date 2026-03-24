@@ -62,6 +62,21 @@ module GrapeOAS
 
     # === apply_to_schema tests ===
 
+    def test_apply_to_schema_warns_on_mixed_type_range
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      # Ruby prevents constructing a mixed-type Range directly, so simulate one
+      mixed_range = Struct.new(:begin, :end, :exclude_end?).new(1, "z", false)
+
+      _stdout, stderr = capture_io do
+        RangeUtils.apply_to_schema(schema, mixed_range)
+      end
+
+      assert_nil schema.minimum
+      assert_nil schema.maximum
+      assert_nil schema.enum
+      assert_match(/Mixed-type range.*ignored/, stderr)
+    end
+
     def test_apply_numeric_range_to_integer_schema
       schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
       RangeUtils.apply_to_schema(schema, 1..10)

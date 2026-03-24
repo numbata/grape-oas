@@ -10,11 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#49](https://github.com/numbata/grape-oas/pull/49): Extract rangeutils and fix oom on wide string range expansion - [@numbata](https://github.com/numbata).
 - [#43](https://github.com/numbata/grape-oas/pull/43): Bump actions/upload-artifact from 6 to 7 - [@dependabot[bot]](https://github.com/dependabot[bot]).
 
 ### Fixed
 
+- [#49](https://github.com/numbata/grape-oas/pull/49): Fix OOM on wide string range expansion in `values:` — replace unbounded `range.to_a` with bounded enumeration; non-numeric ranges on numeric schemas and numeric ranges on non-numeric schemas now warn and are ignored instead of silently producing invalid output - [@numbata](https://github.com/numbata).
 - [#46](https://github.com/numbata/grape-oas/pull/46): Fix `is_array: true` in request param documentation being ignored for primitive types — only entity types were wrapped in array schema - [@numbata](https://github.com/numbata).
 - [#42](https://github.com/numbata/grape-oas/pull/42): Fix array items `description` and `nullable` placement — hoist to outer array schema instead of wrapping `items` in `allOf`; fix `:description` field naming collision in `PropertyExtractor` - [@numbata](https://github.com/numbata).
 - [#44](https://github.com/numbata/grape-oas/pull/44): Fix RuboCop 1.85 offenses - [@numbata](https://github.com/numbata).

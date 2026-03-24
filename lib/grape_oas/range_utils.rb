@@ -27,6 +27,8 @@ module GrapeOAS
       # minimum=/maximum=/exclusive_maximum= setters (Schema, ConstraintSet, etc).
       # Skips descending and infinite bounds.
       def apply_numeric_range(target, range)
+        return unless range
+
         first_val = range.begin
         last_val = range.end
 
