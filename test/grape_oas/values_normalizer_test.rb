@@ -27,8 +27,21 @@ module GrapeOAS
       assert_equal %w[a b], ValuesNormalizer.normalize({ value: %w[a b], message: "pick one" })
     end
 
+    def test_unwraps_hash_with_string_value_key
+      assert_equal %w[a b], ValuesNormalizer.normalize({ "value" => %w[a b], "message" => "pick one" })
+    end
+
     def test_returns_nil_for_hash_with_nil_value
       assert_nil ValuesNormalizer.normalize({ value: nil, message: "pick one" })
+    end
+
+    def test_rescues_raising_proc_inside_hash_wrapped_value
+      _, stderr = capture_io do
+        @result = ValuesNormalizer.normalize({ value: proc { raise ArgumentError, "boom" } })
+      end
+
+      assert_nil @result
+      assert_match(/Proc evaluation failed/, stderr)
     end
 
     def test_evaluates_arity_zero_proc

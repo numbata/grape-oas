@@ -10,9 +10,9 @@ module GrapeOAS
     def self.normalize(values, context: "values")
       return nil unless values
 
-      return nil if values.is_a?(Hash) && !values.key?(:value)
+      return nil if values.is_a?(Hash) && !values.key?(:value) && !values.key?("value")
 
-      values = values[:value] if values.is_a?(Hash)
+      values = values[:value] || values["value"] if values.is_a?(Hash)
       return nil unless values
 
       if values.respond_to?(:call)
