@@ -19,7 +19,7 @@ module GrapeOAS
 
           apply_additional_properties(schema, doc)
           apply_format_and_example(schema, doc)
-          apply_constraints(schema, doc)
+          SchemaConstraints.apply(schema, doc)
           apply_values(schema, spec)
         end
 
@@ -48,10 +48,6 @@ module GrapeOAS
           def apply_format_and_example(schema, doc)
             schema.format = doc[:format] if doc[:format] && schema.respond_to?(:format=)
             schema.examples = doc[:example] if doc[:example] && schema.respond_to?(:examples=)
-          end
-
-          def apply_constraints(schema, doc)
-            SchemaConstraints.apply(schema, doc)
           end
 
           def apply_values(schema, spec)

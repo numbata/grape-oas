@@ -121,5 +121,13 @@ module GrapeOAS
       schema = Object.new
       assert_silent { SchemaConstraints.apply(schema, { minimum: 0, max_length: 10 }) }
     end
+
+    def test_ignores_string_keys
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      SchemaConstraints.apply(schema, { "minimum" => 5, "maximum" => 50 })
+
+      assert_nil schema.minimum
+      assert_nil schema.maximum
+    end
   end
 end
