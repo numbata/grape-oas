@@ -40,7 +40,7 @@ module GrapeOAS
     end
 
     def self.set_instance?(value)
-      defined?(Set) && value.is_a?(Set)
+      value.is_a?(Set)
     end
     private_class_method :set_instance?
   end

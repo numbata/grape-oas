@@ -58,9 +58,6 @@ module GrapeOAS
             schema.pattern = doc[:pattern] if doc.key?(:pattern) && schema.respond_to?(:pattern=)
           end
 
-          # Normalizes spec[:values] via ValuesNormalizer and applies to schema:
-          # Range → minimum/maximum constraints; Array → enum (on items for array schemas,
-          # on compatible variants for oneOf schemas).
           def apply_values(schema, spec)
             values = ValuesNormalizer.normalize(spec[:values], context: "parameter values")
             return unless values
