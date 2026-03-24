@@ -41,13 +41,19 @@ module GrapeOAS
         target.exclusive_maximum = range.exclude_end? if target.respond_to?(:exclusive_maximum=)
       end
 
+      # Returns true when all non-nil bounds are Numeric (pure numeric range).
+      def numeric_range?(range)
+        bounds = [range.begin, range.end].compact
+        bounds.any? && bounds.all?(Numeric)
+      end
+
       # Applies a Range to a schema as min/max or enum.
       # @param schema [ApiModel::Schema]
       def apply_to_schema(schema, range)
         bounds = [range.begin, range.end].compact
         return if bounds.empty?
 
-        all_numeric = bounds.all?(Numeric)
+        all_numeric = numeric_range?(range)
         any_numeric = bounds.any?(Numeric)
         mixed_numeric = any_numeric && !all_numeric
         numeric_range = all_numeric

@@ -175,12 +175,8 @@ module GrapeOAS
           end
 
           def range_compatible_with_schema?(range, schema)
-            bounds = [range.begin, range.end].compact
-            return true if bounds.empty?
-
-            numeric_range = bounds.all?(Numeric)
             numeric_type = RangeUtils::NUMERIC_TYPES.include?(schema.type)
-            numeric_range == numeric_type
+            RangeUtils.numeric_range?(range) ? numeric_type : !numeric_type
           end
         end
       end

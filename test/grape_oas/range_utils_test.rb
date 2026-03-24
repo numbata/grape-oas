@@ -60,6 +60,28 @@ module GrapeOAS
       assert_equal %w[a b c d], RangeUtils.expand_range_to_enum("a"..."e")
     end
 
+    # === numeric_range? tests ===
+
+    def test_numeric_range_returns_true_for_integer_range
+      assert RangeUtils.numeric_range?(1..10)
+    end
+
+    def test_numeric_range_returns_true_for_float_range
+      assert RangeUtils.numeric_range?(0.0..1.0)
+    end
+
+    def test_numeric_range_returns_true_for_endless_numeric_range
+      assert RangeUtils.numeric_range?(1..)
+    end
+
+    def test_numeric_range_returns_false_for_string_range
+      refute RangeUtils.numeric_range?("a".."z")
+    end
+
+    def test_numeric_range_returns_false_for_beginless_string_range
+      refute RangeUtils.numeric_range?(..("z"))
+    end
+
     # === apply_to_schema tests ===
 
     def test_apply_to_schema_warns_on_mixed_type_range
