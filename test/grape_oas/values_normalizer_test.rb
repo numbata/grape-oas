@@ -110,5 +110,9 @@ module GrapeOAS
       assert_nil ValuesNormalizer.normalize(proc { 42 })
       assert_nil ValuesNormalizer.normalize(proc { "hello" })
     end
+
+    def test_returns_nil_for_proc_returning_empty_array
+      assert_nil ValuesNormalizer.normalize(proc { [] })
+    end
   end
 end
