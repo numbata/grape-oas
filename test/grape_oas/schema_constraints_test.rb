@@ -100,5 +100,26 @@ module GrapeOAS
       assert_equal 100, schema.maximum
       assert schema.exclusive_maximum
     end
+
+    def test_exclusive_minimum_without_minimum
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      SchemaConstraints.apply(schema, { exclusive_minimum: true })
+
+      assert_nil schema.minimum
+      assert schema.exclusive_minimum
+    end
+
+    def test_exclusive_maximum_without_maximum
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
+      SchemaConstraints.apply(schema, { exclusive_maximum: true })
+
+      assert_nil schema.maximum
+      assert schema.exclusive_maximum
+    end
+
+    def test_skips_constraint_when_schema_does_not_respond_to_setter
+      schema = Object.new
+      assert_silent { SchemaConstraints.apply(schema, { minimum: 0, max_length: 10 }) }
+    end
   end
 end
