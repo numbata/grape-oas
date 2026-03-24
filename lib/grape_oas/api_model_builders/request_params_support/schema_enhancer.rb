@@ -80,7 +80,17 @@ module GrapeOAS
             end
 
             if values.is_a?(Range)
-              RangeUtils.apply_to_schema(schema, values)
+              if one_of_schema?(schema)
+                schema.one_of.each do |variant|
+                  next if null_type_schema?(variant)
+
+                  RangeUtils.apply_to_schema(variant, values)
+                end
+              elsif array_schema_with_items?(schema)
+                RangeUtils.apply_to_schema(schema.items, values)
+              else
+                RangeUtils.apply_to_schema(schema, values)
+              end
             else
               enum_values = defined?(Set) && values.is_a?(Set) ? values.to_a : values
               apply_enum_values(schema, enum_values) if enum_values.is_a?(Array) && enum_values.any?

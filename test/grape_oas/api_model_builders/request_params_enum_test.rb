@@ -206,6 +206,58 @@ module GrapeOAS
         assert_equal %w[a b c d e], letter_param.schema.enum
       end
 
+      # === Range values on container schemas ===
+
+      def test_integer_range_values_on_array_param
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :ids, type: [Integer], values: 1..100, documentation: { param_type: "body" }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, _params = builder.build
+
+        ids = body_schema.properties["ids"]
+
+        refute_nil ids
+        assert_equal Constants::SchemaTypes::ARRAY, ids.type
+        assert_equal 1, ids.items.minimum
+        assert_equal 100, ids.items.maximum
+      end
+
+      def test_integer_range_values_on_one_of_param
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :count, types: [Integer, String, NilClass], values: 1..10
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        count_param = params.find { |p| p.name == "count" }
+
+        refute_nil count_param
+        refute_nil count_param.schema.one_of
+
+        integer_variant = count_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
+
+        refute_nil integer_variant
+        assert_equal 1, integer_variant.minimum
+        assert_equal 10, integer_variant.maximum
+      end
+
       # === Proc values ===
 
       def test_proc_enum_values
