@@ -12,7 +12,7 @@ module GrapeOAS
 
       return nil if values.is_a?(Hash) && !values.key?(:value) && !values.key?("value")
 
-      values = values[:value] || values["value"] if values.is_a?(Hash)
+      values = values.key?(:value) ? values[:value] : values["value"] if values.is_a?(Hash)
       return nil unless values
 
       if values.respond_to?(:call)

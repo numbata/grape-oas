@@ -35,6 +35,10 @@ module GrapeOAS
       assert_nil ValuesNormalizer.normalize({ value: nil, message: "pick one" })
     end
 
+    def test_unwraps_hash_with_false_value
+      assert_equal [false], ValuesNormalizer.normalize({ value: [false], message: "pick one" })
+    end
+
     def test_rescues_raising_proc_inside_hash_wrapped_value
       _, stderr = capture_io do
         @result = ValuesNormalizer.normalize({ value: proc { raise ArgumentError, "boom" } })
