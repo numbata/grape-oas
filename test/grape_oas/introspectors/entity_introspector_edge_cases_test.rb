@@ -322,6 +322,47 @@ module GrapeOAS
         refute_nil flag
         assert_equal [false], flag.enum
       end
+
+      # === Entity exposure values: Proc and hash-wrapped values ===
+
+      class ProcValuesEntity < Grape::Entity
+        expose :status, documentation: { type: String, values: proc { %w[active inactive] } }
+        expose :priority, documentation: { type: String, values: { value: %w[low high], message: "pick one" } }
+      end
+
+      def test_entity_exposure_proc_values_evaluated_and_applied
+        schema = EntityIntrospector.new(ProcValuesEntity).build_schema
+        status = schema.properties["status"]
+
+        refute_nil status
+        assert_equal %w[active inactive], status.enum
+      end
+
+      def test_entity_exposure_hash_wrapped_values_unwrapped_and_applied
+        schema = EntityIntrospector.new(ProcValuesEntity).build_schema
+        priority = schema.properties["priority"]
+
+        refute_nil priority
+        assert_equal %w[low high], priority.enum
+      end
+
+      # === Entity exposure values: Range on nullable field ===
+
+      class NullableRangeEntity < Grape::Entity
+        expose :score, documentation: { type: Integer, nullable: true, values: 0..100 }
+      end
+
+      def test_entity_exposure_range_on_nullable_field_applies_min_max
+        # nullable: true sets schema.nullable rather than producing a oneOf wrapper,
+        # so min/max constraints are applied directly to the schema — valid OpenAPI.
+        schema = EntityIntrospector.new(NullableRangeEntity).build_schema
+        score = schema.properties["score"]
+
+        refute_nil score
+        assert score.nullable
+        assert_equal 0, score.minimum
+        assert_equal 100, score.maximum
+      end
     end
   end
 end

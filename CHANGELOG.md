@@ -10,10 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#50](https://github.com/numbata/grape-oas/pull/50): Extract ValuesNormalizer and fix [false] enum silently dropped - [@numbata](https://github.com/numbata).
 - [#43](https://github.com/numbata/grape-oas/pull/43): Bump actions/upload-artifact from 6 to 7 - [@dependabot[bot]](https://github.com/dependabot[bot]).
 
+### Changed
+
+- [#50](https://github.com/numbata/grape-oas/pull/50): Extract `ValuesNormalizer` — consolidates Proc/Set/Hash value normalization into a single module used by both request params and entity exposures - [@numbata](https://github.com/numbata).
+
 ### Fixed
+
+- [#50](https://github.com/numbata/grape-oas/pull/50): Fix `[false]` enum silently dropped — `[false].any?` returns `false` in Ruby, causing boolean-only enum constraints to be discarded - [@numbata](https://github.com/numbata).
 
 - [#49](https://github.com/numbata/grape-oas/pull/49): Fix OOM on wide string range expansion in `values:` — replace unbounded `range.to_a` with bounded enumeration; non-numeric ranges on numeric schemas and numeric ranges on non-numeric schemas now warn and are ignored instead of silently producing invalid output - [@numbata](https://github.com/numbata).
 - [#46](https://github.com/numbata/grape-oas/pull/46): Fix `is_array: true` in request param documentation being ignored for primitive types — only entity types were wrapped in array schema - [@numbata](https://github.com/numbata).
