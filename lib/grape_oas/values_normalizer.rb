@@ -31,6 +31,7 @@ module GrapeOAS
 
       values = values.to_a if set_instance?(values)
       return nil unless values.is_a?(Array) || values.is_a?(Range)
+      return nil if values.is_a?(Array) && values.empty?
 
       values
     end

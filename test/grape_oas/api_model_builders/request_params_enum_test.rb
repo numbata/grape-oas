@@ -427,6 +427,19 @@ module GrapeOAS
         assert_nil integer_variant.enum
       end
 
+      # === [false] enum regression ===
+
+      def test_false_only_enum_applied_to_schema
+        # [false].any? returns false in Ruby, which previously caused [false] to be
+        # silently dropped. Verify SchemaEnhancer.apply correctly sets enum: [false].
+        enhancer = RequestParamsSupport::SchemaEnhancer
+        schema = ApiModel::Schema.new(type: Constants::SchemaTypes::BOOLEAN)
+
+        enhancer.apply(schema, { values: [false] }, {})
+
+        assert_equal [false], schema.enum
+      end
+
       # === Mixed-type enum values (unit tests for filter_compatible_values) ===
 
       def test_filter_compatible_values_splits_mixed_enum

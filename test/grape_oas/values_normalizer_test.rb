@@ -76,8 +76,17 @@ module GrapeOAS
       assert_equal [false], ValuesNormalizer.normalize([false])
     end
 
-    def test_passes_through_empty_array
-      assert_equal [], ValuesNormalizer.normalize([])
+    def test_returns_nil_for_empty_array
+      assert_nil ValuesNormalizer.normalize([])
+    end
+
+    def test_unwraps_hash_wrapped_proc
+      assert_equal %w[x y z], ValuesNormalizer.normalize({ value: proc { %w[x y z] }, message: "pick one" })
+    end
+
+    def test_returns_nil_for_except_hash_format
+      # Grape's { except: [...] } exclusion format is not a value enum — treat as nil
+      assert_nil ValuesNormalizer.normalize({ except: [1, 2, 3] })
     end
 
     def test_proc_returning_range

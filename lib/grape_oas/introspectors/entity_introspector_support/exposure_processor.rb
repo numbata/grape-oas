@@ -165,7 +165,11 @@ module GrapeOAS
 
         def apply_exposure_properties(schema, doc)
           schema.nullable = doc[:nullable] || doc["nullable"] || false
-          schema.enum = doc[:values] || doc["values"] if doc[:values] || doc["values"]
+          raw_values = doc[:values] || doc["values"]
+          if raw_values
+            normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
+            schema.enum = normalized if normalized.is_a?(Array) && !normalized.empty?
+          end
           schema.description = doc[:desc] || doc["desc"] if doc[:desc] || doc["desc"]
           schema.format = doc[:format] || doc["format"] if doc[:format] || doc["format"]
           schema.examples = doc[:example] || doc["example"] if schema.respond_to?(:examples=) && (doc[:example] || doc["example"])
