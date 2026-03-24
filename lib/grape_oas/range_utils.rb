@@ -44,12 +44,14 @@ module GrapeOAS
       # Applies a Range to a schema as min/max or enum.
       # @param schema [ApiModel::Schema]
       def apply_to_schema(schema, range)
-        bounds        = [range.begin, range.end].compact
-        all_numeric   = bounds.all?(Numeric)
-        any_numeric   = bounds.any?(Numeric)
+        bounds = [range.begin, range.end].compact
+        return if bounds.empty?
+
+        all_numeric = bounds.all?(Numeric)
+        any_numeric = bounds.any?(Numeric)
         mixed_numeric = any_numeric && !all_numeric
         numeric_range = all_numeric
-        numeric_type  = NUMERIC_TYPES.include?(schema.type)
+        numeric_type = NUMERIC_TYPES.include?(schema.type)
 
         if mixed_numeric
           warn "[grape-oas] Mixed-type range #{range} ignored; endpoints must both be numeric or both non-numeric"

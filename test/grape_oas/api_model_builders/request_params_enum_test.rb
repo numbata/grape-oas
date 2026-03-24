@@ -244,18 +244,27 @@ module GrapeOAS
 
         route = api_class.routes.first
         builder = RequestParams.new(api: @api, route: route)
-        _body_schema, params = builder.build
+        _stdout, stderr = capture_io do
+          _body_schema, params = builder.build
 
-        count_param = params.find { |p| p.name == "count" }
+          count_param = params.find { |p| p.name == "count" }
 
-        refute_nil count_param
-        refute_nil count_param.schema.one_of
+          refute_nil count_param
+          refute_nil count_param.schema.one_of
 
-        integer_variant = count_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
+          integer_variant = count_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
+          string_variant = count_param.schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
 
-        refute_nil integer_variant
-        assert_equal 1, integer_variant.minimum
-        assert_equal 10, integer_variant.maximum
+          refute_nil integer_variant
+          assert_equal 1, integer_variant.minimum
+          assert_equal 10, integer_variant.maximum
+
+          refute_nil string_variant
+          assert_nil string_variant.minimum
+          assert_nil string_variant.maximum
+        end
+
+        assert_empty stderr
       end
 
       # === Proc values ===

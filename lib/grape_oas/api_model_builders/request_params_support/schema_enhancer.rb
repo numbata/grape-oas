@@ -83,6 +83,7 @@ module GrapeOAS
               if one_of_schema?(schema)
                 schema.one_of.each do |variant|
                   next if null_type_schema?(variant)
+                  next unless range_compatible_with_schema?(values, variant)
 
                   RangeUtils.apply_to_schema(variant, values)
                 end
@@ -171,6 +172,15 @@ module GrapeOAS
 
           def extract_defs(doc)
             doc[:defs] || doc[:$defs]
+          end
+
+          def range_compatible_with_schema?(range, schema)
+            bounds = [range.begin, range.end].compact
+            return true if bounds.empty?
+
+            numeric_range = bounds.all?(Numeric)
+            numeric_type = RangeUtils::NUMERIC_TYPES.include?(schema.type)
+            numeric_range == numeric_type
           end
         end
       end
