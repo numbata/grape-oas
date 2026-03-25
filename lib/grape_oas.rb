@@ -58,17 +58,17 @@ module GrapeOAS
     end
   end
 
-  # @param logger [#warn, nil] a logger-compatible object, or nil to reset
+  # @param value [#warn, nil] a logger-compatible object, or nil to reset
   #   to the default $stderr logger
-  def logger=(logger)
-    if logger.nil?
+  def logger=(value)
+    if value.nil?
       @logger = nil
       return
     end
 
-    raise ArgumentError, "logger must respond to :warn (got #{logger.class})" unless logger.respond_to?(:warn)
+    raise ArgumentError, "logger must respond to :warn (got #{value.class})" unless value.respond_to?(:warn)
 
-    @logger = logger
+    @logger = value
   end
 
   module_function :logger, :logger=

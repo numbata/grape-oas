@@ -23,7 +23,7 @@ class GrapeOASTest < Minitest::Test
     GrapeOAS.instance_variable_set(:@logger, nil)
     output = capture_grape_oas_log { GrapeOAS.logger.warn("test message") }
 
-    assert_includes output, "[grape-oas] test message"
+    assert_equal "[grape-oas] test message\n", output
   ensure
     GrapeOAS.instance_variable_set(:@logger, nil)
   end
