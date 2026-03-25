@@ -89,14 +89,12 @@ module GrapeOAS
       # Ruby prevents constructing a mixed-type Range directly, so simulate one
       mixed_range = Struct.new(:begin, :end, :exclude_end?).new(1, "z", false)
 
-      _stdout, stderr = capture_io do
-        RangeUtils.apply_to_schema(schema, mixed_range)
-      end
+      log_output = capture_grape_oas_log { RangeUtils.apply_to_schema(schema, mixed_range) }
 
       assert_nil schema.minimum
       assert_nil schema.maximum
       assert_nil schema.enum
-      assert_match(/Mixed-type range.*ignored/, stderr)
+      assert_match(/Mixed-type range.*ignored/, log_output)
     end
 
     def test_apply_numeric_range_to_integer_schema
@@ -128,14 +126,12 @@ module GrapeOAS
     def test_apply_numeric_range_on_string_type_is_skipped
       schema = ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
 
-      _stdout, stderr = capture_io do
-        RangeUtils.apply_to_schema(schema, 1..10)
-      end
+      log_output = capture_grape_oas_log { RangeUtils.apply_to_schema(schema, 1..10) }
 
       assert_nil schema.minimum
       assert_nil schema.maximum
       assert_nil schema.enum
-      assert_match(/Numeric range.*ignored on non-numeric/, stderr)
+      assert_match(/Numeric range.*ignored on non-numeric/, log_output)
     end
 
     def test_apply_string_range_sets_enum
@@ -171,13 +167,11 @@ module GrapeOAS
     def test_apply_string_range_on_integer_type_is_skipped
       schema = ApiModel::Schema.new(type: Constants::SchemaTypes::INTEGER)
 
-      _stdout, stderr = capture_io do
-        RangeUtils.apply_to_schema(schema, "a".."z")
-      end
+      log_output = capture_grape_oas_log { RangeUtils.apply_to_schema(schema, "a".."z") }
 
       assert_nil schema.enum
       assert_nil schema.minimum
-      assert_match(/Non-numeric range.*ignored on numeric/, stderr)
+      assert_match(/Non-numeric range.*ignored on numeric/, log_output)
     end
 
     def test_apply_infinity_range_skips_infinite_bounds
@@ -209,13 +203,11 @@ module GrapeOAS
     def test_apply_numeric_range_on_nil_type_warns
       schema = ApiModel::Schema.new(type: nil)
 
-      _stdout, stderr = capture_io do
-        RangeUtils.apply_to_schema(schema, 1..10)
-      end
+      log_output = capture_grape_oas_log { RangeUtils.apply_to_schema(schema, 1..10) }
 
       assert_nil schema.minimum
       assert_nil schema.maximum
-      assert_match(/Numeric range.*ignored on non-numeric/, stderr)
+      assert_match(/Numeric range.*ignored on non-numeric/, log_output)
     end
 
     # === apply_numeric_range tests ===

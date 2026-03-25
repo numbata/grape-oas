@@ -43,5 +43,26 @@ require "grape"
 require "grape-entity"
 require "grape-oas"
 
+require "logger"
+require "stringio"
+
+module LoggerCaptureHelper
+  def capture_grape_oas_log
+    log_output = StringIO.new
+    original_logger = GrapeOAS.logger
+    captured_logger = Logger.new(log_output, progname: "grape-oas", level: Logger::WARN)
+    captured_logger.formatter = GrapeOAS::LOG_FORMATTER
+    GrapeOAS.logger = captured_logger
+    begin
+      yield
+    ensure
+      GrapeOAS.logger = original_logger
+    end
+    log_output.string
+  end
+end
+
+Minitest::Test.include(LoggerCaptureHelper)
+
 # Load support helpers (exclude *_test.rb to avoid circular requires)
 Dir[File.expand_path("support/**/*.rb", __dir__)].reject { |f| f.end_with?("_test.rb") }.each { |f| require f }

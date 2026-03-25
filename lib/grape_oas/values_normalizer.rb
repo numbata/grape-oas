@@ -26,7 +26,7 @@ module GrapeOAS
         begin
           values = values.call
         rescue StandardError => e
-          warn "[grape-oas] Proc evaluation failed for #{context} (#{e.class}): #{e.message}"
+          GrapeOAS.logger.warn("Proc evaluation failed for #{context} (#{e.class}): #{e.message}")
           return nil
         end
         return nil unless values.is_a?(Array) || values.is_a?(Range) || set_instance?(values)

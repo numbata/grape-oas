@@ -40,12 +40,13 @@ module GrapeOAS
     end
 
     def test_rescues_raising_proc_inside_hash_wrapped_value
-      _, stderr = capture_io do
-        @result = ValuesNormalizer.normalize({ value: proc { raise ArgumentError, "boom" } })
+      result = nil
+      log_output = capture_grape_oas_log do
+        result = ValuesNormalizer.normalize({ value: proc { raise ArgumentError, "boom" } })
       end
 
-      assert_nil @result
-      assert_match(/Proc evaluation failed/, stderr)
+      assert_nil result
+      assert_match(/Proc evaluation failed/, log_output)
     end
 
     def test_evaluates_arity_zero_proc
@@ -76,21 +77,22 @@ module GrapeOAS
     end
 
     def test_rescues_raising_proc
-      _, stderr = capture_io do
-        @result = ValuesNormalizer.normalize(proc { raise ArgumentError, "boom" })
+      result = nil
+      log_output = capture_grape_oas_log do
+        result = ValuesNormalizer.normalize(proc { raise ArgumentError, "boom" })
       end
 
-      assert_nil @result
-      assert_match(/Proc evaluation failed/, stderr)
-      assert_match(/ArgumentError/, stderr)
+      assert_nil result
+      assert_match(/Proc evaluation failed/, log_output)
+      assert_match(/ArgumentError/, log_output)
     end
 
     def test_includes_context_in_warning
-      _, stderr = capture_io do
+      log_output = capture_grape_oas_log do
         ValuesNormalizer.normalize(proc { raise "oops" }, context: "field 'status'")
       end
 
-      assert_match(/field 'status'/, stderr)
+      assert_match(/field 'status'/, log_output)
     end
 
     def test_passes_through_false_only_array

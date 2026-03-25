@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "grape"
+require "logger"
 require "zeitwerk"
 
 loader = Zeitwerk::Loader.for_gem
@@ -40,6 +41,32 @@ module GrapeOAS
     OAS::VERSION
   end
   module_function :version
+
+  # Formatter that prepends [grape-oas] and suppresses Logger metadata.
+  # Used by the default logger and the test capture helper.
+  LOG_FORMATTER = proc { |_severity, _datetime, _progname, msg| "[grape-oas] #{msg}\n" }
+
+  # Configurable logger for schema generation warnings.
+  # Defaults to Logger on $stderr. Set to Rails.logger or Logger.new(File::NULL).
+  #
+  # @return [#warn]
+  def logger
+    @logger ||= begin
+      l = Logger.new($stderr, progname: "grape-oas", level: Logger::WARN)
+      l.formatter = LOG_FORMATTER
+      l
+    end
+  end
+
+  # @param value [#warn, nil] a logger-compatible object, or nil to reset
+  #   to the default $stderr logger
+  def logger=(value)
+    raise ArgumentError, "logger must respond to :warn (got #{value.class})" if value && !value.respond_to?(:warn)
+
+    @logger = value
+  end
+
+  module_function :logger, :logger=
 
   # Returns the global introspector registry.
   #
