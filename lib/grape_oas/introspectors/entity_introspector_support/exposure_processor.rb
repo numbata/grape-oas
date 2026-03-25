@@ -63,7 +63,7 @@ module GrapeOAS
 
           schema = build_exposure_base_schema(type)
           apply_exposure_properties(schema, doc)
-          apply_exposure_constraints(schema, doc)
+          SchemaConstraints.apply(schema, doc.transform_keys(&:to_sym))
           schema
         end
 
@@ -187,10 +187,6 @@ module GrapeOAS
           schema.defs = defs if defs.is_a?(Hash)
           x_ext = extract_extensions(doc)
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
-        end
-
-        def apply_exposure_constraints(schema, doc)
-          SchemaConstraints.apply(schema, doc.transform_keys(&:to_sym))
         end
 
         def schema_for_type(type)
