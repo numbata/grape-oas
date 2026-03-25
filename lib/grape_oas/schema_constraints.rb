@@ -4,6 +4,7 @@ module GrapeOAS
   # Applies numeric and string constraints from documentation to a schema.
   module SchemaConstraints
     def self.apply(schema, doc)
+      doc = doc.transform_keys(&:to_sym) unless doc.empty?
       if doc.key?(:minimum)
         schema.minimum = doc[:minimum] if schema.respond_to?(:minimum=)
         # Clear stale exclusive_minimum; re-set below if also provided

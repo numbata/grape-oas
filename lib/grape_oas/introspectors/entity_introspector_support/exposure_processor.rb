@@ -63,7 +63,7 @@ module GrapeOAS
 
           schema = build_exposure_base_schema(type)
           apply_exposure_properties(schema, doc)
-          SchemaConstraints.apply(schema, doc.transform_keys(&:to_sym))
+          SchemaConstraints.apply(schema, doc)
           schema
         end
 
@@ -219,16 +219,7 @@ module GrapeOAS
           if raw_values
             normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
             if normalized.is_a?(Array) && !normalized.empty?
-              # Skip mutation of cached entity schemas referenced via using:
-              return if schema.respond_to?(:canonical_name) && schema.canonical_name
-
-              if schema.type == Constants::SchemaTypes::ARRAY &&
-                 schema.respond_to?(:items) && schema.items &&
-                 !(schema.items.respond_to?(:canonical_name) && schema.items.canonical_name)
-                schema.items.enum = normalized
-              else
-                schema.enum = normalized
-              end
+              apply_enum_to_schema(schema, normalized)
             elsif normalized.is_a?(Range)
               RangeUtils.apply_to_schema(schema, normalized)
             end
@@ -242,6 +233,20 @@ module GrapeOAS
           schema.defs = defs if defs.is_a?(Hash)
           x_ext = extract_extensions(doc)
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
+        end
+
+        # Cached entity schemas (via using:) are shared across all exposures that
+        # reference the same entity — do not mutate their enum.
+        def apply_enum_to_schema(schema, values)
+          return if schema.respond_to?(:canonical_name) && schema.canonical_name
+
+          if schema.type == Constants::SchemaTypes::ARRAY &&
+             schema.respond_to?(:items) && schema.items &&
+             !(schema.items.respond_to?(:canonical_name) && schema.items.canonical_name)
+            schema.items.enum = values
+          else
+            schema.enum = values
+          end
         end
 
         def schema_for_type(type)
