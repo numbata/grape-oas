@@ -12,20 +12,20 @@ class GrapeOASTest < Minitest::Test
   end
 
   def test_logger_returns_default_logger
-    GrapeOAS.instance_variable_set(:@logger, nil)
+    GrapeOAS.logger = nil
 
     assert_respond_to GrapeOAS.logger, :warn
   ensure
-    GrapeOAS.instance_variable_set(:@logger, nil)
+    GrapeOAS.logger = nil
   end
 
   def test_default_logger_formats_with_grape_oas_prefix
-    GrapeOAS.instance_variable_set(:@logger, nil)
+    GrapeOAS.logger = nil
     output = capture_grape_oas_log { GrapeOAS.logger.warn("test message") }
 
     assert_equal "[grape-oas] test message\n", output
   ensure
-    GrapeOAS.instance_variable_set(:@logger, nil)
+    GrapeOAS.logger = nil
   end
 
   def test_logger_setter_accepts_warn_compatible_object
@@ -35,7 +35,7 @@ class GrapeOASTest < Minitest::Test
 
     assert_same custom, GrapeOAS.logger
   ensure
-    GrapeOAS.instance_variable_set(:@logger, nil)
+    GrapeOAS.logger = nil
   end
 
   def test_logger_setter_accepts_nil_to_reset_to_default
@@ -47,7 +47,7 @@ class GrapeOASTest < Minitest::Test
     assert_respond_to GrapeOAS.logger, :warn
     refute_same custom, GrapeOAS.logger
   ensure
-    GrapeOAS.instance_variable_set(:@logger, nil)
+    GrapeOAS.logger = nil
   end
 
   def test_logger_setter_raises_for_object_without_warn
@@ -69,6 +69,6 @@ class GrapeOASTest < Minitest::Test
 
     assert_equal ["something went wrong"], messages
   ensure
-    GrapeOAS.instance_variable_set(:@logger, nil)
+    GrapeOAS.logger = nil
   end
 end
