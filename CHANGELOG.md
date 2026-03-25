@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- [#52](https://github.com/numbata/grape-oas/pull/52): Extract `SchemaConstraints` — centralizes numeric/string constraint application (min/max, exclusive flags, length, pattern) and adds `exclusive_minimum`/`exclusive_maximum` support - [@numbata](https://github.com/numbata).
 - [#50](https://github.com/numbata/grape-oas/pull/50): Extract `ValuesNormalizer` — consolidates Proc/Set/Hash value normalization into a single module used by both request params and entity exposures - [@numbata](https://github.com/numbata).
 
 ### Fixed
