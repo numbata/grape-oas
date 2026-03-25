@@ -58,7 +58,8 @@ module GrapeOAS
         # @param doc [Hash] the documentation hash
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
-          opts = exposure.instance_variable_get(:@options) || {}
+          doc = doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym } unless doc.empty?
+          opts = exposure_options(exposure)
           type = opts[:using] || doc[:type] || doc["type"]
 
           schema = build_exposure_base_schema(type)
@@ -104,7 +105,7 @@ module GrapeOAS
 
         def add_exposure_to_schema(schema, exposure)
           doc = exposure.documentation || {}
-          opts = exposure.instance_variable_get(:@options) || {}
+          opts = exposure_options(exposure)
 
           if merge_exposure?(exposure, doc, opts)
             merge_exposure_into_schema(schema, exposure, doc)
@@ -177,14 +178,15 @@ module GrapeOAS
           return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
 
           doc = exposure.documentation || {}
-          opts = exposure.instance_variable_get(:@options) || {}
+          opts = exposure_options(exposure)
           # Extra !opts[:using] catches using: set to a non-entity class (e.g. String)
-          !resolve_entity_from_opts_with(opts, doc) && !opts[:using]
+          !resolve_grape_entity_class(opts, doc) && !opts[:using]
         end
 
         # Builds an inline object schema from a NestingExposure's child exposures.
         # Duplicate-key children (conditional branches) are merged via NestingMerger.
         def build_nesting_exposure_schema(exposure, doc)
+          doc = doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym } unless doc.empty?
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           return schema unless exposure.respond_to?(:nested_exposures)
 
@@ -214,7 +216,6 @@ module GrapeOAS
         end
 
         def apply_exposure_properties(schema, doc)
-          doc = doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym } unless doc.empty?
           schema.nullable = doc[:nullable] || false
           raw_values = doc[:values]
           if raw_values
@@ -307,15 +308,19 @@ module GrapeOAS
         end
 
         def resolve_entity_from_opts(exposure, doc)
-          opts = exposure.instance_variable_get(:@options) || {}
-          resolve_entity_from_opts_with(opts, doc)
+          opts = exposure_options(exposure)
+          resolve_grape_entity_class(opts, doc)
         end
 
-        def resolve_entity_from_opts_with(opts, doc)
+        def resolve_grape_entity_class(opts, doc)
           type = opts[:using] || doc[:type] || doc["type"]
           return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
 
           nil
+        end
+
+        def exposure_options(exposure)
+          exposure.instance_variable_get(:@options) || {}
         end
 
         def build_schema_for_primitive(type)
