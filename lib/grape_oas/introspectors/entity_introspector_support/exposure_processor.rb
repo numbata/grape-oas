@@ -59,7 +59,7 @@ module GrapeOAS
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
           opts = exposure_options(exposure)
-          type = opts[:using] || doc[:type] || doc["type"]
+          type = opts[:using] || doc[:type]
 
           schema = build_exposure_base_schema(type)
           apply_exposure_properties(schema, doc)
@@ -186,7 +186,6 @@ module GrapeOAS
         # Builds an inline object schema from a NestingExposure's child exposures.
         # Duplicate-key children (conditional branches) are merged via NestingMerger.
         def build_nesting_exposure_schema(exposure, doc)
-          doc = normalize_doc_keys(doc)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           return schema unless exposure.respond_to?(:nested_exposures)
 
@@ -313,7 +312,7 @@ module GrapeOAS
         end
 
         def resolve_grape_entity_class(opts, doc)
-          type = opts[:using] || doc[:type] || doc["type"]
+          type = opts[:using] || doc[:type]
           return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
 
           nil

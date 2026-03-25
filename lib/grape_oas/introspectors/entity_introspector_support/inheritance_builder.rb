@@ -78,6 +78,7 @@ module GrapeOAS
 
         def add_child_property(child_schema, exposure, processor)
           doc = exposure.documentation || {}
+          doc = doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym } unless doc.empty?
           opts = exposure.instance_variable_get(:@options) || {}
 
           return if processor.merge_exposure?(exposure, doc, opts)
@@ -101,7 +102,7 @@ module GrapeOAS
         end
 
         def wrap_in_array_if_needed(prop_schema, doc)
-          is_array = doc[:is_array] || doc["is_array"]
+          is_array = doc[:is_array]
           return prop_schema unless is_array
 
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
