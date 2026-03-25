@@ -50,7 +50,9 @@ module LoggerCaptureHelper
   def capture_grape_oas_log
     log_output = StringIO.new
     original_logger = GrapeOAS.logger
-    GrapeOAS.logger = Logger.new(log_output, progname: "grape-oas", level: Logger::WARN)
+    captured_logger = Logger.new(log_output, progname: "grape-oas", level: Logger::WARN)
+    captured_logger.formatter = proc { |_severity, _datetime, _progname, msg| "[grape-oas] #{msg}\n" }
+    GrapeOAS.logger = captured_logger
     begin
       yield
     ensure

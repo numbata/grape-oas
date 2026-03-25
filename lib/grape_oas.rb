@@ -48,12 +48,16 @@ module GrapeOAS
   def logger
     @logger ||= begin
       require "logger"
-      Logger.new($stderr, progname: "grape-oas", level: Logger::WARN)
+      logger = Logger.new($stderr, progname: "grape-oas", level: Logger::WARN)
+      logger.formatter = proc { |_severity, _datetime, _progname, msg| "[grape-oas] #{msg}\n" }
+      logger
     end
   end
 
-  # @param logger [Logger] a Logger-compatible object
+  # @param logger [#warn] a logger-compatible object responding to :warn
   def logger=(logger)
+    raise ArgumentError, "logger must respond to :warn (got #{logger.class})" unless logger.respond_to?(:warn)
+
     @logger = logger
   end
 
