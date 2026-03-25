@@ -369,8 +369,8 @@ module GrapeOAS
         builder = RequestParams.new(api: @api, route: route)
 
         # Should not raise NameError - should fall back to string type
-        body_schema, _params = builder.build
-
+        body_schema = nil
+        capture_grape_oas_log { body_schema, _params = builder.build }
         data = body_schema.properties["data"]
 
         assert_equal "string", data.type, "Should fall back to string for unresolvable entity"

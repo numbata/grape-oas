@@ -201,7 +201,7 @@ module GrapeOAS
           klass = Object.const_get(const_name, false)
           klass if klass.is_a?(Class) && klass <= Grape::Entity
         rescue NameError => e
-          GrapeOAS.logger.warn("[grape-oas] Could not resolve entity constant '#{const_name}': #{e.message}")
+          GrapeOAS.logger.warn("Could not resolve entity constant '#{const_name}': #{e.message}")
           nil
         end
       end

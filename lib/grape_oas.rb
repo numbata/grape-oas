@@ -41,15 +41,19 @@ module GrapeOAS
   end
   module_function :version
 
+  # Formatter that prepends [grape-oas] and suppresses Logger metadata.
+  # Used by the default logger and the test capture helper.
+  LOG_FORMATTER = proc { |_severity, _datetime, _progname, msg| "[grape-oas] #{msg}\n" }
+
   # Configurable logger for schema generation warnings.
   # Defaults to Logger on $stderr. Set to Rails.logger or Logger.new(File::NULL).
   #
-  # @return [Logger]
+  # @return [#warn]
   def logger
     @logger ||= begin
       require "logger"
       logger = Logger.new($stderr, progname: "grape-oas", level: Logger::WARN)
-      logger.formatter = proc { |_severity, _datetime, _progname, msg| "[grape-oas] #{msg}\n" }
+      logger.formatter = LOG_FORMATTER
       logger
     end
   end
