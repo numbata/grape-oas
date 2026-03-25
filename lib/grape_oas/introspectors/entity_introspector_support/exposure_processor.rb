@@ -55,10 +55,9 @@ module GrapeOAS
         # Builds a schema for an exposure.
         #
         # @param exposure the entity exposure
-        # @param doc [Hash] the documentation hash
+        # @param doc [Hash] the documentation hash (must be normalized via normalize_doc_keys)
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
-          doc = doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym } unless doc.empty?
           opts = exposure_options(exposure)
           type = opts[:using] || doc[:type] || doc["type"]
 
@@ -122,6 +121,7 @@ module GrapeOAS
         end
 
         def add_property_from_exposure(schema, exposure, doc)
+          doc = normalize_doc_keys(doc)
           prop_schema = build_property_schema(exposure, doc)
           required = determine_required(doc, exposure)
           schema.add_property(exposure.key.to_s, prop_schema, required: required)
@@ -148,7 +148,7 @@ module GrapeOAS
         end
 
         def wrap_in_array_if_needed(prop_schema, doc)
-          is_array = doc[:is_array] || doc["is_array"]
+          is_array = doc[:is_array]
           return prop_schema unless is_array
 
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
@@ -186,7 +186,7 @@ module GrapeOAS
         # Builds an inline object schema from a NestingExposure's child exposures.
         # Duplicate-key children (conditional branches) are merged via NestingMerger.
         def build_nesting_exposure_schema(exposure, doc)
-          doc = doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym } unless doc.empty?
+          doc = normalize_doc_keys(doc)
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           return schema unless exposure.respond_to?(:nested_exposures)
 
@@ -317,6 +317,12 @@ module GrapeOAS
           return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
 
           nil
+        end
+
+        def normalize_doc_keys(doc)
+          return doc if doc.empty?
+
+          doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym }
         end
 
         def exposure_options(exposure)

@@ -2,6 +2,11 @@
 
 module GrapeOAS
   # Applies numeric and string constraints from documentation to a schema.
+  #
+  # Callers are responsible for passing a symbol-keyed doc hash (produced by
+  # normalize_doc_keys or equivalent). The internal transform_keys call is kept
+  # as a defensive fallback so that direct callers (e.g. in tests) passing raw
+  # string-keyed hashes continue to work.
   module SchemaConstraints
     def self.apply(schema, doc)
       doc = doc.transform_keys(&:to_sym) unless doc.empty?
