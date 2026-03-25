@@ -315,11 +315,10 @@ module GrapeOAS
           schema_b = wrapper_b
         end
 
-        merger = EntityIntrospectorSupport::NestingMerger.new
         merged = nil
 
         log = capture_grape_oas_log do
-          merged = merger.merge(schema_a, schema_b)
+          merged = EntityIntrospectorSupport::NestingMerger.merge(schema_a, schema_b)
         end
 
         # Should not crash and should produce a merged schema

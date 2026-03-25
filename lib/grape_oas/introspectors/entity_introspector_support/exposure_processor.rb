@@ -188,7 +188,6 @@ module GrapeOAS
           schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           return schema unless exposure.respond_to?(:nested_exposures)
 
-          merger = NestingMerger.new
           nesting_accum = {}
           nesting_required = Hash.new { |h, k| h[k] = [] }
           Array(exposure.nested_exposures).each do |child_exposure|
@@ -197,18 +196,17 @@ module GrapeOAS
 
             if nesting_exposure?(child_exposure)
               child_schema = build_property_schema(child_exposure, child_doc)
-              required = determine_required(child_doc, child_exposure)
-              nesting_required[key] << required
-              nesting_accum[key] = merger.merge(nesting_accum[key], child_schema)
-              schema.add_property(key, nesting_accum[key], required: required)
+              nesting_required[key] << determine_required(child_doc, child_exposure)
+              nesting_accum[key] = NestingMerger.merge(nesting_accum[key], child_schema)
             else
               add_exposure_to_schema(schema, child_exposure)
             end
           end
 
-          # Required only if ALL branches agree
-          nesting_required.each do |key, flags|
-            schema.required.delete(key) unless flags.all?
+          # Add each accumulated nesting property once with the correct required flag.
+          # ALL branches must agree for the property to be required.
+          nesting_accum.each do |key, merged_schema|
+            schema.add_property(key, merged_schema, required: nesting_required[key].all?)
           end
 
           apply_exposure_properties(schema, doc)
@@ -221,12 +219,17 @@ module GrapeOAS
           raw_values = doc[:values] || doc["values"]
           if raw_values
             normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
-            # Entity exposures do not support oneOf/array-items dispatch.
-            # Values are applied directly to the schema. If the entity field is a
-            # nullable oneOf type, values will be applied to the wrapper schema,
-            # not the individual variants. This is consistent with original behavior.
             if normalized.is_a?(Array) && !normalized.empty?
-              schema.enum = normalized
+              # Skip mutation of cached entity schemas referenced via using:
+              return if schema.respond_to?(:canonical_name) && schema.canonical_name
+
+              if schema.type == Constants::SchemaTypes::ARRAY &&
+                 schema.respond_to?(:items) && schema.items &&
+                 !(schema.items.respond_to?(:canonical_name) && schema.items.canonical_name)
+                schema.items.enum = normalized
+              else
+                schema.enum = normalized
+              end
             elsif normalized.is_a?(Range)
               RangeUtils.apply_to_schema(schema, normalized)
             end
@@ -240,6 +243,10 @@ module GrapeOAS
           schema.defs = defs if defs.is_a?(Hash)
           x_ext = extract_extensions(doc)
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
+        end
+
+        def apply_exposure_constraints(schema, doc)
+          SchemaConstraints.apply(schema, doc)
         end
 
         def schema_for_type(type)
