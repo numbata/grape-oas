@@ -73,7 +73,7 @@ module GrapeOAS
             return unless source.respond_to?(:extensions) && source.extensions
 
             existing = merged.extensions || {}
-            merged.extensions = existing.merge(deep_dup_hash(source.extensions))
+            merged.extensions = existing.merge(dup_hash_recursive(source.extensions))
           end
 
           def mergeable_schemas?(left, right)
@@ -87,12 +87,12 @@ module GrapeOAS
               schema.items&.type == Constants::SchemaTypes::OBJECT
           end
 
-          # Recursive dup for extension hashes. Scalars are shared (safe for frozen literals).
-          def deep_dup_hash(hash)
+          # Recursive dup for extension hashes. Non-collection values are shared (safe for frozen literals).
+          def dup_hash_recursive(hash)
             hash.each_with_object({}) do |(k, v), result|
               result[k] = case v
-                          when Hash then deep_dup_hash(v)
-                          when Array then v.map { |e| e.is_a?(Hash) ? deep_dup_hash(e) : e }
+                          when Hash then dup_hash_recursive(v)
+                          when Array then v.map { |e| e.is_a?(Hash) ? dup_hash_recursive(e) : e }
                           else v
                           end
             end
