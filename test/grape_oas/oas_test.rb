@@ -38,6 +38,18 @@ class GrapeOASTest < Minitest::Test
     GrapeOAS.instance_variable_set(:@logger, nil)
   end
 
+  def test_logger_setter_accepts_nil_to_reset_to_default
+    custom = Object.new
+    custom.define_singleton_method(:warn) { |_msg| nil }
+    GrapeOAS.logger = custom
+    GrapeOAS.logger = nil
+
+    assert_respond_to GrapeOAS.logger, :warn
+    refute_same custom, GrapeOAS.logger
+  ensure
+    GrapeOAS.instance_variable_set(:@logger, nil)
+  end
+
   def test_logger_setter_raises_for_object_without_warn
     assert_raises(ArgumentError) { GrapeOAS.logger = Object.new }
   end

@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "grape"
+require "logger"
 require "zeitwerk"
 
 loader = Zeitwerk::Loader.for_gem
@@ -51,15 +52,20 @@ module GrapeOAS
   # @return [#warn]
   def logger
     @logger ||= begin
-      require "logger"
-      logger = Logger.new($stderr, progname: "grape-oas", level: Logger::WARN)
-      logger.formatter = LOG_FORMATTER
-      logger
+      l = Logger.new($stderr, progname: "grape-oas", level: Logger::WARN)
+      l.formatter = LOG_FORMATTER
+      l
     end
   end
 
-  # @param logger [#warn] a logger-compatible object responding to :warn
+  # @param logger [#warn, nil] a logger-compatible object, or nil to reset
+  #   to the default $stderr logger
   def logger=(logger)
+    if logger.nil?
+      @logger = nil
+      return
+    end
+
     raise ArgumentError, "logger must respond to :warn (got #{logger.class})" unless logger.respond_to?(:warn)
 
     @logger = logger

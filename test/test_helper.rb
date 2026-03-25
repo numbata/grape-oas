@@ -59,6 +59,9 @@ module LoggerCaptureHelper
       GrapeOAS.logger = original_logger
     end
     log_output.string
+  rescue StandardError => e
+    e.define_singleton_method(:log_output) { log_output.string }
+    raise
   end
 end
 
