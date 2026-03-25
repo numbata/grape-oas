@@ -61,18 +61,15 @@ module GrapeOAS
 
         if mixed_numeric
           GrapeOAS.logger.warn("Mixed-type range #{range} ignored; endpoints must both be numeric or both non-numeric")
-          nil
         elsif numeric_range && numeric_type
           apply_numeric_range(schema, range)
         elsif numeric_range
           GrapeOAS.logger.warn("Numeric range #{range} ignored on non-numeric schema type '#{schema.type}'")
-          nil
         elsif !numeric_type
           expanded = expand_range_to_enum(range)
           schema.enum = expanded if expanded
         else
           GrapeOAS.logger.warn("Non-numeric range #{range} ignored on numeric schema type '#{schema.type}'")
-          nil
         end
       end
 

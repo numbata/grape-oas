@@ -214,8 +214,9 @@ module GrapeOAS
         end
 
         def apply_exposure_properties(schema, doc)
-          schema.nullable = doc[:nullable] || doc["nullable"] || false
-          raw_values = doc[:values] || doc["values"]
+          doc = doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym } unless doc.empty?
+          schema.nullable = doc[:nullable] || false
+          raw_values = doc[:values]
           if raw_values
             normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
             if normalized.is_a?(Array) && !normalized.empty?
@@ -224,9 +225,9 @@ module GrapeOAS
               RangeUtils.apply_to_schema(schema, normalized)
             end
           end
-          schema.description = doc[:desc] || doc["desc"] if doc[:desc] || doc["desc"]
-          schema.format = doc[:format] || doc["format"] if doc[:format] || doc["format"]
-          schema.examples = doc[:example] || doc["example"] if schema.respond_to?(:examples=) && (doc[:example] || doc["example"])
+          schema.description = doc[:desc] if doc[:desc]
+          schema.format = doc[:format] if doc[:format]
+          schema.examples = doc[:example] if schema.respond_to?(:examples=) && doc[:example]
           schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
           schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
           defs = doc[:defs] || doc[:$defs]
