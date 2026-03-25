@@ -67,6 +67,22 @@ module GrapeOAS
           schema
         end
 
+        # Builds the property schema for an exposure, routing nesting exposures
+        # to the inline-object path. Wraps in array if doc[:is_array] is set.
+        # Doc must already be normalized via normalize_doc_keys.
+        #
+        # @param exposure the entity exposure
+        # @param doc [Hash] normalized documentation hash
+        # @return [ApiModel::Schema]
+        def build_property_schema(exposure, doc)
+          prop_schema = if nesting_exposure?(exposure)
+                          build_nesting_exposure_schema(exposure, doc)
+                        else
+                          schema_for_exposure(exposure, doc)
+                        end
+          wrap_in_array_if_needed(prop_schema, doc)
+        end
+
         # Checks if an exposure should be included in the schema.
         #
         # @param exposure the entity exposure
@@ -127,15 +143,6 @@ module GrapeOAS
           schema.add_property(exposure.key.to_s, prop_schema, required: required)
         end
 
-        def build_property_schema(exposure, doc)
-          prop_schema = if nesting_exposure?(exposure)
-                          build_nesting_exposure_schema(exposure, doc)
-                        else
-                          schema_for_exposure(exposure, doc)
-                        end
-          wrap_in_array_if_needed(prop_schema, doc)
-        end
-
         def determine_required(doc, exposure)
           # If explicitly set in documentation, use that value
           return doc[:required] unless doc[:required].nil?
@@ -193,7 +200,7 @@ module GrapeOAS
           nesting_required = Hash.new { |h, k| h[k] = [] }
           Array(exposure.nested_exposures).each do |child_exposure|
             key = child_exposure.key.to_s
-            child_doc = child_exposure.documentation || {}
+            child_doc = normalize_doc_keys(child_exposure.documentation || {})
 
             if nesting_exposure?(child_exposure)
               child_schema = build_property_schema(child_exposure, child_doc)
@@ -319,9 +326,7 @@ module GrapeOAS
         end
 
         def normalize_doc_keys(doc)
-          return doc if doc.empty?
-
-          doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym }
+          DocKeyNormalizer.normalize(doc)
         end
 
         def exposure_options(exposure)

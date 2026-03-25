@@ -77,15 +77,13 @@ module GrapeOAS
         end
 
         def add_child_property(child_schema, exposure, processor)
-          doc = exposure.documentation || {}
-          doc = doc.transform_keys { |k| k.to_s.start_with?("x-") ? k.to_s : k.to_sym } unless doc.empty?
+          doc = DocKeyNormalizer.normalize(exposure.documentation || {})
           opts = exposure.instance_variable_get(:@options) || {}
 
           return if processor.merge_exposure?(exposure, doc, opts)
 
-          prop_schema = processor.schema_for_exposure(exposure, doc)
+          prop_schema = processor.build_property_schema(exposure, doc)
           required = determine_required(doc, exposure, processor)
-          prop_schema = wrap_in_array_if_needed(prop_schema, doc)
 
           child_schema.add_property(exposure.key.to_s, prop_schema, required: required)
         end
@@ -99,13 +97,6 @@ module GrapeOAS
 
           # Unconditional exposures are required by default (always present in output)
           true
-        end
-
-        def wrap_in_array_if_needed(prop_schema, doc)
-          is_array = doc[:is_array]
-          return prop_schema unless is_array
-
-          ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
         end
       end
     end
