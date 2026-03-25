@@ -203,14 +203,13 @@ module GrapeOAS
             end
           end
 
-          # Add each accumulated nesting property once with the correct required flag.
           # ALL branches must agree for the property to be required.
           nesting_accum.each do |key, merged_schema|
             schema.add_property(key, merged_schema, required: nesting_required[key].all?)
           end
 
           apply_exposure_properties(schema, doc)
-          apply_exposure_constraints(schema, doc)
+          SchemaConstraints.apply(schema, doc)
           schema
         end
 
@@ -243,10 +242,6 @@ module GrapeOAS
           schema.defs = defs if defs.is_a?(Hash)
           x_ext = extract_extensions(doc)
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
-        end
-
-        def apply_exposure_constraints(schema, doc)
-          SchemaConstraints.apply(schema, doc)
         end
 
         def schema_for_type(type)
