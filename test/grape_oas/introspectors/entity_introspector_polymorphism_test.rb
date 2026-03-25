@@ -142,6 +142,41 @@ module GrapeOAS
         assert_includes schema.properties.keys, "kind"
         assert_includes schema.properties.keys, "value"
       end
+
+      # === Nesting exposure in a child entity (regression) ===
+      # InheritanceBuilder#add_child_property must route through build_property_schema
+      # so block-based nesting exposures produce inline object schemas, not {type: "string"}.
+
+      class BaseAnimal < Grape::Entity
+        expose :species, documentation: {
+          type: String,
+          is_discriminator: true,
+          required: true
+        }
+      end
+
+      class AnnotatedAnimal < BaseAnimal
+        expose :measurements do
+          expose :weight, documentation: { type: Integer }
+          expose :height, documentation: { type: Integer }
+        end
+      end
+
+      def test_child_entity_nesting_exposure_produces_inline_object
+        schema = EntityIntrospector.new(AnnotatedAnimal).build_schema
+
+        refute_nil schema.all_of, "Child entity should use allOf"
+        child_schema = schema.all_of[1]
+
+        assert_includes child_schema.properties.keys, "measurements"
+
+        measurements = child_schema.properties["measurements"]
+
+        assert_equal "object", measurements.type,
+                     "Nesting exposure in child entity must produce an inline object, not a primitive"
+        assert_includes measurements.properties.keys, "weight"
+        assert_includes measurements.properties.keys, "height"
+      end
     end
   end
 end

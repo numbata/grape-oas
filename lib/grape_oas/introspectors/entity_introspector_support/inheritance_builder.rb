@@ -78,25 +78,14 @@ module GrapeOAS
 
         def add_child_property(child_schema, exposure, processor)
           doc = DocKeyNormalizer.normalize(exposure.documentation || {})
-          opts = exposure.instance_variable_get(:@options) || {}
+          opts = processor.send(:exposure_options, exposure)
 
           return if processor.merge_exposure?(exposure, doc, opts)
 
           prop_schema = processor.build_property_schema(exposure, doc)
-          required = determine_required(doc, exposure, processor)
+          required = processor.send(:determine_required, doc, exposure)
 
           child_schema.add_property(exposure.key.to_s, prop_schema, required: required)
-        end
-
-        def determine_required(doc, exposure, processor)
-          # If explicitly set in documentation, use that value
-          return doc[:required] unless doc[:required].nil?
-
-          # Conditional exposures are not required (may be absent from output)
-          return false if processor.conditional?(exposure)
-
-          # Unconditional exposures are required by default (always present in output)
-          true
         end
       end
     end
