@@ -420,6 +420,27 @@ module GrapeOAS
         assert_equal "object", info.type
         assert_includes info.properties.keys, "detail"
       end
+
+      # === dup_hash_recursive with nested hash in extensions ===
+
+      def test_nesting_merger_deep_copies_nested_extension_hashes
+        # Trigger the `when Hash then dup_hash_recursive(v)` branch by merging
+        # two branches that both carry a nested-hash extension value.
+        schema_a = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+        schema_a.extensions = { "x-config" => { "key" => "a" } }
+
+        schema_b = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+        schema_b.extensions = { "x-config" => { "key" => "b" } }
+
+        merged = EntityIntrospectorSupport::NestingMerger.merge(schema_a, schema_b)
+
+        # Last branch wins for overlapping extension keys
+        assert_equal({ "key" => "b" }, merged.extensions["x-config"])
+        # Mutation of merged extensions must not affect original
+        merged.extensions["x-config"]["key"] = "mutated"
+
+        assert_equal({ "key" => "b" }, schema_b.extensions["x-config"])
+      end
     end
   end
 end

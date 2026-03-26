@@ -177,6 +177,34 @@ module GrapeOAS
         assert_includes measurements.properties.keys, "weight"
         assert_includes measurements.properties.keys, "height"
       end
+
+      # === DiscriminatorHandler.find_parent_entity delegation ===
+
+      def test_discriminator_handler_find_parent_entity_returns_parent
+        assert_equal Pet, EntityIntrospectorSupport::DiscriminatorHandler.find_parent_entity(Cat)
+      end
+
+      def test_discriminator_handler_find_parent_entity_returns_nil_for_root_entity
+        assert_nil EntityIntrospectorSupport::DiscriminatorHandler.find_parent_entity(Pet)
+      end
+
+      # === EntityIntrospectorSupport.exposures rescues NoMethodError ===
+
+      def test_entity_introspector_support_exposures_rescues_no_method_error
+        # Simulate an entity whose root_exposures returns an object that raises
+        # NoMethodError on instance_variable_get (e.g. a broken proxy object).
+        broken_root = Object.new
+        def broken_root.instance_variable_get(_)
+          raise NoMethodError, "simulated"
+        end
+
+        klass = Class.new(Grape::Entity)
+        klass.define_singleton_method(:root_exposures) { broken_root }
+
+        result = EntityIntrospectorSupport.exposures(klass)
+
+        assert_equal [], result
+      end
     end
   end
 end

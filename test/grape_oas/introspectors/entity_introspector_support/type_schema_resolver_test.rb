@@ -123,6 +123,12 @@ module GrapeOAS
         def test_resolve_grape_entity_class_returns_nil_when_no_type
           assert_nil @resolver.resolve_grape_entity_class({}, {})
         end
+
+        # The `rescue NameError` branch in resolve_entity_from_string (type_schema_resolver.rb)
+        # guards against a race condition where const_defined? returns true but const_get
+        # subsequently raises NameError (e.g. concurrent autoload failure). This cannot be
+        # triggered deterministically in a unit test without unsafe global monkey-patching
+        # of Object.const_get. Accepted as an untestable defensive branch.
       end
     end
   end
