@@ -136,7 +136,7 @@ module GrapeOAS
         end
 
         def add_exposure_to_schema(schema, exposure)
-          doc = exposure.documentation || {}
+          doc = normalize_doc_keys(exposure.documentation || {})
           opts = exposure_options(exposure)
 
           if merge_exposure?(exposure, doc, opts)
@@ -154,7 +154,6 @@ module GrapeOAS
         end
 
         def add_property_from_exposure(schema, exposure, doc)
-          doc = normalize_doc_keys(doc)
           prop_schema = build_property_schema(exposure, doc)
           required = determine_required(doc, exposure)
           schema.add_property(exposure.key.to_s, prop_schema, required: required)
