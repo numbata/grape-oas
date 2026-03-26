@@ -51,8 +51,10 @@ module GrapeOAS
                   merged.properties[n] = merge(existing, s, depth + 1)
                 else
                   GrapeOAS.logger.warn(
-                    "Maximum nesting merge depth (#{MAX_MERGE_DEPTH}) exceeded " \
-                    "for property '#{n}'; replacing with current branch value",
+                    "NestingMerger: depth cap (#{MAX_MERGE_DEPTH}) reached while merging " \
+                    "property '#{n}'. Previously merged properties for this key are " \
+                    "discarded; the last conditional branch wins. " \
+                    "Simplify the nesting structure to avoid data loss.",
                   )
                   merged.add_property(n, s, required: shared_required.include?(n))
                 end

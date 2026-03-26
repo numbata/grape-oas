@@ -325,8 +325,10 @@ module GrapeOAS
         assert_equal "object", merged.type
         assert_includes merged.properties.keys, "deep"
 
-        # Should have emitted the depth-exceeded warning
-        assert_match(/Maximum nesting merge depth/, log)
+        # Should have emitted the depth-exceeded warning naming the property and depth
+        assert_match(/NestingMerger.*depth cap.*#{max_depth}/, log)
+        assert_match(/property 'deep'/, log)
+        assert_match(/Previously merged properties.*discarded/, log)
       end
 
       # === Extensions preserved across merged branches ===
