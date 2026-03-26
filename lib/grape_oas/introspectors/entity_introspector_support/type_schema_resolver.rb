@@ -7,7 +7,6 @@ module GrapeOAS
       # Handles primitives, Grape::Entity subclasses (via recursive introspection),
       # and merge exposures. Extracted from ExposureProcessor so the type-resolution
       # concern can be read and tested in isolation.
-      #
       class TypeSchemaResolver
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 

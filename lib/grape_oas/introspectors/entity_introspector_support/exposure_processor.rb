@@ -43,7 +43,6 @@ module GrapeOAS
         # Builds a schema for an exposure.
         #
         # @param exposure the entity exposure
-        # @param doc [Hash] the documentation hash (must be normalized via normalize_doc_keys)
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
           opts = exposure_options(exposure)
@@ -57,7 +56,6 @@ module GrapeOAS
 
         # Builds the property schema for an exposure, routing nesting exposures
         # to the inline-object path. Wraps in array if doc[:is_array] is set.
-        # Doc must already be normalized via normalize_doc_keys.
         #
         # @param exposure the entity exposure
         # @param doc [Hash] normalized documentation hash
@@ -72,8 +70,6 @@ module GrapeOAS
         end
 
         # Checks if an exposure should be included in the schema.
-        # All exposures are currently included; this hook exists for future
-        # filtering logic (e.g. conditionals, feature flags).
         #
         # @param exposure the entity exposure
         # @return [Boolean] true if exposed
@@ -119,13 +115,9 @@ module GrapeOAS
         # @param exposure the entity exposure
         # @return [Boolean]
         def determine_required(doc, exposure)
-          # If explicitly set in documentation, use that value
           return doc[:required] unless doc[:required].nil?
-
-          # Conditional exposures are not required (may be absent from output)
           return false if conditional?(exposure)
 
-          # Unconditional exposures are required by default (always present in output)
           true
         end
 
