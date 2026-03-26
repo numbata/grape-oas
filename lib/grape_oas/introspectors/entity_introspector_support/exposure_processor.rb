@@ -84,13 +84,12 @@ module GrapeOAS
         end
 
         # Checks if an exposure should be included in the schema.
+        # All exposures are currently included; this hook exists for future
+        # filtering logic (e.g. conditionals, feature flags).
         #
         # @param exposure the entity exposure
         # @return [Boolean] true if exposed
-        def exposed?(exposure)
-          exposure.instance_variable_get(:@conditions) || []
-          true
-        rescue NoMethodError
+        def exposed?(_exposure)
           true
         end
 
@@ -114,6 +113,32 @@ module GrapeOAS
         def merge_exposure?(exposure, doc, opts)
           merge_flag = PropertyExtractor.extract_merge_flag(exposure, doc, opts)
           merge_flag && resolve_entity_from_opts(exposure, doc)
+        end
+
+        # Returns the options hash for an exposure.
+        #
+        # @param exposure the entity exposure
+        # @return [Hash]
+        def exposure_options(exposure)
+          exposure.instance_variable_get(:@options) || {}
+        end
+
+        # Determines whether a property should be marked required.
+        # Explicit doc[:required] takes precedence; conditional exposures
+        # default to false; unconditional exposures default to true.
+        #
+        # @param doc [Hash] normalized documentation hash
+        # @param exposure the entity exposure
+        # @return [Boolean]
+        def determine_required(doc, exposure)
+          # If explicitly set in documentation, use that value
+          return doc[:required] unless doc[:required].nil?
+
+          # Conditional exposures are not required (may be absent from output)
+          return false if conditional?(exposure)
+
+          # Unconditional exposures are required by default (always present in output)
+          true
         end
 
         private
@@ -141,17 +166,6 @@ module GrapeOAS
           prop_schema = build_property_schema(exposure, doc)
           required = determine_required(doc, exposure)
           schema.add_property(exposure.key.to_s, prop_schema, required: required)
-        end
-
-        def determine_required(doc, exposure)
-          # If explicitly set in documentation, use that value
-          return doc[:required] unless doc[:required].nil?
-
-          # Conditional exposures are not required (may be absent from output)
-          return false if conditional?(exposure)
-
-          # Unconditional exposures are required by default (always present in output)
-          true
         end
 
         def wrap_in_array_if_needed(prop_schema, doc)
@@ -184,7 +198,7 @@ module GrapeOAS
         def nesting_exposure?(exposure)
           return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
 
-          doc = exposure.documentation || {}
+          doc = normalize_doc_keys(exposure.documentation || {})
           opts = exposure_options(exposure)
           # Extra !opts[:using] catches using: set to a non-entity class (e.g. String)
           !resolve_grape_entity_class(opts, doc) && !opts[:using]
@@ -199,10 +213,9 @@ module GrapeOAS
           nesting_accum = {}
           nesting_required = Hash.new { |h, k| h[k] = [] }
           Array(exposure.nested_exposures).each do |child_exposure|
-            key = child_exposure.key.to_s
-            child_doc = normalize_doc_keys(child_exposure.documentation || {})
-
             if nesting_exposure?(child_exposure)
+              key = child_exposure.key.to_s
+              child_doc = normalize_doc_keys(child_exposure.documentation || {})
               child_schema = build_property_schema(child_exposure, child_doc)
               nesting_required[key] << determine_required(child_doc, child_exposure)
               nesting_accum[key] = NestingMerger.merge(nesting_accum[key], child_schema)
@@ -327,10 +340,6 @@ module GrapeOAS
 
         def normalize_doc_keys(doc)
           DocKeyNormalizer.normalize(doc)
-        end
-
-        def exposure_options(exposure)
-          exposure.instance_variable_get(:@options) || {}
         end
 
         def build_schema_for_primitive(type)

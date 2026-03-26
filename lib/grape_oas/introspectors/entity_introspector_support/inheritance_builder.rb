@@ -78,12 +78,12 @@ module GrapeOAS
 
         def add_child_property(child_schema, exposure, processor)
           doc = DocKeyNormalizer.normalize(exposure.documentation || {})
-          opts = processor.send(:exposure_options, exposure)
+          opts = processor.exposure_options(exposure)
 
           return if processor.merge_exposure?(exposure, doc, opts)
 
           prop_schema = processor.build_property_schema(exposure, doc)
-          required = processor.send(:determine_required, doc, exposure)
+          required = processor.determine_required(doc, exposure)
 
           child_schema.add_property(exposure.key.to_s, prop_schema, required: required)
         end
