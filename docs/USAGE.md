@@ -203,6 +203,52 @@ module Entity
 end
 ```
 
+### Nesting Exposures
+
+Block-based `expose :key do ... end` nesting produces an inline object schema with
+all child properties, enum values, and constraints preserved:
+
+```ruby
+class StatusEntity < Grape::Entity
+  expose :meta do
+    expose :alignment, documentation: { type: String, values: %w[left center right] }
+    expose :visible, documentation: { type: 'Boolean' }
+  end
+end
+```
+
+Produces:
+
+```json
+{
+  "meta": {
+    "type": "object",
+    "properties": {
+      "alignment": { "type": "string", "enum": ["left", "center", "right"] },
+      "visible": { "type": "boolean" }
+    }
+  }
+}
+```
+
+Conditional duplicate-key branches are merged — properties from all branches are
+preserved, and a property is `required` only when all branches agree:
+
+```ruby
+class ProductEntity < Grape::Entity
+  expose :pricing, if: { currency: :usd } do
+    expose :amount, documentation: { type: Integer }
+    expose :currency, documentation: { type: String }
+  end
+
+  expose :pricing, if: { currency: :eur } do
+    expose :amount, documentation: { type: Integer }
+    expose :currency, documentation: { type: String }
+    expose :vat_rate, documentation: { type: Float }
+  end
+end
+```
+
 ### Using Entities
 
 ```ruby
