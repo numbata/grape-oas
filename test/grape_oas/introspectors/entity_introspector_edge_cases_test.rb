@@ -432,13 +432,25 @@ module GrapeOAS
         expose :child, using: SimpleRefEntity, documentation: { type: SimpleRefEntity, values: %w[should not appear] }
       end
 
-      def test_entity_values_on_using_ref_does_not_mutate_cached_schema
-        schema = EntityIntrospector.new(ParentWithValuesOnRefEntity).build_schema
+      def test_entity_values_on_using_ref_applies_enum_via_dup
+        schema = nil
+        log = capture_grape_oas_log do
+          schema = EntityIntrospector.new(ParentWithValuesOnRefEntity).build_schema
+        end
 
         child = schema.properties["child"]
 
-        # The referenced entity schema should NOT have enum set on it
-        assert_nil child.enum
+        # enum is now applied to a dup of the cached schema, not silently dropped
+        assert_equal %w[should not appear], child.enum
+
+        # the cached SimpleRefEntity schema itself must not be mutated
+        cached = EntityIntrospector.new(SimpleRefEntity).build_schema
+
+        assert_nil cached.enum, "cached schema must not be mutated"
+
+        # a warning must be emitted naming the entity
+        assert_match(/Duplicating cached schema/, log)
+        assert_match(/SimpleRefEntity/, log)
       end
 
       # === Entity with min/max constraints ===

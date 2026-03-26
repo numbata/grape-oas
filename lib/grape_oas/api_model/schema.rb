@@ -56,6 +56,20 @@ module GrapeOAS
         @required << key if required && !@required.include?(key)
         schema
       end
+
+      protected
+
+      # Ensure dup produces an independent copy — without this, the shallow
+      # copy shares @properties, @required, and @defs with the original.
+      # Property values are duped one level deep (via transform_values(&:dup)),
+      # which triggers initialize_copy recursively on each nested Schema,
+      # producing a full deep copy of the property tree.
+      def initialize_copy(source)
+        super
+        @properties = source.properties.transform_values(&:dup)
+        @required   = source.required.dup
+        @defs       = source.defs.dup
+      end
     end
   end
 end

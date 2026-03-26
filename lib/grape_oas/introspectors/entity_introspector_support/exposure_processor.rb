@@ -49,7 +49,7 @@ module GrapeOAS
           type = opts[:using] || doc[:type]
 
           schema = type_resolver.build_exposure_base_schema(type)
-          apply_exposure_properties(schema, doc)
+          schema = apply_exposure_properties(schema, doc)
           SchemaConstraints.apply(schema, doc)
           schema
         end
@@ -194,7 +194,7 @@ module GrapeOAS
             schema.add_property(key, merged_schema, required: nesting_required[key].all?)
           end
 
-          apply_exposure_properties(schema, doc)
+          schema = apply_exposure_properties(schema, doc)
           SchemaConstraints.apply(schema, doc)
           schema
         end
@@ -205,7 +205,7 @@ module GrapeOAS
           if raw_values
             normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
             if normalized.is_a?(Array) && !normalized.empty?
-              apply_enum_to_schema(schema, normalized)
+              schema = apply_enum_to_schema(schema, normalized)
             elsif normalized.is_a?(Range)
               RangeUtils.apply_to_schema(schema, normalized)
             end
@@ -219,20 +219,43 @@ module GrapeOAS
           schema.defs = defs if defs.is_a?(Hash)
           x_ext = extract_extensions(doc)
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
+          schema
         end
 
         # Cached entity schemas (via using:) are shared across all exposures that
-        # reference the same entity — do not mutate their enum.
+        # reference the same entity — dup before setting enum to avoid mutating
+        # the shared schema; emit a warning so users know a dup occurred.
+        #
+        # @return [ApiModel::Schema] the schema (or a dup) with enum applied
         def apply_enum_to_schema(schema, values)
-          return if schema.respond_to?(:canonical_name) && schema.canonical_name
+          if schema.respond_to?(:canonical_name) && schema.canonical_name
+            GrapeOAS.logger.warn(
+              "Duplicating cached schema '#{schema.canonical_name}' to apply enum #{values.inspect}",
+            )
+            schema = schema.dup
+            schema.canonical_name = nil
+            schema.enum = values
+            return schema
+          end
 
           if schema.type == Constants::SchemaTypes::ARRAY &&
-             schema.respond_to?(:items) && schema.items &&
-             !(schema.items.respond_to?(:canonical_name) && schema.items.canonical_name)
-            schema.items.enum = values
+             schema.respond_to?(:items) && schema.items
+            if schema.items.respond_to?(:canonical_name) && schema.items.canonical_name
+              GrapeOAS.logger.warn(
+                "Duplicating cached schema '#{schema.items.canonical_name}' to apply enum #{values.inspect}",
+              )
+              schema = schema.dup
+              items_dup = schema.items.dup
+              items_dup.canonical_name = nil
+              items_dup.enum = values
+              schema.items = items_dup
+            else
+              schema.items.enum = values
+            end
           else
             schema.enum = values
           end
+          schema
         end
 
         def normalize_doc_keys(doc)
