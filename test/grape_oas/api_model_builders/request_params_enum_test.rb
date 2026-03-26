@@ -312,6 +312,7 @@ module GrapeOAS
         field_param = params.find { |p| p.name == "field" }
 
         refute_nil field_param
+        assert_nil field_param.schema.enum
       end
 
       # === Single value enum ===
@@ -334,6 +335,7 @@ module GrapeOAS
         constant_param = params.find { |p| p.name == "constant" }
 
         refute_nil constant_param
+        assert_equal ["fixed"], constant_param.schema.enum
       end
 
       # === Values in nested hash ===
@@ -482,6 +484,95 @@ module GrapeOAS
         result = enhancer.send(:filter_compatible_values, integer_schema, string_values)
 
         assert_empty result
+      end
+
+      # === SchemaEnhancer edge cases for range and callable handling ===
+
+      def test_exclusive_range_sets_exclusive_maximum
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :score, type: Integer, values: 0...10
+          end
+          get "scores" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        score_param = params.find { |p| p.name == "score" }
+
+        assert_equal 0, score_param.schema.minimum
+        assert_equal 10, score_param.schema.maximum
+        assert score_param.schema.exclusive_maximum
+      end
+
+      def test_descending_numeric_range_is_skipped
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :level, type: Integer, values: 10..1
+          end
+          get "levels" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        level_param = params.find { |p| p.name == "level" }
+
+        assert_nil level_param.schema.minimum
+        assert_nil level_param.schema.maximum
+      end
+
+      def test_raising_proc_does_not_crash
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :status, type: String, values: proc { raise ArgumentError, "boom" }
+          end
+          get "statuses" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+
+        log = capture_grape_oas_log do
+          _body_schema, params = builder.build
+          status_param = params.find { |p| p.name == "status" }
+
+          assert_nil status_param.schema.enum
+        end
+
+        assert_match(/Proc evaluation failed/, log)
+      end
+
+      def test_wide_string_range_is_capped
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :code, type: String, values: "a".."zzzzzz"
+          end
+          get "codes" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        code_param = params.find { |p| p.name == "code" }
+
+        assert_nil code_param.schema.enum
       end
     end
   end

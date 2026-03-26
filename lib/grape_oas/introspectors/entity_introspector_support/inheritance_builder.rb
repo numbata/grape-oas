@@ -16,12 +16,7 @@ module GrapeOAS
         # @param entity_class [Class] the entity class to check
         # @return [Class, nil] the parent entity class or nil
         def self.find_parent_entity(entity_class)
-          return nil unless defined?(Grape::Entity)
-
-          parent = entity_class.superclass
-          return nil unless parent && parent < Grape::Entity && parent != Grape::Entity
-
-          parent
+          EntityIntrospectorSupport.find_parent_entity(entity_class)
         end
 
         # Checks if an entity inherits from a parent that uses discriminator.
@@ -77,34 +72,15 @@ module GrapeOAS
         end
 
         def add_child_property(child_schema, exposure, processor)
-          doc = exposure.documentation || {}
-          opts = exposure.instance_variable_get(:@options) || {}
+          doc = DocKeyNormalizer.normalize(exposure.documentation || {})
+          opts = processor.exposure_options(exposure)
 
           return if processor.merge_exposure?(exposure, doc, opts)
 
-          prop_schema = processor.schema_for_exposure(exposure, doc)
-          required = determine_required(doc, exposure, processor)
-          prop_schema = wrap_in_array_if_needed(prop_schema, doc)
+          prop_schema = processor.build_property_schema(exposure, doc)
+          required = processor.determine_required(doc, exposure)
 
           child_schema.add_property(exposure.key.to_s, prop_schema, required: required)
-        end
-
-        def determine_required(doc, exposure, processor)
-          # If explicitly set in documentation, use that value
-          return doc[:required] unless doc[:required].nil?
-
-          # Conditional exposures are not required (may be absent from output)
-          return false if processor.conditional?(exposure)
-
-          # Unconditional exposures are required by default (always present in output)
-          true
-        end
-
-        def wrap_in_array_if_needed(prop_schema, doc)
-          is_array = doc[:is_array] || doc["is_array"]
-          return prop_schema unless is_array
-
-          ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
         end
       end
     end

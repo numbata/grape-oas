@@ -150,6 +150,12 @@ class Entity::User < Grape::Entity
   expose :id, documentation: { type: Integer }
   expose :name, documentation: { type: String }
   expose :posts, using: Entity::Post, documentation: { is_array: true }
+
+  # Block-based nesting produces an inline object schema
+  expose :meta do
+    expose :role, documentation: { type: String, values: %w[admin user guest] }
+    expose :verified, documentation: { type: 'Boolean' }
+  end
 end
 ```
 

@@ -1,0 +1,446 @@
+# frozen_string_literal: true
+
+require "test_helper"
+
+module GrapeOAS
+  module Introspectors
+    # Tests for block-based nesting exposures (NestingExposure) in entity introspection.
+    # These verify that `expose :foo do ... end` patterns produce inline object schemas
+    # with child properties and their enum values preserved.
+    class EntityIntrospectorNestingExposureTest < Minitest::Test
+      # === Basic block-based nesting with enum values ===
+
+      class TextAlignmentEntity < Grape::Entity
+        expose :label, documentation: { type: String }
+        expose :textAlignment do
+          expose :textHorizontalAlign, documentation: { type: String, values: %w[left center right] }
+          expose :textVerticalAlign, documentation: { type: String, values: %w[top center bottom] }
+        end
+      end
+
+      def test_nesting_exposure_builds_inline_object_with_properties
+        schema = EntityIntrospector.new(TextAlignmentEntity).build_schema
+
+        assert_equal "object", schema.type
+        assert_includes schema.properties.keys, "label"
+        assert_includes schema.properties.keys, "textAlignment"
+
+        ta = schema.properties["textAlignment"]
+
+        assert_equal "object", ta.type
+        assert_includes ta.properties.keys, "textHorizontalAlign"
+        assert_includes ta.properties.keys, "textVerticalAlign"
+      end
+
+      def test_nesting_exposure_preserves_enum_values_on_children
+        schema = EntityIntrospector.new(TextAlignmentEntity).build_schema
+
+        ta = schema.properties["textAlignment"]
+        h_align = ta.properties["textHorizontalAlign"]
+        v_align = ta.properties["textVerticalAlign"]
+
+        assert_equal %w[left center right], h_align.enum
+        assert_equal %w[top center bottom], v_align.enum
+      end
+
+      # === Deeply nested blocks (2+ levels) ===
+
+      class DeepNestingEntity < Grape::Entity
+        expose :config do
+          expose :display do
+            expose :mode, documentation: { type: String, values: %w[compact expanded] }
+            expose :columns, documentation: { type: Integer }
+          end
+          expose :name, documentation: { type: String }
+        end
+      end
+
+      def test_deeply_nested_blocks
+        schema = EntityIntrospector.new(DeepNestingEntity).build_schema
+
+        config = schema.properties["config"]
+
+        assert_equal "object", config.type
+        assert_includes config.properties.keys, "display"
+        assert_includes config.properties.keys, "name"
+
+        display = config.properties["display"]
+
+        assert_equal "object", display.type
+        assert_includes display.properties.keys, "mode"
+        assert_includes display.properties.keys, "columns"
+
+        assert_equal %w[compact expanded], display.properties["mode"].enum
+        assert_equal "integer", display.properties["columns"].type
+      end
+
+      # === Nesting exposure with documentation on the parent ===
+
+      class DocumentedNestingEntity < Grape::Entity
+        expose :settings, documentation: { desc: "User settings", nullable: true } do
+          expose :theme, documentation: { type: String, values: %w[light dark] }
+        end
+      end
+
+      def test_nesting_exposure_applies_parent_documentation
+        schema = EntityIntrospector.new(DocumentedNestingEntity).build_schema
+
+        settings = schema.properties["settings"]
+
+        assert_equal "object", settings.type
+        assert_equal "User settings", settings.description
+        assert settings.nullable
+        assert_equal %w[light dark], settings.properties["theme"].enum
+      end
+
+      # === Nesting exposure wrapping an array ===
+
+      class ArrayNestingEntity < Grape::Entity
+        expose :items, documentation: { is_array: true } do
+          expose :id, documentation: { type: Integer }
+          expose :status, documentation: { type: String, values: %w[active inactive] }
+        end
+      end
+
+      def test_nesting_exposure_with_array_wrapper
+        schema = EntityIntrospector.new(ArrayNestingEntity).build_schema
+
+        items = schema.properties["items"]
+
+        assert_equal "array", items.type
+        assert_equal "object", items.items.type
+        assert_includes items.items.properties.keys, "id"
+        assert_includes items.items.properties.keys, "status"
+        assert_equal %w[active inactive], items.items.properties["status"].enum
+      end
+
+      # === Mixed: nesting exposure with using: entity child ===
+
+      class InnerEntity < Grape::Entity
+        expose :value, documentation: { type: String }
+      end
+
+      class MixedNestingEntity < Grape::Entity
+        expose :wrapper do
+          expose :simple, documentation: { type: String, values: %w[a b] }
+          expose :nested, using: InnerEntity, documentation: { type: InnerEntity }
+        end
+      end
+
+      def test_mixed_nesting_with_entity_child
+        schema = EntityIntrospector.new(MixedNestingEntity).build_schema
+
+        wrapper = schema.properties["wrapper"]
+
+        assert_equal "object", wrapper.type
+        assert_equal %w[a b], wrapper.properties["simple"].enum
+
+        nested = wrapper.properties["nested"]
+
+        assert_equal "object", nested.type
+        assert_includes nested.properties.keys, "value"
+      end
+
+      # === Duplicate-key nested exposures (conditional branches) ===
+
+      class DuplicateKeyNestingEntity < Grape::Entity
+        expose :meta do
+          expose :info do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :info do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_duplicate_key_children_merge_object_properties
+        schema = EntityIntrospector.new(DuplicateKeyNestingEntity).build_schema
+
+        meta = schema.properties["meta"]
+
+        assert_equal "object", meta.type
+
+        info = meta.properties["info"]
+
+        assert_equal "object", info.type
+        # Both branches should be merged — alpha from first, beta from second
+        assert_includes info.properties.keys, "alpha"
+        assert_includes info.properties.keys, "beta"
+        # Branch-specific fields are NOT required (only shared fields would be)
+        refute_includes info.required, "alpha"
+        refute_includes info.required, "beta"
+      end
+
+      # === Deep duplicate-key merge (recursive) ===
+
+      class DeepDuplicateKeyEntity < Grape::Entity
+        expose :meta do
+          expose :info do
+            expose :details do
+              expose :x, documentation: { type: String }
+            end
+          end
+          expose :info do
+            expose :details do
+              expose :y, documentation: { type: Integer }
+            end
+          end
+        end
+      end
+
+      def test_deep_duplicate_key_merge_preserves_nested_properties
+        schema = EntityIntrospector.new(DeepDuplicateKeyEntity).build_schema
+
+        details = schema.properties["meta"].properties["info"].properties["details"]
+
+        assert_equal "object", details.type
+        assert_includes details.properties.keys, "x"
+        assert_includes details.properties.keys, "y"
+      end
+
+      # === Conditional exposure inside nesting block ===
+
+      class ConditionalNestingEntity < Grape::Entity
+        expose :data do
+          expose :always, documentation: { type: String }
+          expose :sometimes, documentation: { type: String, values: %w[x y] }, if: { type: :full }
+        end
+      end
+
+      def test_conditional_child_in_nesting_block
+        schema = EntityIntrospector.new(ConditionalNestingEntity).build_schema
+
+        data = schema.properties["data"]
+
+        assert_equal "object", data.type
+        assert_includes data.properties.keys, "always"
+        assert_includes data.properties.keys, "sometimes"
+        assert_equal %w[x y], data.properties["sometimes"].enum
+
+        # Conditional child should not be required
+        refute_includes data.required, "sometimes"
+        assert_includes data.required, "always"
+      end
+
+      # === Duplicate-key nesting with branch metadata (desc, nullable) ===
+
+      class MetadataBranchEntity < Grape::Entity
+        expose :meta do
+          expose :info, documentation: { desc: "First branch" } do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :info, documentation: { desc: "Second branch", nullable: true } do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_duplicate_key_merge_preserves_branch_metadata
+        schema = EntityIntrospector.new(MetadataBranchEntity).build_schema
+
+        info = schema.properties["meta"].properties["info"]
+
+        assert_equal "object", info.type
+        assert_includes info.properties.keys, "alpha"
+        assert_includes info.properties.keys, "beta"
+        # First non-nil wins for scalar metadata
+        assert_equal "First branch", info.description
+        assert info.nullable
+      end
+
+      # === Duplicate-key array-wrapped nesting branches merge items ===
+
+      class ArrayDuplicateKeyEntity < Grape::Entity
+        expose :data do
+          expose :items, documentation: { is_array: true } do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :items, documentation: { is_array: true } do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_duplicate_key_array_nesting_merges_items
+        schema = EntityIntrospector.new(ArrayDuplicateKeyEntity).build_schema
+
+        items = schema.properties["data"].properties["items"]
+
+        assert_equal "array", items.type
+        assert_equal "object", items.items.type
+        assert_includes items.items.properties.keys, "alpha"
+        assert_includes items.items.properties.keys, "beta"
+      end
+
+      # === Nullable uses OR semantics across branches ===
+      # If any branch is nullable, the merged result is nullable,
+      # since conditional branches represent alternatives.
+
+      class NullableOrEntity < Grape::Entity
+        expose :meta do
+          expose :info, documentation: { nullable: true } do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :info, documentation: { nullable: false } do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_nullable_true_from_any_branch_makes_merged_nullable
+        schema = EntityIntrospector.new(NullableOrEntity).build_schema
+
+        info = schema.properties["meta"].properties["info"]
+
+        assert info.nullable
+      end
+
+      # === MAX_MERGE_DEPTH exceeded emits warning and degrades gracefully ===
+
+      def test_max_merge_depth_emits_warning_and_does_not_crash
+        max_depth = EntityIntrospectorSupport::NestingMerger::MAX_MERGE_DEPTH
+
+        # Build two deeply nested object schemas that share the same key at every level,
+        # forcing recursive merge past MAX_MERGE_DEPTH.
+        schema_a = ApiModel::Schema.new(type: "string")
+        schema_b = ApiModel::Schema.new(type: "integer")
+        (max_depth + 2).times do
+          wrapper_a = ApiModel::Schema.new(type: "object")
+          wrapper_a.add_property("deep", schema_a, required: true)
+          schema_a = wrapper_a
+
+          wrapper_b = ApiModel::Schema.new(type: "object")
+          wrapper_b.add_property("deep", schema_b, required: true)
+          schema_b = wrapper_b
+        end
+
+        merged = nil
+
+        log = capture_grape_oas_log do
+          merged = EntityIntrospectorSupport::NestingMerger.merge(schema_a, schema_b)
+        end
+
+        # Should not crash and should produce a merged schema
+        assert_equal "object", merged.type
+        assert_includes merged.properties.keys, "deep"
+
+        # Should have emitted the depth-exceeded warning
+        assert_match(/Maximum nesting merge depth/, log)
+      end
+
+      # === Extensions preserved across merged branches ===
+
+      class ExtensionBranchEntity < Grape::Entity
+        expose :meta do
+          expose :info, documentation: { "x-source" => "branch-a", "x-tags" => %w[internal] } do
+            expose :alpha, documentation: { type: String }
+          end
+          expose :info, documentation: { "x-tag" => "branch-b" } do
+            expose :beta, documentation: { type: Integer }
+          end
+        end
+      end
+
+      def test_extensions_merged_from_both_branches
+        schema = EntityIntrospector.new(ExtensionBranchEntity).build_schema
+
+        info = schema.properties["meta"].properties["info"]
+
+        assert_includes info.properties.keys, "alpha"
+        assert_includes info.properties.keys, "beta"
+        assert_equal "branch-a", info.extensions["x-source"]
+        assert_equal "branch-b", info.extensions["x-tag"]
+        assert_equal %w[internal], info.extensions["x-tags"]
+      end
+
+      # === Non-object duplicate keys are not merged ===
+
+      class NonObjectDuplicateKeyEntity < Grape::Entity
+        expose :meta do
+          expose :tag, documentation: { type: String, values: %w[a b] }
+          expose :tag, documentation: { type: String, values: %w[c d] }
+        end
+      end
+
+      def test_non_object_duplicate_key_uses_last_value
+        schema = EntityIntrospector.new(NonObjectDuplicateKeyEntity).build_schema
+
+        tag = schema.properties["meta"].properties["tag"]
+
+        assert_equal "string", tag.type
+        assert_equal %w[c d], tag.enum
+      end
+
+      # === Deep duplicate-key with array-of-objects property merges recursively ===
+
+      class DeepArrayMergeEntity < Grape::Entity
+        expose :root do
+          expose :group do
+            expose :items, documentation: { is_array: true } do
+              expose :x, documentation: { type: String }
+            end
+          end
+          expose :group do
+            expose :items, documentation: { is_array: true } do
+              expose :y, documentation: { type: Integer }
+            end
+          end
+        end
+      end
+
+      def test_deep_array_of_objects_property_is_merged
+        schema = EntityIntrospector.new(DeepArrayMergeEntity).build_schema
+
+        group = schema.properties["root"].properties["group"]
+        items = group.properties["items"]
+
+        assert_equal "array", items.type
+        assert_equal "object", items.items.type
+        assert_includes items.items.properties.keys, "x"
+        assert_includes items.items.properties.keys, "y"
+      end
+
+      # === Mixed nesting/non-nesting duplicate key: nesting wins ===
+
+      class MixedDuplicateKeyEntity < Grape::Entity
+        expose :meta do
+          expose :info, documentation: { type: String }
+          expose :info do
+            expose :detail, documentation: { type: String }
+          end
+        end
+      end
+
+      def test_nesting_duplicate_key_overwrites_non_nesting
+        schema = EntityIntrospector.new(MixedDuplicateKeyEntity).build_schema
+
+        info = schema.properties["meta"].properties["info"]
+
+        assert_equal "object", info.type
+        assert_includes info.properties.keys, "detail"
+      end
+
+      # === dup_hash_recursive with nested hash in extensions ===
+
+      def test_nesting_merger_deep_copies_nested_extension_hashes
+        # Trigger the `when Hash then dup_hash_recursive(v)` branch by merging
+        # two branches that both carry a nested-hash extension value.
+        schema_a = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+        schema_a.extensions = { "x-config" => { "key" => "a" } }
+
+        schema_b = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+        schema_b.extensions = { "x-config" => { "key" => "b" } }
+
+        merged = EntityIntrospectorSupport::NestingMerger.merge(schema_a, schema_b)
+
+        # Last branch wins for overlapping extension keys
+        assert_equal({ "key" => "b" }, merged.extensions["x-config"])
+        # Mutation of merged extensions must not affect original
+        merged.extensions["x-config"]["key"] = "mutated"
+
+        assert_equal({ "key" => "b" }, schema_b.extensions["x-config"])
+      end
+    end
+  end
+end

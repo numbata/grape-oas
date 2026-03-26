@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#48](https://github.com/numbata/grape-oas/pull/48): Add configurable `GrapeOAS.logger` for schema generation warnings - [@numbata](https://github.com/numbata).
 - [#43](https://github.com/numbata/grape-oas/pull/43): Bump actions/upload-artifact from 6 to 7 - [@dependabot[bot]](https://github.com/dependabot[bot]).
+- [#51](https://github.com/numbata/grape-oas/pull/51): Add inline nesting exposure support — block-based `expose :key do ... end` now produces inline object schemas with preserved enum values, min/max constraints, and metadata - [@numbata](https://github.com/numbata).
 
 ### Changed
 

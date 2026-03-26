@@ -257,6 +257,45 @@ module GrapeOAS
         assert result["items"]["x-nullable"], "x-nullable should be on the composed items schema"
         assert result["items"]["allOf"], "allOf should be present on items"
       end
+
+      # === Inline nested object with enum properties ===
+
+      def test_inline_nested_object_with_enum_properties
+        inner = ApiModel::Schema.new(type: "string")
+        inner.enum = %w[left center right]
+
+        outer = ApiModel::Schema.new(type: "object")
+        outer.add_property("align", inner)
+
+        parent = ApiModel::Schema.new(type: "object")
+        parent.add_property("textAlignment", outer)
+
+        result = OAS2::Schema.new(parent).build
+
+        ta = result["properties"]["textAlignment"]
+
+        assert_equal "object", ta["type"]
+        assert_equal %w[left center right], ta["properties"]["align"]["enum"]
+      end
+
+      # === Inline nested object with minimum/maximum ===
+
+      def test_inline_nested_object_with_min_max
+        inner = ApiModel::Schema.new(type: "integer")
+        inner.minimum = -2
+        inner.maximum = 2
+
+        outer = ApiModel::Schema.new(type: "object")
+        outer.add_property("offset", inner)
+
+        result = OAS2::Schema.new(outer).build
+
+        offset = result["properties"]["offset"]
+
+        assert_equal "integer", offset["type"]
+        assert_equal(-2, offset["minimum"])
+        assert_equal 2, offset["maximum"]
+      end
     end
   end
 end

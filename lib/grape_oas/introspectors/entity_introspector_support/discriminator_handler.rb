@@ -5,26 +5,12 @@ module GrapeOAS
     module EntityIntrospectorSupport
       # Handles discriminator fields in entity inheritance for polymorphic schemas.
       class DiscriminatorHandler
-        # Checks if an entity inherits from a parent that uses discriminator.
-        #
-        # @param entity_class [Class] the entity class to check
-        # @return [Boolean] true if parent has a discriminator field
-        def self.inherits_with_discriminator?(entity_class)
-          parent = find_parent_entity(entity_class)
-          parent && new(parent).discriminator?
-        end
-
         # Finds the parent entity class if one exists.
         #
         # @param entity_class [Class] the entity class
         # @return [Class, nil] the parent entity class or nil
         def self.find_parent_entity(entity_class)
-          return nil unless defined?(Grape::Entity)
-
-          parent = entity_class.superclass
-          return nil unless parent && parent < Grape::Entity && parent != Grape::Entity
-
-          parent
+          EntityIntrospectorSupport.find_parent_entity(entity_class)
         end
 
         def initialize(entity_class)
@@ -65,17 +51,8 @@ module GrapeOAS
 
         private
 
-        # Gets the exposures defined on the entity class.
-        #
-        # @return [Array] list of entity exposures
         def exposures
-          return [] unless @entity_class.respond_to?(:root_exposures)
-
-          root = @entity_class.root_exposures
-          list = root.instance_variable_get(:@exposures) || []
-          Array(list)
-        rescue NoMethodError
-          []
+          EntityIntrospectorSupport.exposures(@entity_class)
         end
       end
     end

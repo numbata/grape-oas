@@ -29,13 +29,7 @@ module GrapeOAS
         #
         # @return [Array] list of entity exposures
         def exposures
-          return [] unless @entity_class.respond_to?(:root_exposures)
-
-          root = @entity_class.root_exposures
-          list = root.instance_variable_get(:@exposures) || []
-          Array(list)
-        rescue NoMethodError
-          []
+          EntityIntrospectorSupport.exposures(@entity_class)
         end
 
         # Gets the exposures defined on a parent entity.
@@ -43,38 +37,43 @@ module GrapeOAS
         # @param parent_entity [Class] the parent entity class
         # @return [Array] list of parent exposures
         def parent_exposures(parent_entity)
-          return [] unless parent_entity.respond_to?(:root_exposures)
-
-          root = parent_entity.root_exposures
-          list = root.instance_variable_get(:@exposures) || []
-          Array(list)
-        rescue NoMethodError
-          []
+          EntityIntrospectorSupport.exposures(parent_entity)
         end
 
         # Builds a schema for an exposure.
         #
         # @param exposure the entity exposure
-        # @param doc [Hash] the documentation hash
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
-          opts = exposure.instance_variable_get(:@options) || {}
-          type = opts[:using] || doc[:type] || doc["type"]
+          opts = exposure_options(exposure)
+          type = opts[:using] || doc[:type]
 
-          schema = build_exposure_base_schema(type)
+          schema = type_resolver.build_exposure_base_schema(type)
           apply_exposure_properties(schema, doc)
-          SchemaConstraints.apply(schema, doc.transform_keys(&:to_sym))
+          SchemaConstraints.apply(schema, doc)
           schema
+        end
+
+        # Builds the property schema for an exposure, routing nesting exposures
+        # to the inline-object path. Wraps in array if doc[:is_array] is set.
+        #
+        # @param exposure the entity exposure
+        # @param doc [Hash] normalized documentation hash
+        # @return [ApiModel::Schema]
+        def build_property_schema(exposure, doc)
+          prop_schema = if nesting_exposure?(exposure)
+                          build_nesting_exposure_schema(exposure, doc)
+                        else
+                          schema_for_exposure(exposure, doc)
+                        end
+          wrap_in_array_if_needed(prop_schema, doc)
         end
 
         # Checks if an exposure should be included in the schema.
         #
         # @param exposure the entity exposure
         # @return [Boolean] true if exposed
-        def exposed?(exposure)
-          exposure.instance_variable_get(:@conditions) || []
-          true
-        rescue NoMethodError
+        def exposed?(_exposure)
           true
         end
 
@@ -97,14 +96,40 @@ module GrapeOAS
         # @return [Boolean] true if merge exposure
         def merge_exposure?(exposure, doc, opts)
           merge_flag = PropertyExtractor.extract_merge_flag(exposure, doc, opts)
-          merge_flag && resolve_entity_from_opts(exposure, doc)
+          merge_flag && type_resolver.resolve_entity_from_opts(exposure, doc)
+        end
+
+        # Returns the options hash for an exposure.
+        #
+        # @param exposure the entity exposure
+        # @return [Hash]
+        def exposure_options(exposure)
+          exposure.instance_variable_get(:@options) || {}
+        end
+
+        # Determines whether a property should be marked required.
+        # Explicit doc[:required] takes precedence; conditional exposures
+        # default to false; unconditional exposures default to true.
+        #
+        # @param doc [Hash] normalized documentation hash
+        # @param exposure the entity exposure
+        # @return [Boolean]
+        def determine_required(doc, exposure)
+          return doc[:required] unless doc[:required].nil?
+          return false if conditional?(exposure)
+
+          true
         end
 
         private
 
+        def type_resolver
+          @type_resolver ||= TypeSchemaResolver.new(stack: @stack, registry: @registry)
+        end
+
         def add_exposure_to_schema(schema, exposure)
-          doc = exposure.documentation || {}
-          opts = exposure.instance_variable_get(:@options) || {}
+          doc = normalize_doc_keys(exposure.documentation || {})
+          opts = exposure_options(exposure)
 
           if merge_exposure?(exposure, doc, opts)
             merge_exposure_into_schema(schema, exposure, doc)
@@ -114,73 +139,80 @@ module GrapeOAS
         end
 
         def merge_exposure_into_schema(schema, exposure, doc)
-          merged_schema = schema_for_merge(exposure, doc)
+          merged_schema = type_resolver.schema_for_merge(exposure, doc)
           merged_schema.properties.each do |n, ps|
             schema.add_property(n, ps, required: merged_schema.required.include?(n))
           end
         end
 
         def add_property_from_exposure(schema, exposure, doc)
-          prop_schema = schema_for_exposure(exposure, doc)
+          prop_schema = build_property_schema(exposure, doc)
           required = determine_required(doc, exposure)
-          prop_schema = wrap_in_array_if_needed(prop_schema, doc)
           schema.add_property(exposure.key.to_s, prop_schema, required: required)
         end
 
-        def determine_required(doc, exposure)
-          # If explicitly set in documentation, use that value
-          return doc[:required] unless doc[:required].nil?
-
-          # Conditional exposures are not required (may be absent from output)
-          return false if conditional?(exposure)
-
-          # Unconditional exposures are required by default (always present in output)
-          true
-        end
-
         def wrap_in_array_if_needed(prop_schema, doc)
-          is_array = doc[:is_array] || doc["is_array"]
+          is_array = doc[:is_array]
           return prop_schema unless is_array
 
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
         end
 
-        def build_exposure_base_schema(type)
-          if type.is_a?(Array)
-            # Array instance like [String] - extract inner type
-            inner = schema_for_type(type.first)
-            ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: inner)
-          elsif type == Array
-            # Array class itself - create array with string items
-            ApiModel::Schema.new(
-              type: Constants::SchemaTypes::ARRAY,
-              items: ApiModel::Schema.new(type: Constants::SchemaTypes::STRING),
-            )
-          elsif type.is_a?(Hash) || type == Hash
-            ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-          else
-            schema_for_type(type) || ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+        # Detects block-based nesting exposures (NestingExposure) that should become
+        # inline object schemas. Only triggers when no entity class is via `using:`.
+        def nesting_exposure?(exposure)
+          return false unless exposure.respond_to?(:nesting?) && exposure.nesting?
+
+          doc = normalize_doc_keys(exposure.documentation || {})
+          opts = exposure_options(exposure)
+          # Extra !opts[:using] catches using: set to a non-entity class (e.g. String)
+          !type_resolver.resolve_grape_entity_class(opts, doc) && !opts[:using]
+        end
+
+        # Builds an inline object schema from a NestingExposure's child exposures.
+        # Duplicate-key children (conditional branches) are merged via NestingMerger.
+        def build_nesting_exposure_schema(exposure, doc)
+          schema = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+          return schema unless exposure.respond_to?(:nested_exposures)
+
+          nesting_accum = {}
+          nesting_required = Hash.new { |h, k| h[k] = [] }
+          Array(exposure.nested_exposures).each do |child_exposure|
+            if nesting_exposure?(child_exposure)
+              key = child_exposure.key.to_s
+              child_doc = normalize_doc_keys(child_exposure.documentation || {})
+              child_schema = build_property_schema(child_exposure, child_doc)
+              nesting_required[key] << determine_required(child_doc, child_exposure)
+              nesting_accum[key] = NestingMerger.merge(nesting_accum[key], child_schema)
+            else
+              add_exposure_to_schema(schema, child_exposure)
+            end
           end
+
+          # ALL branches must agree for the property to be required.
+          nesting_accum.each do |key, merged_schema|
+            schema.add_property(key, merged_schema, required: nesting_required[key].all?)
+          end
+
+          apply_exposure_properties(schema, doc)
+          SchemaConstraints.apply(schema, doc)
+          schema
         end
 
         def apply_exposure_properties(schema, doc)
-          schema.nullable = doc[:nullable] || doc["nullable"] || false
-          raw_values = doc[:values] || doc["values"]
+          schema.nullable = doc[:nullable] || false
+          raw_values = doc[:values]
           if raw_values
             normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
-            # Entity exposures do not support oneOf/array-items dispatch.
-            # Values are applied directly to the schema. If the entity field is a
-            # nullable oneOf type, values will be applied to the wrapper schema,
-            # not the individual variants. This is consistent with original behavior.
             if normalized.is_a?(Array) && !normalized.empty?
-              schema.enum = normalized
+              apply_enum_to_schema(schema, normalized)
             elsif normalized.is_a?(Range)
               RangeUtils.apply_to_schema(schema, normalized)
             end
           end
-          schema.description = doc[:desc] || doc["desc"] if doc[:desc] || doc["desc"]
-          schema.format = doc[:format] || doc["format"] if doc[:format] || doc["format"]
-          schema.examples = doc[:example] || doc["example"] if schema.respond_to?(:examples=) && (doc[:example] || doc["example"])
+          schema.description = doc[:desc] if doc[:desc]
+          schema.format = doc[:format] if doc[:format]
+          schema.examples = doc[:example] if schema.respond_to?(:examples=) && doc[:example]
           schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
           schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
           defs = doc[:defs] || doc[:$defs]
@@ -189,78 +221,22 @@ module GrapeOAS
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
         end
 
-        def schema_for_type(type)
-          case type
-          when Class
-            schema_for_class_type(type)
-          when String, Symbol
-            schema_for_string_type(type.to_s)
+        # Cached entity schemas (via using:) are shared across all exposures that
+        # reference the same entity — do not mutate their enum.
+        def apply_enum_to_schema(schema, values)
+          return if schema.respond_to?(:canonical_name) && schema.canonical_name
+
+          if schema.type == Constants::SchemaTypes::ARRAY &&
+             schema.respond_to?(:items) && schema.items &&
+             !(schema.items.respond_to?(:canonical_name) && schema.items.canonical_name)
+            schema.items.enum = values
           else
-            default_string_schema
+            schema.enum = values
           end
         end
 
-        def schema_for_class_type(type)
-          if defined?(Grape::Entity) && type <= Grape::Entity
-            GrapeOAS.introspectors.build_schema(type, stack: @stack, registry: @registry)
-          else
-            build_schema_for_primitive(type) || default_string_schema
-          end
-        end
-
-        def schema_for_string_type(type_name)
-          entity_class = resolve_entity_from_string(type_name)
-          if entity_class
-            GrapeOAS.introspectors.build_schema(entity_class, stack: @stack, registry: @registry)
-          else
-            schema_type = Constants.primitive_type(type_name) || Constants::SchemaTypes::STRING
-            ApiModel::Schema.new(type: schema_type)
-          end
-        end
-
-        def default_string_schema
-          ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
-        end
-
-        def resolve_entity_from_string(type_name)
-          return nil unless defined?(Grape::Entity)
-          return nil unless valid_constant_name?(type_name)
-          return nil unless Object.const_defined?(type_name, false)
-
-          klass = Object.const_get(type_name, false)
-          klass if klass.is_a?(Class) && klass <= Grape::Entity
-        rescue NameError
-          nil
-        end
-
-        def schema_for_merge(exposure, doc)
-          using_class = resolve_entity_from_opts(exposure, doc)
-          return ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT) unless using_class
-
-          child = GrapeOAS.introspectors.build_schema(using_class, stack: @stack, registry: @registry)
-          merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-          child.properties.each do |n, ps|
-            merged.add_property(n, ps, required: child.required.include?(n))
-          end
-          merged
-        end
-
-        def resolve_entity_from_opts(exposure, doc)
-          opts = exposure.instance_variable_get(:@options) || {}
-          type = opts[:using] || doc[:type] || doc["type"]
-          return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
-
-          nil
-        end
-
-        def build_schema_for_primitive(type)
-          schema_type = Constants.primitive_type(type)
-          return nil unless schema_type
-
-          ApiModel::Schema.new(
-            type: schema_type,
-            format: Constants.format_for_type(type),
-          )
+        def normalize_doc_keys(doc)
+          DocKeyNormalizer.normalize(doc)
         end
       end
     end

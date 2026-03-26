@@ -61,7 +61,6 @@ module GrapeOAS
 
         if mixed_numeric
           GrapeOAS.logger.warn("Mixed-type range #{range} ignored; endpoints must both be numeric or both non-numeric")
-          nil
         elsif numeric_range && numeric_type
           apply_numeric_range(schema, range)
         elsif numeric_range

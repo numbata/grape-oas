@@ -32,6 +32,40 @@ module GrapeOAS
         assert_equal %w[string null], param_schema["type"]
       end
 
+      # === Inline nested object with enum properties ===
+
+      def test_inline_nested_object_with_enum_properties
+        inner = ApiModel::Schema.new(type: "string")
+        inner.enum = %w[x y]
+
+        outer = ApiModel::Schema.new(type: "object")
+        outer.add_property("direction", inner)
+
+        doc = generate_doc_with_schema(outer)
+        param_schema = doc["paths"]["/x"]["get"]["parameters"].first["schema"]
+
+        assert_equal %w[x y], param_schema["properties"]["direction"]["enum"]
+      end
+
+      # === Inline nested object with minimum/maximum ===
+
+      def test_inline_nested_object_with_min_max
+        inner = ApiModel::Schema.new(type: "integer")
+        inner.minimum = -2
+        inner.maximum = 2
+
+        outer = ApiModel::Schema.new(type: "object")
+        outer.add_property("offset", inner)
+
+        doc = generate_doc_with_schema(outer)
+        param_schema = doc["paths"]["/x"]["get"]["parameters"].first["schema"]
+
+        offset = param_schema["properties"]["offset"]
+
+        assert_equal(-2, offset["minimum"])
+        assert_equal 2, offset["maximum"]
+      end
+
       private
 
       def generate_doc_with_schema(schema)
