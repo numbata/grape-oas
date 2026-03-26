@@ -5,15 +5,6 @@ module GrapeOAS
     module EntityIntrospectorSupport
       # Handles discriminator fields in entity inheritance for polymorphic schemas.
       class DiscriminatorHandler
-        # Checks if an entity inherits from a parent that uses discriminator.
-        #
-        # @param entity_class [Class] the entity class to check
-        # @return [Boolean] true if parent has a discriminator field
-        def self.inherits_with_discriminator?(entity_class)
-          parent = find_parent_entity(entity_class)
-          parent && new(parent).discriminator?
-        end
-
         # Finds the parent entity class if one exists.
         #
         # @param entity_class [Class] the entity class

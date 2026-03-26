@@ -37,13 +37,7 @@ module GrapeOAS
         # @param parent_entity [Class] the parent entity class
         # @return [Array] list of parent exposures
         def parent_exposures(parent_entity)
-          return [] unless parent_entity.respond_to?(:root_exposures)
-
-          root = parent_entity.root_exposures
-          list = root.instance_variable_get(:@exposures) || []
-          Array(list)
-        rescue NoMethodError
-          []
+          EntityIntrospectorSupport.exposures(parent_entity)
         end
 
         # Builds a schema for an exposure.
