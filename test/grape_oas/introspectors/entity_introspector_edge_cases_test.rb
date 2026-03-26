@@ -441,6 +441,48 @@ module GrapeOAS
         assert_nil child.enum
       end
 
+      def test_entity_values_on_using_ref_emits_warning
+        log = capture_grape_oas_log do
+          EntityIntrospector.new(ParentWithValuesOnRefEntity).build_schema
+        end
+
+        assert_match(/enum values.*were not applied.*cached shared entity schema/, log)
+        assert_match(/SimpleRefEntity/, log)
+      end
+
+      # === Array of entities (is_array: true) with values: emits warning ===
+      # When is_array: true + using:, the entity schema (canonical_name set) is
+      # passed to apply_enum_to_schema before array-wrapping, so the top-level
+      # canonical_name guard fires and emits the warning.
+
+      class ArrayItemsRefEntity < Grape::Entity
+        expose :code, documentation: { type: String }
+      end
+
+      class ParentWithArrayItemsValuesEntity < Grape::Entity
+        expose :items,
+               using: ArrayItemsRefEntity,
+               documentation: { type: ArrayItemsRefEntity, is_array: true, values: %w[x y z] }
+      end
+
+      def test_array_of_entity_with_values_does_not_mutate_cached_schema
+        schema = EntityIntrospector.new(ParentWithArrayItemsValuesEntity).build_schema
+
+        items_prop = schema.properties["items"]
+
+        assert_equal "array", items_prop.type
+        assert_nil items_prop.items.enum
+      end
+
+      def test_array_of_entity_with_values_emits_warning
+        log = capture_grape_oas_log do
+          EntityIntrospector.new(ParentWithArrayItemsValuesEntity).build_schema
+        end
+
+        assert_match(/enum values.*were not applied.*cached shared entity schema/, log)
+        assert_match(/ArrayItemsRefEntity/, log)
+      end
+
       # === Entity with min/max constraints ===
 
       class ConstrainedEntity < Grape::Entity

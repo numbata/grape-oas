@@ -222,14 +222,30 @@ module GrapeOAS
         end
 
         # Cached entity schemas (via using:) are shared across all exposures that
-        # reference the same entity — do not mutate their enum.
+        # reference the same entity — do not mutate their enum. Warn so the user
+        # knows their values: constraint was not applied.
         def apply_enum_to_schema(schema, values)
-          return if schema.respond_to?(:canonical_name) && schema.canonical_name
+          if schema.respond_to?(:canonical_name) && schema.canonical_name
+            GrapeOAS.logger.warn(
+              "enum values #{values.inspect} were not applied to '#{schema.canonical_name}' " \
+              "because it is a cached shared entity schema ($ref). " \
+              "Declare the enum on the entity itself to apply it.",
+            )
+            return
+          end
 
           if schema.type == Constants::SchemaTypes::ARRAY &&
-             schema.respond_to?(:items) && schema.items &&
-             !(schema.items.respond_to?(:canonical_name) && schema.items.canonical_name)
-            schema.items.enum = values
+             schema.respond_to?(:items) && schema.items
+            items = schema.items
+            if items.respond_to?(:canonical_name) && items.canonical_name
+              GrapeOAS.logger.warn(
+                "enum values #{values.inspect} were not applied to array items '#{items.canonical_name}' " \
+                "because it is a cached shared entity schema ($ref). " \
+                "Declare the enum on the entity itself to apply it.",
+              )
+              return
+            end
+            items.enum = values
           else
             schema.enum = values
           end
