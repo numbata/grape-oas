@@ -19,12 +19,7 @@ module GrapeOAS
         # @param entity_class [Class] the entity class
         # @return [Class, nil] the parent entity class or nil
         def self.find_parent_entity(entity_class)
-          return nil unless defined?(Grape::Entity)
-
-          parent = entity_class.superclass
-          return nil unless parent && parent < Grape::Entity && parent != Grape::Entity
-
-          parent
+          EntityIntrospectorSupport.find_parent_entity(entity_class)
         end
 
         def initialize(entity_class)
@@ -65,17 +60,8 @@ module GrapeOAS
 
         private
 
-        # Gets the exposures defined on the entity class.
-        #
-        # @return [Array] list of entity exposures
         def exposures
-          return [] unless @entity_class.respond_to?(:root_exposures)
-
-          root = @entity_class.root_exposures
-          list = root.instance_variable_get(:@exposures) || []
-          Array(list)
-        rescue NoMethodError
-          []
+          EntityIntrospectorSupport.exposures(@entity_class)
         end
       end
     end

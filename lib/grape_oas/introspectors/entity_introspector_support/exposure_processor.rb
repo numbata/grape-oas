@@ -29,13 +29,7 @@ module GrapeOAS
         #
         # @return [Array] list of entity exposures
         def exposures
-          return [] unless @entity_class.respond_to?(:root_exposures)
-
-          root = @entity_class.root_exposures
-          list = root.instance_variable_get(:@exposures) || []
-          Array(list)
-        rescue NoMethodError
-          []
+          EntityIntrospectorSupport.exposures(@entity_class)
         end
 
         # Gets the exposures defined on a parent entity.

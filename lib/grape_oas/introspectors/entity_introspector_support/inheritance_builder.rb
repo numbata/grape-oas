@@ -16,12 +16,7 @@ module GrapeOAS
         # @param entity_class [Class] the entity class to check
         # @return [Class, nil] the parent entity class or nil
         def self.find_parent_entity(entity_class)
-          return nil unless defined?(Grape::Entity)
-
-          parent = entity_class.superclass
-          return nil unless parent && parent < Grape::Entity && parent != Grape::Entity
-
-          parent
+          EntityIntrospectorSupport.find_parent_entity(entity_class)
         end
 
         # Checks if an entity inherits from a parent that uses discriminator.
