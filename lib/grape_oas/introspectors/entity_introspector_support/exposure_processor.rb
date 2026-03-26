@@ -61,7 +61,7 @@ module GrapeOAS
           opts = exposure_options(exposure)
           type = opts[:using] || doc[:type]
 
-          schema = build_exposure_base_schema(type)
+          schema = type_resolver.build_exposure_base_schema(type)
           apply_exposure_properties(schema, doc)
           SchemaConstraints.apply(schema, doc)
           schema
@@ -112,7 +112,7 @@ module GrapeOAS
         # @return [Boolean] true if merge exposure
         def merge_exposure?(exposure, doc, opts)
           merge_flag = PropertyExtractor.extract_merge_flag(exposure, doc, opts)
-          merge_flag && resolve_entity_from_opts(exposure, doc)
+          merge_flag && type_resolver.resolve_entity_from_opts(exposure, doc)
         end
 
         # Returns the options hash for an exposure.
@@ -143,6 +143,10 @@ module GrapeOAS
 
         private
 
+        def type_resolver
+          @type_resolver ||= TypeSchemaResolver.new(stack: @stack, registry: @registry)
+        end
+
         def add_exposure_to_schema(schema, exposure)
           doc = exposure.documentation || {}
           opts = exposure_options(exposure)
@@ -155,7 +159,7 @@ module GrapeOAS
         end
 
         def merge_exposure_into_schema(schema, exposure, doc)
-          merged_schema = schema_for_merge(exposure, doc)
+          merged_schema = type_resolver.schema_for_merge(exposure, doc)
           merged_schema.properties.each do |n, ps|
             schema.add_property(n, ps, required: merged_schema.required.include?(n))
           end
@@ -175,24 +179,6 @@ module GrapeOAS
           ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
         end
 
-        def build_exposure_base_schema(type)
-          if type.is_a?(Array)
-            # Array instance like [String] - extract inner type
-            inner = schema_for_type(type.first)
-            ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: inner)
-          elsif type == Array
-            # Array class itself - create array with string items
-            ApiModel::Schema.new(
-              type: Constants::SchemaTypes::ARRAY,
-              items: ApiModel::Schema.new(type: Constants::SchemaTypes::STRING),
-            )
-          elsif type.is_a?(Hash) || type == Hash
-            ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-          else
-            schema_for_type(type) || ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
-          end
-        end
-
         # Detects block-based nesting exposures (NestingExposure) that should become
         # inline object schemas. Only triggers when no entity class is via `using:`.
         def nesting_exposure?(exposure)
@@ -201,7 +187,7 @@ module GrapeOAS
           doc = normalize_doc_keys(exposure.documentation || {})
           opts = exposure_options(exposure)
           # Extra !opts[:using] catches using: set to a non-entity class (e.g. String)
-          !resolve_grape_entity_class(opts, doc) && !opts[:using]
+          !type_resolver.resolve_grape_entity_class(opts, doc) && !opts[:using]
         end
 
         # Builds an inline object schema from a NestingExposure's child exposures.
@@ -270,86 +256,8 @@ module GrapeOAS
           end
         end
 
-        def schema_for_type(type)
-          case type
-          when Class
-            schema_for_class_type(type)
-          when String, Symbol
-            schema_for_string_type(type.to_s)
-          else
-            default_string_schema
-          end
-        end
-
-        def schema_for_class_type(type)
-          if defined?(Grape::Entity) && type <= Grape::Entity
-            GrapeOAS.introspectors.build_schema(type, stack: @stack, registry: @registry)
-          else
-            build_schema_for_primitive(type) || default_string_schema
-          end
-        end
-
-        def schema_for_string_type(type_name)
-          entity_class = resolve_entity_from_string(type_name)
-          if entity_class
-            GrapeOAS.introspectors.build_schema(entity_class, stack: @stack, registry: @registry)
-          else
-            schema_type = Constants.primitive_type(type_name) || Constants::SchemaTypes::STRING
-            ApiModel::Schema.new(type: schema_type)
-          end
-        end
-
-        def default_string_schema
-          ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
-        end
-
-        def resolve_entity_from_string(type_name)
-          return nil unless defined?(Grape::Entity)
-          return nil unless valid_constant_name?(type_name)
-          return nil unless Object.const_defined?(type_name, false)
-
-          klass = Object.const_get(type_name, false)
-          klass if klass.is_a?(Class) && klass <= Grape::Entity
-        rescue NameError
-          nil
-        end
-
-        def schema_for_merge(exposure, doc)
-          using_class = resolve_entity_from_opts(exposure, doc)
-          return ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT) unless using_class
-
-          child = GrapeOAS.introspectors.build_schema(using_class, stack: @stack, registry: @registry)
-          merged = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-          child.properties.each do |n, ps|
-            merged.add_property(n, ps, required: child.required.include?(n))
-          end
-          merged
-        end
-
-        def resolve_entity_from_opts(exposure, doc)
-          opts = exposure_options(exposure)
-          resolve_grape_entity_class(opts, doc)
-        end
-
-        def resolve_grape_entity_class(opts, doc)
-          type = opts[:using] || doc[:type]
-          return type if defined?(Grape::Entity) && type.is_a?(Class) && type <= Grape::Entity
-
-          nil
-        end
-
         def normalize_doc_keys(doc)
           DocKeyNormalizer.normalize(doc)
-        end
-
-        def build_schema_for_primitive(type)
-          schema_type = Constants.primitive_type(type)
-          return nil unless schema_type
-
-          ApiModel::Schema.new(
-            type: schema_type,
-            format: Constants.format_for_type(type),
-          )
         end
       end
     end
