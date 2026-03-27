@@ -52,7 +52,7 @@ module GrapeOAS
                 else
                   GrapeOAS.logger.warn(
                     "NestingMerger: property '#{n}' exceeds maximum merge depth " \
-                    "(#{MAX_MERGE_DEPTH}); using last branch value instead of merging",
+                    "(#{MAX_MERGE_DEPTH}); using current branch value instead of merging",
                   )
                   merged.add_property(n, s, required: shared_required.include?(n))
                 end
