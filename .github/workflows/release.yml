@@ -32,7 +32,7 @@ jobs:
             exit 1
           fi
           {
-            echo "notes<<'EOF'"
+            echo "notes<<EOF"
             echo "$notes"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
