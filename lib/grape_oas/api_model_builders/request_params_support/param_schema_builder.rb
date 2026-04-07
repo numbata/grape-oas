@@ -36,15 +36,7 @@ module GrapeOAS
 
           # is_array: true on a typed array like "[String]" is redundant and would
           # double-wrap it as Array<Array<...>> via build_primitive_array_schema.
-          if doc[:is_array] && extract_typed_array_member(raw_type)
-            resolved = GrapeOAS.type_resolvers.build_schema(raw_type)
-            unless resolved
-              GrapeOAS.logger.warn(
-                "type_resolvers could not resolve '#{raw_type}'; falling back to Array<string>",
-              )
-            end
-            return resolved || build_simple_array_schema
-          end
+          return GrapeOAS.type_resolvers.build_schema(raw_type) if doc[:is_array] && extract_typed_array_member(raw_type)
           return build_primitive_array_schema(doc_type, raw_type) if doc[:is_array]
           return build_entity_schema(doc_type) if grape_entity?(doc_type)
           return build_entity_schema(raw_type) if grape_entity?(raw_type)
