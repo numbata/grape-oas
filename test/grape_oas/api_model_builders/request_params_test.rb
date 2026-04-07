@@ -374,9 +374,6 @@ module GrapeOAS
       end
 
       def test_typed_array_with_is_array_does_not_double_wrap
-        # type: [String] already implies an array; is_array: true is redundant.
-        # Previously this produced Array<Array<unknown>> because build_primitive_array_schema
-        # resolved "[String]" → type "array" and wrapped it again.
         api_class = Class.new(Grape::API) do
           format :json
           params do
