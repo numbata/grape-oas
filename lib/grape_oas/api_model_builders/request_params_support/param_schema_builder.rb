@@ -33,12 +33,19 @@ module GrapeOAS
 
           return build_entity_array_schema(spec, raw_type, doc_type) if entity_array_type?(type_source, doc_type, spec)
           return build_doc_entity_array_schema(doc_type) if doc[:is_array] && grape_entity?(doc_type)
+
           # When raw_type is already a typed array like "[String]", is_array: true is
           # redundant — the type itself carries array semantics. Falling through to
           # build_primitive_array_schema would resolve "[String]" → type "array" and
           # produce Array<Array<...>>. Use type_resolvers instead to build it correctly.
           if doc[:is_array] && extract_typed_array_member(raw_type)
-            return GrapeOAS.type_resolvers.build_schema(raw_type) || build_simple_array_schema
+            resolved = GrapeOAS.type_resolvers.build_schema(raw_type)
+            unless resolved
+              GrapeOAS.logger.warn(
+                "type_resolvers could not resolve '#{raw_type}'; falling back to Array<string>",
+              )
+            end
+            return resolved || build_simple_array_schema
           end
           return build_primitive_array_schema(doc_type, raw_type) if doc[:is_array]
           return build_entity_schema(doc_type) if grape_entity?(doc_type)
