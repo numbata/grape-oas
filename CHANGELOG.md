@@ -12,6 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#58](https://github.com/numbata/grape-oas/pull/58): Fix contract extraction compatibility with Grape 3.2 - [@numbata](https://github.com/numbata).
 - Your contribution here
 
+## [Unreleased]
+
+### Fixed
+
+- [#57](https://github.com/numbata/grape-oas/pull/57): Fix `Array<Array<...>>` double-wrap when `is_array: true` is used with typed array notation like `type: [String]` — the redundant `is_array` flag no longer produces a nested array schema - [@numbata](https://github.com/numbata).
+
 ## [1.3.0] - 2026-03-27
 
 ### Added
@@ -28,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#57](https://github.com/numbata/grape-oas/pull/57): Fix `Array<Array<...>>` double-wrap when `is_array: true` is used with typed array notation like `type: [String]` — the redundant `is_array` flag no longer produces a nested array schema - [@numbata](https://github.com/numbata).
 - [#55](https://github.com/numbata/grape-oas/pull/55): Preserve enum values on cached entity schemas — dup the shared schema before applying enum instead of silently discarding the constraint; emit a warning naming the entity - [@numbata](https://github.com/numbata).
 - [#50](https://github.com/numbata/grape-oas/pull/50): Fix `[false]` enum silently dropped — `[false].any?` returns `false` in Ruby, causing boolean-only enum constraints to be discarded - [@numbata](https://github.com/numbata).
 
