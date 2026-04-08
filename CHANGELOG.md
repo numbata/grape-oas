@@ -29,12 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - [#52](https://github.com/numbata/grape-oas/pull/52): Extract `SchemaConstraints` — centralizes numeric/string constraint application (min/max, exclusive flags, length, pattern) and adds `exclusive_minimum`/`exclusive_maximum` support - [@numbata](https://github.com/numbata).
-- [#56](https://github.com/numbata/grape-oas/pull/56): Make `NestingMerger` depth-cap warning actionable — include property name and depth cap value in the message - [@numbata](https://github.com/numbata).
 - [#50](https://github.com/numbata/grape-oas/pull/50): Extract `ValuesNormalizer` — consolidates Proc/Set/Hash value normalization into a single module used by both request params and entity exposures - [@numbata](https://github.com/numbata).
 
 ### Fixed
 
 - [#55](https://github.com/numbata/grape-oas/pull/55): Preserve enum values on cached entity schemas — dup the shared schema before applying enum instead of silently discarding the constraint; emit a warning naming the entity - [@numbata](https://github.com/numbata).
+- [#56](https://github.com/numbata/grape-oas/pull/56): Make `NestingMerger` depth-cap warning actionable — include property name and depth cap value in the message - [@numbata](https://github.com/numbata).
 - [#50](https://github.com/numbata/grape-oas/pull/50): Fix `[false]` enum silently dropped — `[false].any?` returns `false` in Ruby, causing boolean-only enum constraints to be discarded - [@numbata](https://github.com/numbata).
 
 - [#49](https://github.com/numbata/grape-oas/pull/49): Fix OOM on wide string range expansion in `values:` — replace unbounded `range.to_a` with bounded enumeration; non-numeric ranges on numeric schemas and numeric ranges on non-numeric schemas now warn and are ignored instead of silently producing invalid output - [@numbata](https://github.com/numbata).
