@@ -297,109 +297,58 @@ module GrapeOAS
       end
 
       # === Namespaced types ===
+      #
+      # Grape stringifies typed arrays (e.g. type: [MyModule::Types::UUID] becomes "[MyModule::Types::UUID]").
+      # These tests exercise the schema builder directly with pre-stringified types
+      # because Grape >= 3.2 validates types at definition time and rejects unknown strings.
 
       def test_array_of_namespaced_type_with_uuid
-        # Simulate what Grape stores when you use type: [MyModule::Types::UUID]
-        # Grape converts this to the string "[MyModule::Types::UUID]"
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            # Using a string that simulates namespaced type (Grape stringifies these)
-            requires :slide_ids, type: "[MyModule::Types::UUID]", documentation: { param_type: "body" }
-          end
-          post "items" do
-            {}
-          end
-        end
+        schema = RequestParamsSupport::ParamSchemaBuilder.build(
+          type: "[MyModule::Types::UUID]", documentation: {},
+        )
 
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-        body_schema, _params = builder.build
-
-        slide_ids = body_schema.properties["slide_ids"]
-
-        assert_equal "array", slide_ids.type
-        assert_equal "string", slide_ids.items.type
-        assert_equal "uuid", slide_ids.items.format
+        assert_equal "array", schema.type
+        assert_equal "string", schema.items.type
+        assert_equal "uuid", schema.items.format
       end
 
       def test_array_of_namespaced_type_with_datetime
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            requires :timestamps, type: "[MyModule::Types::DateTime]", documentation: { param_type: "body" }
-          end
-          post "items" do
-            {}
-          end
-        end
+        schema = RequestParamsSupport::ParamSchemaBuilder.build(
+          type: "[MyModule::Types::DateTime]", documentation: {},
+        )
 
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-        body_schema, _params = builder.build
-
-        timestamps = body_schema.properties["timestamps"]
-
-        assert_equal "array", timestamps.type
-        assert_equal "string", timestamps.items.type
-        assert_equal "date-time", timestamps.items.format
+        assert_equal "array", schema.type
+        assert_equal "string", schema.items.type
+        assert_equal "date-time", schema.items.format
       end
 
       def test_array_of_deeply_namespaced_type
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            requires :ids, type: "[Very::Deeply::Nested::Module::Type]", documentation: { param_type: "body" }
-          end
-          post "items" do
-            {}
-          end
-        end
+        schema = RequestParamsSupport::ParamSchemaBuilder.build(
+          type: "[Very::Deeply::Nested::Module::Type]", documentation: {},
+        )
 
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-        body_schema, _params = builder.build
-
-        ids = body_schema.properties["ids"]
-
-        assert_equal "array", ids.type
-        # Unknown namespaced types default to string
-        assert_equal "string", ids.items.type
+        assert_equal "array", schema.type
+        assert_equal "string", schema.items.type
       end
 
       # === Entity arrays ===
 
       def test_array_of_entity_in_typed_notation
-        # Define an entity class for testing
         user_entity = Class.new(Grape::Entity) do
           expose :id, documentation: { type: Integer }
           expose :name, documentation: { type: String }
         end
 
-        # Make the entity accessible via const_get
         Object.const_set(:TestUserEntityForArray, user_entity) unless defined?(TestUserEntityForArray)
 
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            requires :users, type: "[TestUserEntityForArray]", documentation: { param_type: "body" }
-          end
-          post "batch" do
-            {}
-          end
-        end
+        schema = RequestParamsSupport::ParamSchemaBuilder.build(
+          type: "[TestUserEntityForArray]", documentation: {},
+        )
 
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-        body_schema, _params = builder.build
-
-        users = body_schema.properties["users"]
-
-        assert_equal "array", users.type
-        # Items should be an object schema from the entity introspector
-        assert_equal "object", users.items.type
-        assert users.items.properties.key?("id")
-        assert users.items.properties.key?("name")
+        assert_equal "array", schema.type
+        assert_equal "object", schema.items.type
+        assert schema.items.properties.key?("id")
+        assert schema.items.properties.key?("name")
       end
     end
   end

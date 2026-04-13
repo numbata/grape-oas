@@ -353,27 +353,16 @@ module GrapeOAS
 
       def test_resolve_entity_class_handles_unloaded_nested_constant
         # Test that resolve_entity_class handles nested constants gracefully
-        # when parent modules aren't loaded (e.g. "UnloadedModule::V1::UserEntity")
-        api_class = Class.new(Grape::API) do
-          format :json
-          params do
-            # Use a nested constant that doesn't exist - should fall back gracefully
-            requires :data, type: "NonExistent::Module::Entity", documentation: { param_type: "body" }
-          end
-          post "items" do
-            {}
-          end
+        # when parent modules aren't loaded (e.g. "UnloadedModule::V1::UserEntity").
+        # Uses ParamSchemaBuilder directly because Grape >= 3.2 rejects unknown string types.
+        schema = nil
+        capture_grape_oas_log do
+          schema = RequestParamsSupport::ParamSchemaBuilder.build(
+            type: "NonExistent::Module::Entity", documentation: {},
+          )
         end
 
-        route = api_class.routes.first
-        builder = RequestParams.new(api: @api, route: route)
-
-        # Should not raise NameError - should fall back to string type
-        body_schema = nil
-        capture_grape_oas_log { body_schema, _params = builder.build }
-        data = body_schema.properties["data"]
-
-        assert_equal "string", data.type, "Should fall back to string for unresolvable entity"
+        assert_equal "string", schema.type, "Should fall back to string for unresolvable entity"
       end
     end
   end

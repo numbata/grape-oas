@@ -27,7 +27,6 @@ jobs:
   test:
     needs: rubocop
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
     strategy:
       fail-fast: false
       matrix:
@@ -36,10 +35,15 @@ jobs:
           - '3.3'
           - '3.4'
           - '4.0'
+        grape:
+          - '~> 3.1.0'
+          - '~> 3.2.0'
         include:
           - ruby: 'ruby-head'
+            grape: '~> 3.2.0'
             allow-failure: true
     continue-on-error: ${{ matrix.allow-failure || false }}
+    name: Ruby ${{ matrix.ruby }} / Grape ${{ matrix.grape }}
     steps:
       - uses: actions/checkout@v6
       - name: Set up Ruby
@@ -47,8 +51,12 @@ jobs:
         with:
           ruby-version: ${{ matrix.ruby }}
           bundler-cache: true
+        env:
+          GRAPE_VERSION: ${{ matrix.grape }}
       - name: Run tests
         run: bundle exec rake test
+        env:
+          GRAPE_VERSION: ${{ matrix.grape }}
       - name: Annotate uncovered lines
         uses: ggilder/codecoverage@6a0a9c002c49b6e5e4ce15f22574275600163618
         if: github.event_name == 'pull_request' && matrix.ruby == '4.0'
