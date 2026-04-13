@@ -424,6 +424,91 @@ module GrapeOAS
         assert_equal [1, 2, 3], level_param["enum"]
       end
 
+      def test_string_parameter_with_default_emits_default
+        schema = ApiModel::Schema.new(type: "string")
+        schema.default = "pending"
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "status",
+          schema: schema,
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        status_param = result.find { |p| p["name"] == "status" }
+
+        assert_equal "pending", status_param["default"]
+      end
+
+      def test_integer_parameter_with_zero_default_emits_default
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.default = 0
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "page",
+          schema: schema,
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        page_param = result.find { |p| p["name"] == "page" }
+
+        assert page_param.key?("default"), "expected 'default' key to be present"
+        assert_equal 0, page_param["default"]
+      end
+
+      def test_boolean_parameter_with_false_default_emits_default
+        schema = ApiModel::Schema.new(type: "boolean")
+        schema.default = false
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "enabled",
+          schema: schema,
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        enabled_param = result.find { |p| p["name"] == "enabled" }
+
+        assert enabled_param.key?("default"), "expected 'default' key to be present"
+        assert_equal false, enabled_param["default"]
+      end
+
+      def test_parameter_without_default_does_not_emit_default_key
+        schema = ApiModel::Schema.new(type: "string")
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "name",
+          schema: schema,
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        name_param = result.find { |p| p["name"] == "name" }
+
+        refute name_param.key?("default")
+      end
+
       def test_empty_enum_not_emitted
         schema = ApiModel::Schema.new(type: "string")
         schema.enum = []

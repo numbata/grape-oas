@@ -51,6 +51,7 @@ module GrapeOAS
           end
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
           schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"]) if @schema.enum
+          schema_hash["default"] = @schema.default unless @schema.default.nil?
           schema_hash
         end
 

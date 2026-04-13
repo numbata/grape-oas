@@ -78,6 +78,7 @@ module GrapeOAS
           result["maxItems"] = schema.max_items if schema.respond_to?(:max_items) && !schema.max_items.nil?
           result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
           result["enum"] = normalize_enum(schema.enum, result["type"]) if schema.respond_to?(:enum) && schema.enum
+          result["default"] = schema.default if schema.respond_to?(:default) && !schema.default.nil?
         end
 
         def normalize_enum(enum_vals, type)

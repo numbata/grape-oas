@@ -21,6 +21,7 @@ module GrapeOAS
           apply_format_and_example(schema, doc)
           SchemaConstraints.apply(schema, doc)
           apply_values(schema, spec)
+          apply_default(schema, spec, doc)
         end
 
         # Extracts nullable flag from a documentation hash.
@@ -43,6 +44,16 @@ module GrapeOAS
             end
             defs = extract_defs(doc)
             schema.defs = defs if defs.is_a?(Hash) && schema.respond_to?(:defs=)
+          end
+
+          def apply_default(schema, spec, doc)
+            return unless schema.respond_to?(:default=)
+
+            if spec.key?(:default)
+              schema.default = spec[:default]
+            elsif doc.key?(:default)
+              schema.default = doc[:default]
+            end
           end
 
           def apply_format_and_example(schema, doc)

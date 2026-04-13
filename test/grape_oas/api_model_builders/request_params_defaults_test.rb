@@ -36,6 +36,8 @@ module GrapeOAS
         refute_nil disabled_param
         assert_equal "boolean", enabled_param.schema.type
         assert_equal "boolean", disabled_param.schema.type
+        assert_equal false, enabled_param.schema.default
+        assert_equal true, disabled_param.schema.default
       end
 
       # === Integer zero default ===
@@ -60,6 +62,7 @@ module GrapeOAS
 
         refute_nil count_param
         assert_equal "integer", count_param.schema.type
+        assert_equal 0, count_param.schema.default
       end
 
       # === String empty default ===
@@ -153,6 +156,7 @@ module GrapeOAS
 
         refute_nil status_param
         assert_equal "string", status_param.schema.type
+        assert_equal "pending", status_param.schema.default
       end
 
       # === Default in nested hash ===

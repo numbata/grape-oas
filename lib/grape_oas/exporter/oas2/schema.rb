@@ -52,6 +52,7 @@ module GrapeOAS
           schema_hash["example"] = @schema.examples if @schema.examples
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
           schema_hash["discriminator"] = @schema.discriminator if @schema.discriminator
+          schema_hash["default"] = @schema.default unless @schema.default.nil?
           schema_hash
         end
 

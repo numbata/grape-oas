@@ -11,7 +11,7 @@ module GrapeOAS
       VALID_ATTRIBUTES = %i[
         canonical_name type format properties items description
         required nullable enum additional_properties unevaluated_properties defs
-        examples extensions
+        examples default extensions
         min_length max_length pattern
         minimum maximum exclusive_minimum exclusive_maximum
         min_items max_items

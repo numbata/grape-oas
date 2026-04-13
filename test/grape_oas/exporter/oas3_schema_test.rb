@@ -43,6 +43,43 @@ module GrapeOAS
         assert_equal 10, result["maxItems"]
       end
 
+      def test_schema_with_string_default_emits_default
+        schema = ApiModel::Schema.new(type: "string")
+        schema.default = "pending"
+
+        result = OAS3::Schema.new(schema).build
+
+        assert_equal "pending", result["default"]
+      end
+
+      def test_schema_with_integer_zero_default_emits_default
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.default = 0
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("default"), "expected 'default' key to be present"
+        assert_equal 0, result["default"]
+      end
+
+      def test_schema_with_false_default_emits_default
+        schema = ApiModel::Schema.new(type: "boolean")
+        schema.default = false
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("default"), "expected 'default' key to be present"
+        assert_equal false, result["default"]
+      end
+
+      def test_schema_without_default_does_not_emit_default_key
+        schema = ApiModel::Schema.new(type: "string")
+
+        result = OAS3::Schema.new(schema).build
+
+        refute result.key?("default")
+      end
+
       def test_constraints_not_included_when_not_set
         schema = ApiModel::Schema.new(type: "string")
 
