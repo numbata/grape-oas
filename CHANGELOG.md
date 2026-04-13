@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- [#58](https://github.com/numbata/grape-oas/pull/58): Fix test compatibility with grape 3.2 - [@numbata](https://github.com/numbata).
+- [#58](https://github.com/numbata/grape-oas/pull/58): Fix contract extraction and test compatibility with Grape 3.2 - [@numbata](https://github.com/numbata).
 - Your contribution here
 
 ## [1.3.0] - 2026-03-27
