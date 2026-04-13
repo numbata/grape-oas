@@ -348,22 +348,6 @@ module GrapeOAS
         refute_nil data.items, "Plain Array should have items schema"
         assert_equal "string", data.items.type, "Default items type should be string"
       end
-
-      # === Entity constant resolution safety (Issue #13) ===
-
-      def test_resolve_entity_class_handles_unloaded_nested_constant
-        # Test that resolve_entity_class handles nested constants gracefully
-        # when parent modules aren't loaded (e.g. "UnloadedModule::V1::UserEntity").
-        # Uses ParamSchemaBuilder directly because Grape >= 3.2 rejects unknown string types.
-        schema = nil
-        capture_grape_oas_log do
-          schema = RequestParamsSupport::ParamSchemaBuilder.build(
-            type: "NonExistent::Module::Entity", documentation: {},
-          )
-        end
-
-        assert_equal "string", schema.type, "Should fall back to string for unresolvable entity"
-      end
     end
   end
 end

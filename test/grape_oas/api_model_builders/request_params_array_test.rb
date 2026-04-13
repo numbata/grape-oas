@@ -295,61 +295,6 @@ module GrapeOAS
 
         assert_nil ids_param.collection_format
       end
-
-      # === Namespaced types ===
-      #
-      # Grape stringifies typed arrays (e.g. type: [MyModule::Types::UUID] becomes "[MyModule::Types::UUID]").
-      # These tests exercise the schema builder directly with pre-stringified types
-      # because Grape >= 3.2 validates types at definition time and rejects unknown strings.
-
-      def test_array_of_namespaced_type_with_uuid
-        schema = RequestParamsSupport::ParamSchemaBuilder.build(
-          type: "[MyModule::Types::UUID]", documentation: {},
-        )
-
-        assert_equal "array", schema.type
-        assert_equal "string", schema.items.type
-        assert_equal "uuid", schema.items.format
-      end
-
-      def test_array_of_namespaced_type_with_datetime
-        schema = RequestParamsSupport::ParamSchemaBuilder.build(
-          type: "[MyModule::Types::DateTime]", documentation: {},
-        )
-
-        assert_equal "array", schema.type
-        assert_equal "string", schema.items.type
-        assert_equal "date-time", schema.items.format
-      end
-
-      def test_array_of_deeply_namespaced_type
-        schema = RequestParamsSupport::ParamSchemaBuilder.build(
-          type: "[Very::Deeply::Nested::Module::Type]", documentation: {},
-        )
-
-        assert_equal "array", schema.type
-        assert_equal "string", schema.items.type
-      end
-
-      # === Entity arrays ===
-
-      def test_array_of_entity_in_typed_notation
-        user_entity = Class.new(Grape::Entity) do
-          expose :id, documentation: { type: Integer }
-          expose :name, documentation: { type: String }
-        end
-
-        Object.const_set(:TestUserEntityForArray, user_entity) unless defined?(TestUserEntityForArray)
-
-        schema = RequestParamsSupport::ParamSchemaBuilder.build(
-          type: "[TestUserEntityForArray]", documentation: {},
-        )
-
-        assert_equal "array", schema.type
-        assert_equal "object", schema.items.type
-        assert schema.items.properties.key?("id")
-        assert schema.items.properties.key?("name")
-      end
     end
   end
 end

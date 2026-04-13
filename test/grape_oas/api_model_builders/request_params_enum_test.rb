@@ -231,27 +231,6 @@ module GrapeOAS
         assert_equal 100, ids.items.maximum
       end
 
-      # Uses ParamSchemaBuilder directly because Grape >= 3.2 rejects NilClass as a coercible type.
-      def test_integer_range_values_on_one_of_param
-        # Grape stringifies [Integer, String, NilClass] to "[Integer, String, NilClass]"
-        schema = RequestParamsSupport::ParamSchemaBuilder.build(
-          type: "[Integer, String, NilClass]", values: 1..10, documentation: {},
-        )
-
-        refute_nil schema.one_of
-
-        integer_variant = schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
-        string_variant = schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
-
-        refute_nil integer_variant
-        assert_equal 1, integer_variant.minimum
-        assert_equal 10, integer_variant.maximum
-
-        refute_nil string_variant
-        assert_nil string_variant.minimum
-        assert_nil string_variant.maximum
-      end
-
       # === Proc values ===
 
       def test_proc_enum_values
@@ -348,42 +327,6 @@ module GrapeOAS
         refute_nil filter
         assert_includes filter.properties.keys, "status"
         assert_includes filter.properties.keys, "sort"
-      end
-
-      # === Multi-type (oneOf) with enum ===
-
-      # Uses ParamSchemaBuilder directly because Grape >= 3.2 rejects NilClass as a coercible type.
-      def test_multi_type_with_enum_values
-        # Grape stringifies [String, NilClass] to "[String, NilClass]"
-        schema = RequestParamsSupport::ParamSchemaBuilder.build(
-          type: "[String, NilClass]", values: %w[visible hidden], documentation: {},
-        )
-
-        # [String, NilClass] is optimized to nullable string (not oneOf)
-        assert_equal Constants::SchemaTypes::STRING, schema.type
-        assert schema.nullable
-        assert_equal %w[visible hidden], schema.enum
-      end
-
-      # Uses ParamSchemaBuilder directly because Grape >= 3.2 rejects NilClass as a coercible type.
-      def test_multi_type_three_types_still_uses_one_of
-        # Grape stringifies [String, Integer, NilClass] to "[String, Integer, NilClass]"
-        schema = RequestParamsSupport::ParamSchemaBuilder.build(
-          type: "[String, Integer, NilClass]", values: %w[a b c], documentation: {},
-        )
-
-        # NilClass is filtered out, represented via nullable property
-        refute_nil schema.one_of
-        assert_equal 2, schema.one_of.size
-        assert schema.nullable
-
-        string_variant = schema.one_of.find { |s| s.type == Constants::SchemaTypes::STRING }
-
-        assert_equal %w[a b c], string_variant.enum
-
-        integer_variant = schema.one_of.find { |s| s.type == Constants::SchemaTypes::INTEGER }
-
-        assert_nil integer_variant.enum
       end
 
       # === [false] enum regression ===

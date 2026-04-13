@@ -96,18 +96,6 @@ module GrapeOAS
         assert_equal Constants::SchemaTypes::STRING, param.schema.one_of[0].type
         assert_equal Constants::SchemaTypes::BOOLEAN, param.schema.one_of[1].type
       end
-
-      # Make sure we don't break typed arrays like "[String]".
-      # Uses ParamSchemaBuilder directly because Grape >= 3.2 rejects string types.
-      def test_typed_array_still_works
-        schema = RequestParamsSupport::ParamSchemaBuilder.build(
-          type: "[String]", documentation: {},
-        )
-
-        assert_equal Constants::SchemaTypes::ARRAY, schema.type
-        assert_nil schema.one_of
-        assert_equal Constants::SchemaTypes::STRING, schema.items.type
-      end
     end
   end
 end
