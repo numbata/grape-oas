@@ -134,20 +134,24 @@ module GrapeOAS
         validations = setting.route[:saved_validations]
         return unless validations.is_a?(Array)
 
-        # Find ContractScopeValidator which holds the Dry contract/schema
-        contract_validation = validations.find do |v|
-          next unless v.is_a?(Hash)
+        # Find ContractScopeValidator which holds the Dry contract/schema.
+        # Grape < 3.2 stores hashes: {validator_class: ..., opts: {schema: ...}}
+        # Grape >= 3.2 stores validator instances directly (instantiated at definition time)
+        return unless defined?(Grape::Validations::Validators::ContractScopeValidator)
 
-          validator_class = v[:validator_class]
-          validator_class.is_a?(Class) &&
-            defined?(Grape::Validations::Validators::ContractScopeValidator) &&
-            validator_class <= Grape::Validations::Validators::ContractScopeValidator
+        validations.each do |v|
+          case v
+          when Hash
+            next unless v[:validator_class].is_a?(Class) &&
+                        v[:validator_class] <= Grape::Validations::Validators::ContractScopeValidator
+
+            return v.dig(:opts, :schema)
+          when Grape::Validations::Validators::ContractScopeValidator
+            return v.instance_variable_get(:@schema)
+          end
         end
 
-        return unless contract_validation
-
-        # The contract instance is stored in opts[:schema]
-        contract_validation.dig(:opts, :schema)
+        nil
       end
 
       def build_contract_schema
