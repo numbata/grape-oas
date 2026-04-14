@@ -37,9 +37,23 @@ module GrapeOAS
         assert schema.properties.key?("email"), "Should extract contract from validator instance"
       end
 
+      def test_warns_when_validator_instance_has_no_schema
+        validator = Grape::Validations::Validators::ContractScopeValidator.allocate
+
+        log_output = capture_grape_oas_log do
+          build_request_with_validations([validator])
+        end
+
+        assert_match(/ContractScopeValidator found but @schema is nil/, log_output)
+      end
+
       private
 
       def build_with_validations(validations)
+        build_request_with_validations(validations).request_body.media_types.first.schema
+      end
+
+      def build_request_with_validations(validations)
         route_hash = { saved_validations: validations }
         setting = Struct.new(:route).new(route_hash)
         app = Struct.new(:inheritable_setting).new(setting)
@@ -47,8 +61,7 @@ module GrapeOAS
 
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
         Request.new(api: api, route: route, operation: operation).build
-
-        operation.request_body.media_types.first.schema
+        operation
       end
     end
   end

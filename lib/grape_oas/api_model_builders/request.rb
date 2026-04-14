@@ -151,7 +151,7 @@ module GrapeOAS
             # so instance_variable_get is the only way to access the schema.
             # TODO: use v.schema once ruby-grape/grape#2657 restores the accessor.
             schema = v.instance_variable_get(:@schema)
-            GrapeOAS.logger&.error("ContractScopeValidator found but @schema is nil") if schema.nil?
+            GrapeOAS.logger&.warn("ContractScopeValidator found but @schema is nil") if schema.nil?
             return schema
           end
         end
