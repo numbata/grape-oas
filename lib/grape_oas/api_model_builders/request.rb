@@ -147,7 +147,7 @@ module GrapeOAS
 
             return v.dig(:opts, :schema)
           when Grape::Validations::Validators::ContractScopeValidator
-            return v.schema
+            return v.instance_variable_get(:@schema)
           end
         end
 

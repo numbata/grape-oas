@@ -27,8 +27,8 @@ module GrapeOAS
       def test_extracts_contract_from_validator_instance
         contract = Dry::Schema.Params { required(:email).filled(:string) }
 
-        # Simulate Grape >= 3.2 validator instance without depending on
-        # the real constructor which requires a full ParamsScope object.
+        # Grape 3.2 stores frozen validator instances with no public schema accessor.
+        # Use allocate to avoid constructor differences between Grape versions.
         validator = Grape::Validations::Validators::ContractScopeValidator.allocate
         validator.instance_variable_set(:@schema, contract)
 
