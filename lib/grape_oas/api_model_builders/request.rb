@@ -147,8 +147,11 @@ module GrapeOAS
 
             return v.dig(:opts, :schema)
           when Grape::Validations::Validators::ContractScopeValidator
+            # Grape 3.2 removed attr_reader :schema and freezes the validator,
+            # so instance_variable_get is the only way to access the schema.
+            # TODO: use v.schema once ruby-grape/grape#2657 restores the accessor.
             schema = v.instance_variable_get(:@schema)
-            GrapeOAS.logger&.warn("ContractScopeValidator found but @schema is nil") if schema.nil?
+            GrapeOAS.logger&.error("ContractScopeValidator found but @schema is nil") if schema.nil?
             return schema
           end
         end
