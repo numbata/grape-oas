@@ -147,7 +147,9 @@ module GrapeOAS
 
             return v.dig(:opts, :schema)
           when Grape::Validations::Validators::ContractScopeValidator
-            return v.instance_variable_get(:@schema)
+            schema = v.instance_variable_get(:@schema)
+            GrapeOAS.logger&.warn("ContractScopeValidator found but @schema is nil") if schema.nil?
+            return schema
           end
         end
 
