@@ -26,7 +26,6 @@ module GrapeOAS
             type: "[String, NilClass]", values: %w[visible hidden], documentation: {},
           )
 
-          # [String, NilClass] is optimized to nullable string (not oneOf)
           assert_equal Constants::SchemaTypes::STRING, schema.type
           assert schema.nullable
           assert_equal %w[visible hidden], schema.enum
@@ -37,7 +36,6 @@ module GrapeOAS
             type: "[String, Integer, NilClass]", values: %w[a b c], documentation: {},
           )
 
-          # NilClass is filtered out, represented via nullable property
           refute_nil schema.one_of
           assert_equal 2, schema.one_of.size
           assert schema.nullable
