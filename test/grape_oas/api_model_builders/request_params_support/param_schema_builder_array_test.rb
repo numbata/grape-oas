@@ -11,6 +11,10 @@ module GrapeOAS
       # These tests exercise the schema builder directly with pre-stringified types
       # because Grape >= 3.2 validates types at definition time and rejects unknown strings.
       class ParamSchemaBuilderArrayTest < Minitest::Test
+        def teardown
+          Object.send(:remove_const, :TestUserEntityForArray) if defined?(TestUserEntityForArray)
+        end
+
         def test_namespaced_type_with_uuid
           schema = ParamSchemaBuilder.build(
             type: "[MyModule::Types::UUID]", documentation: {},
@@ -56,6 +60,17 @@ module GrapeOAS
           assert_equal "object", schema.items.type
           assert schema.items.properties.key?("id")
           assert schema.items.properties.key?("name")
+        end
+
+        def test_unresolvable_entity_falls_back_to_string
+          schema = nil
+          capture_grape_oas_log do
+            schema = ParamSchemaBuilder.build(
+              type: "NonExistent::Module::Entity", documentation: {},
+            )
+          end
+
+          assert_equal "string", schema.type, "Should fall back to string for unresolvable entity"
         end
       end
     end
