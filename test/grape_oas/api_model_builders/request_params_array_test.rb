@@ -300,12 +300,9 @@ module GrapeOAS
 
       def test_array_of_namespaced_type_with_uuid
         skip "Grape >= 3.2 rejects string type notation" if Gem::Version.new(Grape::VERSION) >= Gem::Version.new("3.2")
-        # Simulate what Grape stores when you use type: [MyModule::Types::UUID]
-        # Grape converts this to the string "[MyModule::Types::UUID]"
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            # Using a string that simulates namespaced type (Grape stringifies these)
             requires :slide_ids, type: "[MyModule::Types::UUID]", documentation: { param_type: "body" }
           end
           post "items" do
@@ -366,7 +363,6 @@ module GrapeOAS
         ids = body_schema.properties["ids"]
 
         assert_equal "array", ids.type
-        # Unknown namespaced types default to string
         assert_equal "string", ids.items.type
       end
 
@@ -405,13 +401,11 @@ module GrapeOAS
 
       def test_array_of_entity_in_typed_notation
         skip "Grape >= 3.2 rejects string type notation" if Gem::Version.new(Grape::VERSION) >= Gem::Version.new("3.2")
-        # Define an entity class for testing
         user_entity = Class.new(Grape::Entity) do
           expose :id, documentation: { type: Integer }
           expose :name, documentation: { type: String }
         end
 
-        # Make the entity accessible via const_get
         Object.const_set(:TestUserEntityForArray, user_entity) unless defined?(TestUserEntityForArray)
 
         api_class = Class.new(Grape::API) do
@@ -431,7 +425,6 @@ module GrapeOAS
         users = body_schema.properties["users"]
 
         assert_equal "array", users.type
-        # Items should be an object schema from the entity introspector
         assert_equal "object", users.items.type
         assert users.items.properties.key?("id")
         assert users.items.properties.key?("name")

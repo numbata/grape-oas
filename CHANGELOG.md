@@ -10,13 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#58](https://github.com/numbata/grape-oas/pull/58): Fix contract extraction compatibility with Grape 3.2 - [@numbata](https://github.com/numbata).
-- Your contribution here
-
-## [Unreleased]
-
-### Fixed
-
 - [#57](https://github.com/numbata/grape-oas/pull/57): Fix `Array<Array<...>>` double-wrap when `is_array: true` is used with typed array notation like `type: [String]` — the redundant `is_array` flag no longer produces a nested array schema - [@numbata](https://github.com/numbata).
+- Your contribution here
 
 ## [1.3.0] - 2026-03-27
 

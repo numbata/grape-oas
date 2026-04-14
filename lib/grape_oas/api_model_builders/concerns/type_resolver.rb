@@ -12,13 +12,8 @@ module GrapeOAS
       # Centralizes Ruby type to OpenAPI schema type resolution.
       # Used by request builders and introspectors to avoid duplicated type switching logic.
       module TypeResolver
-        # Regex fragment for a Ruby constant name, optionally namespaced: "String", "MyModule::MyType"
         CONST_NAME = /(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*/
-
-        # Regex to match Grape's typed array notation like "[String]", "[Integer]", "[MyModule::MyType]"
         TYPED_ARRAY_PATTERN = /\A\[(#{CONST_NAME})\]\z/
-
-        # Regex to match Grape's multi-type notation like "[String, Integer]", "[String, Float]"
         MULTI_TYPE_PATTERN = /\A\[(#{CONST_NAME}(?:,\s*#{CONST_NAME})+)\]\z/
 
         # Resolves a Ruby class or type name to its OpenAPI schema type string.
