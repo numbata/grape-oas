@@ -380,7 +380,7 @@ module GrapeOAS
           expose :name, documentation: { type: String }
         end
 
-        Object.const_set(:TestEntityIsArrayWrap, entity) unless defined?(TestEntityIsArrayWrap)
+        Object.const_set(:TestEntityIsArrayWrap, entity)
 
         api_class = Class.new(Grape::API) do
           format :json
@@ -411,7 +411,7 @@ module GrapeOAS
           expose :name, documentation: { type: String }
         end
 
-        Object.const_set(:TestUserEntityForArray, user_entity) unless defined?(TestUserEntityForArray)
+        Object.const_set(:TestUserEntityForArray, user_entity)
 
         api_class = Class.new(Grape::API) do
           format :json
