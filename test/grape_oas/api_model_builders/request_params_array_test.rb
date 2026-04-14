@@ -299,6 +299,7 @@ module GrapeOAS
       # === Namespaced types ===
 
       def test_array_of_namespaced_type_with_uuid
+        skip "Grape >= 3.2 rejects string type notation" if Gem::Version.new(Grape::VERSION) >= Gem::Version.new("3.2")
         # Simulate what Grape stores when you use type: [MyModule::Types::UUID]
         # Grape converts this to the string "[MyModule::Types::UUID]"
         api_class = Class.new(Grape::API) do
@@ -324,6 +325,7 @@ module GrapeOAS
       end
 
       def test_array_of_namespaced_type_with_datetime
+        skip "Grape >= 3.2 rejects string type notation" if Gem::Version.new(Grape::VERSION) >= Gem::Version.new("3.2")
         api_class = Class.new(Grape::API) do
           format :json
           params do
@@ -346,6 +348,7 @@ module GrapeOAS
       end
 
       def test_array_of_deeply_namespaced_type
+        skip "Grape >= 3.2 rejects string type notation" if Gem::Version.new(Grape::VERSION) >= Gem::Version.new("3.2")
         api_class = Class.new(Grape::API) do
           format :json
           params do
@@ -370,6 +373,7 @@ module GrapeOAS
       # === Entity arrays ===
 
       def test_entity_typed_array_with_is_array_does_not_double_wrap
+        skip "Grape >= 3.2 rejects string type notation" if Gem::Version.new(Grape::VERSION) >= Gem::Version.new("3.2")
         entity = Class.new(Grape::Entity) do
           expose :id, documentation: { type: Integer }
           expose :name, documentation: { type: String }
@@ -400,6 +404,7 @@ module GrapeOAS
       end
 
       def test_array_of_entity_in_typed_notation
+        skip "Grape >= 3.2 rejects string type notation" if Gem::Version.new(Grape::VERSION) >= Gem::Version.new("3.2")
         # Define an entity class for testing
         user_entity = Class.new(Grape::Entity) do
           expose :id, documentation: { type: Integer }
