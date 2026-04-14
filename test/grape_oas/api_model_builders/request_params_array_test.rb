@@ -9,6 +9,11 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
+      def teardown
+        Object.send(:remove_const, :TestEntityIsArrayWrap) if defined?(TestEntityIsArrayWrap)
+        Object.send(:remove_const, :TestUserEntityForArray) if defined?(TestUserEntityForArray)
+      end
+
       # === Typed Array parameters ===
 
       def test_array_of_strings

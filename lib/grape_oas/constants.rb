@@ -51,6 +51,15 @@ module GrapeOAS
     # Prevents OOM on wide string ranges (e.g. "a".."zzzzzz").
     MAX_ENUM_RANGE_SIZE = 100
 
+    # Regex patterns for Grape's stringified type notations.
+    # Grape converts `type: [SomeClass]` to "[SomeClass]" and
+    # `type: [String, Integer]` to "[String, Integer]" for documentation.
+    module TypePatterns
+      CONST_NAME = /(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*/
+      TYPED_ARRAY = /\A\[(?<inner>#{CONST_NAME})\]\z/
+      MULTI_TYPE = /\A\[(#{CONST_NAME}(?:,\s*#{CONST_NAME})+)\]\z/
+    end
+
     # Default values for OpenAPI spec when not provided by user
     module Defaults
       LICENSE_NAME = "Proprietary"

@@ -20,7 +20,7 @@ module GrapeOAS
     class ArrayResolver
       extend Base
 
-      ARRAY_PATTERN = ApiModelBuilders::Concerns::TypeResolver::TYPED_ARRAY_PATTERN
+      ARRAY_PATTERN = Constants::TypePatterns::TYPED_ARRAY
 
       class << self
         def handles?(type)
@@ -52,7 +52,7 @@ module GrapeOAS
 
         def extract_inner_type(type)
           match = type.match(ARRAY_PATTERN)
-          match[1] if match
+          match[:inner] if match
         end
 
         def build_schema_from_class(klass)
