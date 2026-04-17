@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#59](https://github.com/numbata/grape-oas/pull/59): Export `default` param values to OAS2 and OAS3 output - [@olivier-thatch](https://github.com/olivier-thatch).
 - Your contribution here
 
+### Changed
+
+- [#64](https://github.com/numbata/grape-oas/pull/64): Memoize `ContentTypeResolver#default_format_from_app_or_api` and `#content_types_from_app_or_api` per generation on a new `ApiModel::API#builder_cache` — these helpers are invoked once per route × response spec but only depend on `(api, app)`, which is constant for a generation run; the backing `app.default_format` walks Grape's `inheritable_setting.namespace_inheritable` at ~50–90 ms per call. Measured 97× cold-generation speedup on a ~140-route API (87.6 s → 0.9 s) - [@JuniorJoanis](https://github.com/JuniorJoanis).
+
 ## [1.3.0] - 2026-03-27
 
 ### Added

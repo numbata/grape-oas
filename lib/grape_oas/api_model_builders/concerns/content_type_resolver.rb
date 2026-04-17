@@ -57,6 +57,16 @@ module GrapeOAS
         end
 
         def default_format_from_app_or_api
+          return uncached_default_format_from_app_or_api unless api.respond_to?(:builder_cache)
+
+          cache = api.builder_cache
+          key = [:default_format, app.object_id]
+          return cache[key] if cache.key?(key)
+
+          cache[key] = uncached_default_format_from_app_or_api
+        end
+
+        def uncached_default_format_from_app_or_api
           return api.default_format if api.respond_to?(:default_format)
           return app.default_format if app_responds_to?(:default_format)
 
@@ -66,6 +76,16 @@ module GrapeOAS
         end
 
         def content_types_from_app_or_api(default_format)
+          return uncached_content_types_from_app_or_api(default_format) unless api.respond_to?(:builder_cache)
+
+          cache = api.builder_cache
+          key = [:content_types, app.object_id, default_format]
+          return cache[key] if cache.key?(key)
+
+          cache[key] = uncached_content_types_from_app_or_api(default_format)
+        end
+
+        def uncached_content_types_from_app_or_api(default_format)
           source = if api.respond_to?(:content_types)
                      api.content_types
                    elsif app_responds_to?(:content_types)

@@ -38,6 +38,10 @@ module GrapeOAS
       def add_tags(*tags)
         @tag_defs.merge(tags)
       end
+
+      def builder_cache
+        @builder_cache ||= {}
+      end
     end
   end
 end
