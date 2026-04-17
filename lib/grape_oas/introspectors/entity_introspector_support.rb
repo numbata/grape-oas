@@ -20,11 +20,14 @@ module GrapeOAS
       end
 
       # Resolves the canonical name for an entity class, preferring entity_name
-      # when defined and non-empty, falling back to the Ruby class name.
+      # when defined directly on the class and non-blank, falling back to the
+      # Ruby class name. Inherited entity_name is ignored to avoid collisions
+      # between parent and child schemas.
       def self.resolve_canonical_name(entity_class)
-        if entity_class.respond_to?(:entity_name)
+        if entity_class.respond_to?(:entity_name) &&
+           entity_class.method(:entity_name).owner == entity_class.singleton_class
           name = entity_class.entity_name
-          name && !name.empty? ? name : entity_class.name
+          name.is_a?(String) && !name.strip.empty? ? name : entity_class.name
         else
           entity_class.name
         end

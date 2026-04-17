@@ -301,19 +301,27 @@ module GrapeOAS
                    "allOf $ref should point to parent's entity_name 'Animal'"
     end
 
-    # Child without its own entity_name inherits parent's entity_name via Ruby
-    # class method inheritance, so its schema key matches the parent's.
-    # This verifies the child schema still exists (registered under inherited name).
-    def test_oas3_child_without_entity_name_inherits_parent_name
+    # Child without its own entity_name falls back to class name and gets
+    # its own schema with child-specific properties preserved.
+    def test_oas3_child_without_entity_name_uses_class_name
       schema = GrapeOAS.generate(app: InheritanceAPI, schema_type: :oas3)
-      response_schema = schema.dig(
-        "paths", "/dogs/{id}", "get", "responses", "200", "content", "application/json", "schema",
-      )
+      schemas = schema.dig("components", "schemas")
 
-      assert response_schema, "Expected response schema for dogs endpoint"
-      ref = response_schema["$ref"] || response_schema.dig("allOf", 0, "$ref")
+      dog_key = schemas.keys.find { |k| k.include?("Dog") }
 
-      assert ref, "Expected a $ref in dogs response"
+      assert dog_key, "Expected a schema key for DogEntity"
+      refute_equal "Animal", dog_key,
+                   "Child without own entity_name must not collide with parent"
+
+      dog_schema = schemas[dog_key]
+      all_of = dog_schema["allOf"]
+
+      assert all_of, "Expected DogEntity to use allOf for inheritance"
+      assert_equal "#/components/schemas/Animal", all_of[0]["$ref"]
+
+      child_props = all_of[1]["properties"]
+
+      assert child_props&.key?("breed"), "DogEntity's own 'breed' property must be present"
     end
 
     # OAS2: same behavior for inheritance with entity_name
