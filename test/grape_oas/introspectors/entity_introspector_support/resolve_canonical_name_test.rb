@@ -62,6 +62,30 @@ module GrapeOAS
           end
         end
 
+        module EntityNaming
+          def entity_name
+            "FromModule"
+          end
+        end
+
+        class ExtendedEntity < Grape::Entity
+          extend EntityNaming
+
+          expose :id, documentation: { type: Integer }
+        end
+
+        class ChildInheritsExtend < ExtendedEntity
+          expose :extra, documentation: { type: String }
+        end
+
+        class ChildOverridesExtend < ExtendedEntity
+          expose :extra, documentation: { type: String }
+
+          def self.entity_name
+            "ChildOverride"
+          end
+        end
+
         def test_uses_class_name_when_no_entity_name
           assert_equal PlainEntity.name,
                        EntityIntrospectorSupport.resolve_canonical_name(PlainEntity)
@@ -95,6 +119,21 @@ module GrapeOAS
         def test_uses_overridden_entity_name
           assert_equal "OverriddenChild",
                        EntityIntrospectorSupport.resolve_canonical_name(ChildOverridesName)
+        end
+
+        def test_uses_entity_name_from_extend
+          assert_equal "FromModule",
+                       EntityIntrospectorSupport.resolve_canonical_name(ExtendedEntity)
+        end
+
+        def test_ignores_inherited_extend_entity_name
+          assert_equal ChildInheritsExtend.name,
+                       EntityIntrospectorSupport.resolve_canonical_name(ChildInheritsExtend)
+        end
+
+        def test_uses_overridden_extend_entity_name
+          assert_equal "ChildOverride",
+                       EntityIntrospectorSupport.resolve_canonical_name(ChildOverridesExtend)
         end
       end
     end
