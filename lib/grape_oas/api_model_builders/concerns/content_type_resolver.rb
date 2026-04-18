@@ -82,7 +82,8 @@ module GrapeOAS
           key = [:content_types, app.object_id, default_format]
           return cache[key] if cache.key?(key)
 
-          cache[key] = uncached_content_types_from_app_or_api(default_format)
+          value = uncached_content_types_from_app_or_api(default_format)
+          cache[key] = value.is_a?(Hash) ? value.dup.freeze : value
         end
 
         def uncached_content_types_from_app_or_api(default_format)

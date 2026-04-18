@@ -173,6 +173,35 @@ module GrapeOAS
                      "app.content_types must not be consulted when api.content_types answers"
       end
 
+      def test_content_types_cached_hash_is_frozen_and_decoupled_from_source
+        source = { "application/json" => :json }
+        @app.content_types_value = source
+
+        host = ResolverHost.new(api: @api, app: @app, route: @route)
+        cached = host.content_types_from_app_or_api(nil)
+
+        assert_predicate cached, :frozen?, "cached content-types hash must be frozen"
+        refute_same source, cached,
+                    "cached hash must be a copy so mutation of source cannot poison the cache"
+        assert_raises(FrozenError) { cached["text/csv"] = :csv }
+      end
+
+      def test_content_types_cache_survives_source_mutation
+        source = { "application/json" => :json }
+        @app.content_types_value = source
+
+        host = ResolverHost.new(api: @api, app: @app, route: @route)
+        first = host.content_types_from_app_or_api(nil)
+
+        source["application/xml"] = :xml
+
+        second = host.content_types_from_app_or_api(nil)
+
+        assert_equal first, second
+        refute_includes second.keys, "application/xml",
+                        "mutation of the source hash after caching must not leak into cached value"
+      end
+
       def test_resolve_content_types_is_stable_and_memoizes_underlying_helpers
         @app.default_format_value = :json
         @app.content_types_value = {
