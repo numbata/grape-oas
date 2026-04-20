@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#57](https://github.com/numbata/grape-oas/pull/57): Fix `Array<Array<...>>` double-wrap when `is_array: true` is used with typed array notation like `type: [String]` — the redundant `is_array` flag no longer produces a nested array schema - [@numbata](https://github.com/numbata).
 - [#59](https://github.com/numbata/grape-oas/pull/59): Export `default` param values to OAS2 and OAS3 output - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#61](https://github.com/numbata/grape-oas/pull/61): Respect `entity_name` on `grape::entity` subclasses - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#68](https://github.com/numbata/grape-oas/pull/68): De-duplicate parameter `description` between the Parameter Object and its nested `schema` in OAS 3 output — hoists description up to the Parameter Object and strips it from the schema, preventing tools like Swagger UI and Redoc from rendering duplicate text - [@olivier-thatch](https://github.com/olivier-thatch).
 - Your contribution here
 
 ### Changed
