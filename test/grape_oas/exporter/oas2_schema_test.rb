@@ -240,6 +240,20 @@ module GrapeOAS
         assert_equal %w[x y], result["enum"]
       end
 
+      # === Composition: format and type propagation tests ===
+
+      def test_allof_schema_with_type_and_format
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "object")
+        schema.format = "custom"
+
+        result = OAS2::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal "object", result["type"]
+        assert_equal "custom", result["format"]
+      end
+
       # === $ref + allOf wrapping: default propagation tests ===
 
       def test_ref_with_default_wraps_in_allof

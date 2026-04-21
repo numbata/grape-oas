@@ -88,6 +88,8 @@ module GrapeOAS
           end
 
           result = { "allOf" => all_of_items }
+          result["type"] = @schema.type if @schema.type
+          result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
@@ -102,6 +104,8 @@ module GrapeOAS
           end
 
           result = { "oneOf" => one_of_items }
+          result["type"] = @schema.type if @schema.type
+          result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
@@ -117,6 +121,8 @@ module GrapeOAS
           end
 
           result = { "anyOf" => any_of_items }
+          result["type"] = @schema.type if @schema.type
+          result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
