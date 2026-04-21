@@ -337,6 +337,41 @@ module GrapeOAS
         refute result.key?("default")
       end
 
+      # === Composition: enum propagation tests ===
+
+      def test_allof_schema_with_enum
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+        schema.enum = %w[a b c]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal %w[a b c], result["enum"]
+      end
+
+      def test_oneof_schema_with_enum
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(one_of: [variant])
+        schema.enum = %w[x y]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("oneOf")
+        assert_equal %w[x y], result["enum"]
+      end
+
+      def test_anyof_schema_with_enum
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(any_of: [variant])
+        schema.enum = %w[x y]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("anyOf")
+        assert_equal %w[x y], result["enum"]
+      end
+
       # === $ref + allOf wrapping: default propagation tests ===
 
       def test_ref_with_default_wraps_in_allof
