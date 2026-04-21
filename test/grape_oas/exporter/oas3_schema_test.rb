@@ -386,6 +386,16 @@ module GrapeOAS
         assert_equal "custom", result["format"]
       end
 
+      def test_composition_with_nullable_type_array_emits_type_array
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(one_of: [child], type: "string", nullable: true)
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        assert result.key?("oneOf")
+        assert_equal %w[string null], result["type"]
+      end
+
       def test_oneof_schema_with_format
         variant = ApiModel::Schema.new(type: "string")
         schema = ApiModel::Schema.new(one_of: [variant])
