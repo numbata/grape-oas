@@ -524,6 +524,98 @@ module GrapeOAS
         assert_equal "uuid", child["format"]
       end
 
+      # === $ref + allOf wrapping: constraints propagation tests ===
+
+      def test_ref_with_numeric_constraints_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.minimum = 0
+        ref_schema.maximum = 100
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 0, child["minimum"]
+        assert_equal 100, child["maximum"]
+      end
+
+      def test_ref_with_string_constraints_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.min_length = 1
+        ref_schema.max_length = 255
+        ref_schema.pattern = "^[a-z]+$"
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 1, child["minLength"]
+        assert_equal 255, child["maxLength"]
+        assert_equal "^[a-z]+$", child["pattern"]
+      end
+
+      def test_ref_with_array_constraints_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.min_items = 1
+        ref_schema.max_items = 10
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 1, child["minItems"]
+        assert_equal 10, child["maxItems"]
+      end
+
+      def test_ref_with_exclusive_bounds_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.minimum = 0
+        ref_schema.exclusive_minimum = true
+        ref_schema.maximum = 100
+        ref_schema.exclusive_maximum = true
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 0, child["minimum"]
+        assert child["exclusiveMinimum"]
+        assert_equal 100, child["maximum"]
+        assert child["exclusiveMaximum"]
+      end
+
+      def test_ref_without_constraints_stays_plain
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/components/schemas/MyEntity", child["$ref"]
+        refute child.key?("minimum")
+        refute child.key?("minLength")
+        refute child.key?("minItems")
+      end
+
       # === Array items: description/nullable hoisting tests ===
 
       def test_array_ref_items_description_hoisted_to_outer_array

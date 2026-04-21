@@ -138,6 +138,7 @@ module GrapeOAS
             result["description"] = schema.description.to_s if schema.description
             result["default"] = schema.default unless schema.default.nil?
             result["enum"] = schema.enum if schema.enum
+            apply_constraints_from(result, schema)
             if result.empty?
               ref_hash
             else
@@ -149,6 +150,18 @@ module GrapeOAS
             built.delete("description") unless include_metadata
             built
           end
+        end
+
+        def apply_constraints_from(hash, schema)
+          hash["minimum"] = schema.minimum unless schema.minimum.nil?
+          hash["maximum"] = schema.maximum unless schema.maximum.nil?
+          hash["exclusiveMinimum"] = schema.exclusive_minimum if schema.exclusive_minimum
+          hash["exclusiveMaximum"] = schema.exclusive_maximum if schema.exclusive_maximum
+          hash["minLength"] = schema.min_length unless schema.min_length.nil?
+          hash["maxLength"] = schema.max_length unless schema.max_length.nil?
+          hash["pattern"] = schema.pattern if schema.pattern
+          hash["minItems"] = schema.min_items unless schema.min_items.nil?
+          hash["maxItems"] = schema.max_items unless schema.max_items.nil?
         end
 
         def normalize_enum(enum_vals, type)
