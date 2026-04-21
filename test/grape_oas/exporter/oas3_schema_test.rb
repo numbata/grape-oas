@@ -440,6 +440,53 @@ module GrapeOAS
         assert_equal "^[a-z]+$", result["pattern"]
       end
 
+      # === $ref + allOf wrapping: extensions propagation tests ===
+
+      def test_ref_with_extensions_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(
+          canonical_name: "MyEntity",
+          extensions: { "x-custom" => "value" },
+        )
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "value", child["x-custom"]
+      end
+
+      # === Composition: extensions propagation tests ===
+
+      def test_allof_schema_with_extensions
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(
+          all_of: [child],
+          extensions: { "x-custom" => "allof-value" },
+        )
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal "allof-value", result["x-custom"]
+      end
+
+      def test_oneof_schema_with_extensions
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(
+          one_of: [variant],
+          extensions: { "x-tag" => "poly" },
+        )
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("oneOf")
+        assert_equal "poly", result["x-tag"]
+      end
+
       # === $ref + allOf wrapping: default propagation tests ===
 
       def test_ref_with_default_wraps_in_allof

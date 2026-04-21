@@ -94,6 +94,7 @@ module GrapeOAS
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
           apply_constraints_from(result, @schema)
+          result.merge!(@schema.extensions) if @schema.extensions
           apply_nullable(result)
           result
         end
@@ -111,6 +112,7 @@ module GrapeOAS
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
           apply_constraints_from(result, @schema)
+          result.merge!(@schema.extensions) if @schema.extensions
           result["discriminator"] = build_discriminator if @schema.discriminator
           apply_nullable(result)
           result
@@ -129,6 +131,7 @@ module GrapeOAS
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
           apply_constraints_from(result, @schema)
+          result.merge!(@schema.extensions) if @schema.extensions
           result["discriminator"] = build_discriminator if @schema.discriminator
           apply_nullable(result)
           result
@@ -195,6 +198,7 @@ module GrapeOAS
             result["default"] = schema.default unless schema.default.nil?
             result["enum"] = schema.enum if schema.enum
             apply_constraints_from(result, schema)
+            result.merge!(schema.extensions) if schema.extensions
             apply_nullable_to_ref(result, schema)
             if result.empty?
               ref_hash

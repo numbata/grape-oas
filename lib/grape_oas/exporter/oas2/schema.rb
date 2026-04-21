@@ -111,6 +111,7 @@ module GrapeOAS
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
           apply_constraints_from(result, @schema)
+          result.merge!(@schema.extensions) if @schema.extensions
           result["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
           result
         end
@@ -141,6 +142,7 @@ module GrapeOAS
             result["default"] = schema.default unless schema.default.nil?
             result["enum"] = schema.enum if schema.enum
             apply_constraints_from(result, schema)
+            result.merge!(schema.extensions) if schema.extensions
             if result.empty?
               ref_hash
             else
