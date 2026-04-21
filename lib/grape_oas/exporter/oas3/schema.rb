@@ -263,9 +263,9 @@ module GrapeOAS
         end
 
         # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs
-        def sanitize_enum_against_type(hash, type: hash["type"])
+        def sanitize_enum_against_type(hash, type: nil)
           enum_vals = hash["enum"]
-          type_val = type
+          type_val = type || hash["type"]
           return unless enum_vals && type_val
 
           base_type = if type_val.is_a?(Array)
