@@ -92,7 +92,7 @@ module GrapeOAS
           result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
-          result["enum"] = @schema.enum if @schema.enum
+          result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
           apply_constraints_from(result, @schema)
           result.merge!(@schema.extensions) if @schema.extensions
           apply_nullable(result)
@@ -110,7 +110,7 @@ module GrapeOAS
           result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
-          result["enum"] = @schema.enum if @schema.enum
+          result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
           apply_constraints_from(result, @schema)
           result.merge!(@schema.extensions) if @schema.extensions
           result["discriminator"] = build_discriminator if @schema.discriminator
@@ -129,7 +129,7 @@ module GrapeOAS
           result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
-          result["enum"] = @schema.enum if @schema.enum
+          result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
           apply_constraints_from(result, @schema)
           result.merge!(@schema.extensions) if @schema.extensions
           result["discriminator"] = build_discriminator if @schema.discriminator
@@ -194,7 +194,7 @@ module GrapeOAS
             result = {}
             result["description"] = schema.description.to_s if schema.description
             result["default"] = schema.default unless schema.default.nil?
-            result["enum"] = schema.enum if schema.enum
+            result["enum"] = normalize_enum(schema.enum, schema.type) if schema.enum
             apply_constraints_from(result, schema)
             result.merge!(schema.extensions) if schema.extensions
             apply_nullable_to_ref(result, schema)
@@ -250,8 +250,21 @@ module GrapeOAS
         def apply_constraints_from(hash, schema)
           hash["minimum"] = schema.minimum unless schema.minimum.nil?
           hash["maximum"] = schema.maximum unless schema.maximum.nil?
-          hash["exclusiveMinimum"] = schema.exclusive_minimum if schema.exclusive_minimum
-          hash["exclusiveMaximum"] = schema.exclusive_maximum if schema.exclusive_maximum
+
+          if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY
+            if schema.exclusive_minimum && !schema.minimum.nil?
+              hash["exclusiveMinimum"] = schema.minimum
+              hash.delete("minimum")
+            end
+            if schema.exclusive_maximum && !schema.maximum.nil?
+              hash["exclusiveMaximum"] = schema.maximum
+              hash.delete("maximum")
+            end
+          else
+            hash["exclusiveMinimum"] = schema.exclusive_minimum if schema.exclusive_minimum
+            hash["exclusiveMaximum"] = schema.exclusive_maximum if schema.exclusive_maximum
+          end
+
           hash["minLength"] = schema.min_length unless schema.min_length.nil?
           hash["maxLength"] = schema.max_length unless schema.max_length.nil?
           hash["pattern"] = schema.pattern if schema.pattern
