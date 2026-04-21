@@ -81,13 +81,19 @@ module GrapeOAS
 
         # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
         # Extensions are merged to allow x-anyOf/x-oneOf for consumers that support them
+        #
+        # Only description and extensions are applied from the composition node.
+        # Type-specific attributes (default, enum, format, constraints) are omitted
+        # because they describe the multi-type composition, not the single fallback
+        # branch selected here.
         def build_first_of_schema(composition_type)
           schemas = @schema.send(composition_type)
           first_schema = schemas.first
           return {} unless first_schema
 
           result = build_schema_or_ref(first_schema)
-          apply_composition_attributes(result)
+          result["description"] = @schema.description.to_s if @schema.description
+          apply_extensions(result)
           if result.key?("$ref") && result.size > 1
             ref = { "$ref" => result.delete("$ref") }
             result["allOf"] = [ref]

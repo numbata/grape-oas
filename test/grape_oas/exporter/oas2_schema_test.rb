@@ -198,14 +198,14 @@ module GrapeOAS
         assert_equal({ "role" => "guest" }, result["default"])
       end
 
-      def test_first_of_schema_with_default
+      def test_first_of_schema_omits_default
         variant = ApiModel::Schema.new(type: "string")
         schema = ApiModel::Schema.new(one_of: [variant])
         schema.default = "option_a"
 
         result = OAS2::Schema.new(schema).build
 
-        assert_equal "option_a", result["default"]
+        refute result.key?("default"), "default belongs to the composition, not the fallback branch"
       end
 
       def test_allof_schema_without_default
@@ -230,14 +230,14 @@ module GrapeOAS
         assert_equal %w[a b c], result["enum"]
       end
 
-      def test_first_of_schema_with_enum
+      def test_first_of_schema_omits_enum
         variant = ApiModel::Schema.new(type: "string")
         schema = ApiModel::Schema.new(one_of: [variant])
         schema.enum = %w[x y]
 
         result = OAS2::Schema.new(schema).build
 
-        assert_equal %w[x y], result["enum"]
+        refute result.key?("enum"), "enum belongs to the composition, not the fallback branch"
       end
 
       # === Composition: format and type propagation tests ===
@@ -314,7 +314,7 @@ module GrapeOAS
         assert_equal 1, result["minLength"]
       end
 
-      def test_first_of_schema_with_constraints
+      def test_first_of_schema_omits_constraints
         variant = ApiModel::Schema.new(type: "string")
         schema = ApiModel::Schema.new(one_of: [variant])
         schema.min_length = 5
@@ -322,8 +322,8 @@ module GrapeOAS
 
         result = OAS2::Schema.new(schema).build
 
-        assert_equal 5, result["minLength"]
-        assert_equal "^[A-Z]", result["pattern"]
+        refute result.key?("minLength"), "constraints belong to the composition, not the fallback branch"
+        refute result.key?("pattern")
       end
 
       # === $ref + allOf wrapping: extensions propagation tests ===
@@ -372,16 +372,15 @@ module GrapeOAS
         assert_equal [{ "type" => "string" }], result["x-oneOf"]
       end
 
-      def test_first_of_schema_ref_with_default_wraps_in_allof
+      def test_first_of_schema_ref_with_default_stays_plain
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
         schema = ApiModel::Schema.new(one_of: [ref_schema])
         schema.default = "guest"
 
         result = OAS2::Schema.new(schema, Set.new).build
 
-        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], result["allOf"]
-        assert_equal "guest", result["default"]
-        refute result.key?("$ref"), "$ref should not be a bare sibling"
+        assert_equal "#/definitions/MyEntity", result["$ref"]
+        refute result.key?("default"), "default belongs to the composition, not the fallback branch"
       end
 
       def test_first_of_schema_ref_without_attributes_stays_plain
