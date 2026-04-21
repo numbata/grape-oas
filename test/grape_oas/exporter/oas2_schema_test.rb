@@ -360,6 +360,18 @@ module GrapeOAS
         assert_equal "allof-value", result["x-custom"]
       end
 
+      def test_first_of_schema_with_extensions
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(
+          one_of: [variant],
+          extensions: { "x-oneOf" => [{ "type" => "string" }] },
+        )
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal [{ "type" => "string" }], result["x-oneOf"]
+      end
+
       # === $ref + allOf wrapping: default propagation tests ===
 
       def test_ref_with_default_wraps_in_allof

@@ -719,6 +719,36 @@ module GrapeOAS
         refute child.key?("minItems")
       end
 
+      # === $ref + allOf wrapping: combined attributes test ===
+
+      def test_ref_with_multiple_attributes_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(
+          canonical_name: "MyEntity",
+          description: "A related entity",
+          extensions: { "x-deprecated" => true },
+        )
+        ref_schema.default = "guest"
+        ref_schema.enum = %w[admin user guest]
+        ref_schema.min_length = 1
+        ref_schema.max_length = 50
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "A related entity", child["description"]
+        assert_equal "guest", child["default"]
+        assert_equal %w[admin user guest], child["enum"]
+        assert_equal 1, child["minLength"]
+        assert_equal 50, child["maxLength"]
+        assert child["x-deprecated"]
+        refute child.key?("$ref")
+      end
+
       # === Array items: description/nullable hoisting tests ===
 
       def test_array_ref_items_description_hoisted_to_outer_array
