@@ -254,6 +254,35 @@ module GrapeOAS
         assert_equal "custom", result["format"]
       end
 
+      # === Composition: constraints propagation tests ===
+
+      def test_allof_schema_with_constraints
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+        schema.minimum = 0
+        schema.maximum = 100
+        schema.min_length = 1
+
+        result = OAS2::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal 0, result["minimum"]
+        assert_equal 100, result["maximum"]
+        assert_equal 1, result["minLength"]
+      end
+
+      def test_first_of_schema_with_constraints
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(one_of: [variant])
+        schema.min_length = 5
+        schema.pattern = "^[A-Z]"
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal 5, result["minLength"]
+        assert_equal "^[A-Z]", result["pattern"]
+      end
+
       # === $ref + allOf wrapping: default propagation tests ===
 
       def test_ref_with_default_wraps_in_allof

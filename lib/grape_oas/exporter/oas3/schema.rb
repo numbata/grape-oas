@@ -93,6 +93,7 @@ module GrapeOAS
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
+          apply_constraints_from(result, @schema)
           apply_nullable(result)
           result
         end
@@ -109,6 +110,7 @@ module GrapeOAS
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
+          apply_constraints_from(result, @schema)
           result["discriminator"] = build_discriminator if @schema.discriminator
           apply_nullable(result)
           result
@@ -126,6 +128,7 @@ module GrapeOAS
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = @schema.enum if @schema.enum
+          apply_constraints_from(result, @schema)
           result["discriminator"] = build_discriminator if @schema.discriminator
           apply_nullable(result)
           result
