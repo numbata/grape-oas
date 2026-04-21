@@ -116,6 +116,7 @@ module GrapeOAS
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = normalize_enum(@schema.enum, result["type"]) if @schema.enum
+          sanitize_enum_against_type(result)
           apply_all_constraints(result)
           result.merge!(@schema.extensions) if @schema.extensions
         end

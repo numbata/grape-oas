@@ -488,6 +488,17 @@ module GrapeOAS
         assert_equal [1, 2, 3], result["enum"]
       end
 
+      def test_allof_schema_sanitizes_incompatible_enum
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "boolean")
+        schema.enum = %w[true false]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        refute result.key?("enum"), "string enum incompatible with boolean type should be dropped"
+      end
+
       # === $ref + allOf wrapping: extensions propagation tests ===
 
       def test_ref_with_extensions_wraps_in_allof
