@@ -86,8 +86,20 @@ module GrapeOAS
           first_schema = schemas.first
           return {} unless first_schema
 
-          # Build the first schema as the fallback
           result = build_schema_or_ref(first_schema)
+          apply_composition_attributes(result)
+          result
+        end
+
+        # Build allOf schema for inheritance
+        def build_all_of_schema
+          items = @schema.all_of.map { |item| build_schema_or_ref(item) }
+          result = { "allOf" => items }
+          apply_composition_attributes(result)
+          result
+        end
+
+        def apply_composition_attributes(result)
           result["type"] = @schema.type if @schema.type
           result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
@@ -95,25 +107,6 @@ module GrapeOAS
           result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
           apply_constraints(result)
           apply_extensions(result)
-          result
-        end
-
-        # Build allOf schema for inheritance
-        def build_all_of_schema
-          all_of_items = @schema.all_of.map do |item|
-            build_schema_or_ref(item)
-          end
-
-          result = { "allOf" => all_of_items }
-          result["type"] = @schema.type if @schema.type
-          result["format"] = @schema.format if @schema.format
-          result["description"] = @schema.description.to_s if @schema.description
-          result["default"] = @schema.default unless @schema.default.nil?
-          result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
-          apply_constraints(result)
-          result.merge!(@schema.extensions) if @schema.extensions
-          result["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
-          result
         end
 
         def build_properties(properties)
