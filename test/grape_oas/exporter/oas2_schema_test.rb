@@ -254,6 +254,49 @@ module GrapeOAS
         assert_equal "custom", result["format"]
       end
 
+      # === Composition: enum normalization ===
+
+      def test_allof_schema_normalizes_integer_enum
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "integer")
+        schema.enum = %w[1 2 3]
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal [1, 2, 3], result["enum"]
+      end
+
+      # === Inline: zero-value constraints ===
+
+      def test_inline_schema_with_zero_minimum
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.minimum = 0
+        schema.maximum = 100
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal 0, result["minimum"]
+        assert_equal 100, result["maximum"]
+      end
+
+      def test_inline_schema_with_zero_min_length
+        schema = ApiModel::Schema.new(type: "string")
+        schema.min_length = 0
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal 0, result["minLength"]
+      end
+
+      def test_inline_schema_with_zero_min_items
+        schema = ApiModel::Schema.new(type: "array", items: ApiModel::Schema.new(type: "string"))
+        schema.min_items = 0
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal 0, result["minItems"]
+      end
+
       # === Composition: constraints propagation tests ===
 
       def test_allof_schema_with_constraints

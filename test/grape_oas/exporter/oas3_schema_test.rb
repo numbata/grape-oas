@@ -440,6 +440,54 @@ module GrapeOAS
         assert_equal "^[a-z]+$", result["pattern"]
       end
 
+      # === Composition: exclusive bounds under TYPE_ARRAY strategy ===
+
+      def test_allof_schema_with_exclusive_bounds_type_array
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+        schema.minimum = 0
+        schema.exclusive_minimum = true
+        schema.maximum = 100
+        schema.exclusive_maximum = true
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        assert result.key?("allOf")
+        assert_equal 0, result["exclusiveMinimum"]
+        assert_equal 100, result["exclusiveMaximum"]
+        refute result.key?("minimum")
+        refute result.key?("maximum")
+      end
+
+      def test_ref_with_exclusive_bounds_type_array
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.minimum = 5
+        ref_schema.exclusive_minimum = true
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 5, child["exclusiveMinimum"]
+        refute child.key?("minimum")
+      end
+
+      # === Composition: enum normalization ===
+
+      def test_allof_schema_normalizes_integer_enum
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "integer")
+        schema.enum = %w[1 2 3]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert_equal [1, 2, 3], result["enum"]
+      end
+
       # === $ref + allOf wrapping: extensions propagation tests ===
 
       def test_ref_with_extensions_wraps_in_allof
