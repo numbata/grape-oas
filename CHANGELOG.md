@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#59](https://github.com/numbata/grape-oas/pull/59): Export `default` param values to OAS2 and OAS3 output - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#61](https://github.com/numbata/grape-oas/pull/61): Respect `entity_name` on `grape::entity` subclasses - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#68](https://github.com/numbata/grape-oas/pull/68): De-duplicate parameter `description` between the Parameter Object and its nested `schema` in OAS 3 output - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#70](https://github.com/numbata/grape-oas/pull/70): Propagate schema attributes (`default`, `enum`, constraints, extensions) through `$ref` and composition paths - [@numbata](https://github.com/numbata).
 - Your contribution here
 
 ### Changed
