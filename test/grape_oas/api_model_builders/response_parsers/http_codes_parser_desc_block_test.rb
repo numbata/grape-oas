@@ -112,10 +112,11 @@ module GrapeOAS
           mock_route(settings: { description: desc_data })
         end
 
-        def mock_route(options: {}, settings: {})
+        def mock_route(options: {}, settings: {}, request_method: "GET")
           route = Object.new
           route.define_singleton_method(:options) { options }
           route.define_singleton_method(:settings) { settings }
+          route.define_singleton_method(:request_method) { request_method }
           route
         end
       end
