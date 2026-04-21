@@ -624,6 +624,21 @@ module GrapeOAS
         refute child.key?("$ref")
       end
 
+      def test_ref_with_incompatible_enum_drops_enum
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "boolean")
+        ref_schema.enum = %w[true false]
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/components/schemas/MyEntity", child["$ref"]
+        refute child.key?("enum"), "string enum incompatible with boolean type should be dropped"
+      end
+
       def test_ref_without_enum_stays_plain
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")

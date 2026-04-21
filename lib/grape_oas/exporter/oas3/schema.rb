@@ -179,6 +179,7 @@ module GrapeOAS
             result["description"] = schema.description.to_s if schema.description
             result["default"] = schema.default unless schema.default.nil?
             result["enum"] = normalize_enum(schema.enum, schema.type) if schema.enum
+            sanitize_enum_against_type(result, type: schema.type)
             apply_all_constraints(result, schema)
             result.merge!(schema.extensions) if schema.extensions
             apply_nullable_to_ref(result, schema)
@@ -262,9 +263,9 @@ module GrapeOAS
         end
 
         # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs
-        def sanitize_enum_against_type(hash)
+        def sanitize_enum_against_type(hash, type: hash["type"])
           enum_vals = hash["enum"]
-          type_val = hash["type"]
+          type_val = type
           return unless enum_vals && type_val
 
           base_type = if type_val.is_a?(Array)
