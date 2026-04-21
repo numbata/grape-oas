@@ -126,6 +126,7 @@ module GrapeOAS
               result["x-nullable"] = true
             end
             result["description"] = schema.description.to_s if schema.description
+            result["default"] = schema.default unless schema.default.nil?
             if result.empty?
               ref_hash
             else

@@ -293,6 +293,53 @@ module GrapeOAS
         refute child.key?("type")
       end
 
+      # === $ref + allOf wrapping: default propagation tests ===
+
+      def test_ref_with_default_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.default = "guest"
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "guest", child["default"]
+        refute child.key?("$ref")
+      end
+
+      def test_ref_with_false_default_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.default = false
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal false, child["default"] # rubocop:disable Minitest/RefuteFalse
+      end
+
+      def test_ref_without_default_stays_plain
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/components/schemas/MyEntity", child["$ref"]
+        refute child.key?("default")
+      end
+
       # === Array items: description/nullable hoisting tests ===
 
       def test_array_ref_items_description_hoisted_to_outer_array
