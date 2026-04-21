@@ -372,6 +372,28 @@ module GrapeOAS
         assert_equal [{ "type" => "string" }], result["x-oneOf"]
       end
 
+      def test_first_of_schema_ref_with_default_wraps_in_allof
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        schema = ApiModel::Schema.new(one_of: [ref_schema])
+        schema.default = "guest"
+
+        result = OAS2::Schema.new(schema, Set.new).build
+
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], result["allOf"]
+        assert_equal "guest", result["default"]
+        refute result.key?("$ref"), "$ref should not be a bare sibling"
+      end
+
+      def test_first_of_schema_ref_without_attributes_stays_plain
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        schema = ApiModel::Schema.new(one_of: [ref_schema])
+
+        result = OAS2::Schema.new(schema, Set.new).build
+
+        assert_equal "#/definitions/MyEntity", result["$ref"]
+        refute result.key?("allOf")
+      end
+
       # === $ref + allOf wrapping: default propagation tests ===
 
       def test_ref_with_default_wraps_in_allof

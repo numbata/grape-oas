@@ -88,6 +88,10 @@ module GrapeOAS
 
           result = build_schema_or_ref(first_schema)
           apply_composition_attributes(result)
+          if result.key?("$ref") && result.size > 1
+            ref = { "$ref" => result.delete("$ref") }
+            result["allOf"] = [ref]
+          end
           result
         end
 
