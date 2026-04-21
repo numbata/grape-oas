@@ -535,6 +535,19 @@ module GrapeOAS
         assert_equal "poly", result["x-tag"]
       end
 
+      def test_anyof_schema_with_extensions
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(
+          any_of: [variant],
+          extensions: { "x-tag" => "poly" },
+        )
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("anyOf")
+        assert_equal "poly", result["x-tag"]
+      end
+
       # === $ref + allOf wrapping: default propagation tests ===
 
       def test_ref_with_default_wraps_in_allof
