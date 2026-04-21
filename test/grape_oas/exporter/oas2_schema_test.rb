@@ -185,6 +185,38 @@ module GrapeOAS
         refute child.key?("$ref")
       end
 
+      # === Composition: default propagation tests ===
+
+      def test_allof_schema_with_default
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+        schema.default = { "role" => "guest" }
+
+        result = OAS2::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal({ "role" => "guest" }, result["default"])
+      end
+
+      def test_first_of_schema_with_default
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(one_of: [variant])
+        schema.default = "option_a"
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal "option_a", result["default"]
+      end
+
+      def test_allof_schema_without_default
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+
+        result = OAS2::Schema.new(schema).build
+
+        refute result.key?("default")
+      end
+
       # === $ref + allOf wrapping: default propagation tests ===
 
       def test_ref_with_default_wraps_in_allof

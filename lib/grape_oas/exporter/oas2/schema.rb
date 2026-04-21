@@ -89,6 +89,7 @@ module GrapeOAS
           # Build the first schema as the fallback
           result = build_schema_or_ref(first_schema)
           result["description"] = @schema.description.to_s if @schema.description
+          result["default"] = @schema.default unless @schema.default.nil?
           apply_extensions(result)
           result
         end
@@ -101,6 +102,7 @@ module GrapeOAS
 
           result = { "allOf" => all_of_items }
           result["description"] = @schema.description.to_s if @schema.description
+          result["default"] = @schema.default unless @schema.default.nil?
           result["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
           result
         end
