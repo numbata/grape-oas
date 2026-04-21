@@ -129,6 +129,7 @@ module GrapeOAS
             end
             result["description"] = schema.description.to_s if schema.description
             result["default"] = schema.default unless schema.default.nil?
+            result["enum"] = schema.enum if schema.enum
             if result.empty?
               ref_hash
             else
