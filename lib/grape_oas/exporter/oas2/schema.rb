@@ -56,16 +56,16 @@ module GrapeOAS
           schema_hash
         end
 
-        def apply_constraints(schema_hash)
-          schema_hash["minLength"] = @schema.min_length unless @schema.min_length.nil?
-          schema_hash["maxLength"] = @schema.max_length unless @schema.max_length.nil?
-          schema_hash["pattern"] = @schema.pattern if @schema.pattern
-          schema_hash["minimum"] = @schema.minimum unless @schema.minimum.nil?
-          schema_hash["maximum"] = @schema.maximum unless @schema.maximum.nil?
-          schema_hash["exclusiveMinimum"] = @schema.exclusive_minimum if @schema.exclusive_minimum
-          schema_hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
-          schema_hash["minItems"] = @schema.min_items unless @schema.min_items.nil?
-          schema_hash["maxItems"] = @schema.max_items unless @schema.max_items.nil?
+        def apply_constraints(schema_hash, schema = @schema)
+          schema_hash["minimum"] = schema.minimum unless schema.minimum.nil?
+          schema_hash["maximum"] = schema.maximum unless schema.maximum.nil?
+          schema_hash["exclusiveMinimum"] = schema.exclusive_minimum if schema.exclusive_minimum
+          schema_hash["exclusiveMaximum"] = schema.exclusive_maximum if schema.exclusive_maximum
+          schema_hash["minLength"] = schema.min_length unless schema.min_length.nil?
+          schema_hash["maxLength"] = schema.max_length unless schema.max_length.nil?
+          schema_hash["pattern"] = schema.pattern if schema.pattern
+          schema_hash["minItems"] = schema.min_items unless schema.min_items.nil?
+          schema_hash["maxItems"] = schema.max_items unless schema.max_items.nil?
         end
 
         def apply_extensions(schema_hash)
@@ -93,7 +93,7 @@ module GrapeOAS
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
-          apply_constraints_from(result, @schema)
+          apply_constraints(result)
           apply_extensions(result)
           result
         end
@@ -110,7 +110,7 @@ module GrapeOAS
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
           result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
-          apply_constraints_from(result, @schema)
+          apply_constraints(result)
           result.merge!(@schema.extensions) if @schema.extensions
           result["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
           result
@@ -139,7 +139,7 @@ module GrapeOAS
             result["description"] = schema.description.to_s if schema.description
             result["default"] = schema.default unless schema.default.nil?
             result["enum"] = normalize_enum(schema.enum, schema.type) if schema.enum
-            apply_constraints_from(result, schema)
+            apply_constraints(result, schema)
             result.merge!(schema.extensions) if schema.extensions
             if result.empty?
               ref_hash
@@ -152,18 +152,6 @@ module GrapeOAS
             built.delete("description") unless include_metadata
             built
           end
-        end
-
-        def apply_constraints_from(hash, schema)
-          hash["minimum"] = schema.minimum unless schema.minimum.nil?
-          hash["maximum"] = schema.maximum unless schema.maximum.nil?
-          hash["exclusiveMinimum"] = schema.exclusive_minimum if schema.exclusive_minimum
-          hash["exclusiveMaximum"] = schema.exclusive_maximum if schema.exclusive_maximum
-          hash["minLength"] = schema.min_length unless schema.min_length.nil?
-          hash["maxLength"] = schema.max_length unless schema.max_length.nil?
-          hash["pattern"] = schema.pattern if schema.pattern
-          hash["minItems"] = schema.min_items unless schema.min_items.nil?
-          hash["maxItems"] = schema.max_items unless schema.max_items.nil?
         end
 
         def normalize_enum(enum_vals, type)
