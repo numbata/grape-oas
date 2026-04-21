@@ -451,6 +451,54 @@ module GrapeOAS
         refute child.key?("enum")
       end
 
+      # === $ref + allOf wrapping: format and type propagation tests ===
+
+      def test_ref_with_format_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.format = "date-time"
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "date-time", child["format"]
+        refute child.key?("$ref")
+      end
+
+      def test_ref_with_type_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "string")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "string", child["type"]
+      end
+
+      def test_ref_with_type_and_format_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "string")
+        ref_schema.format = "uuid"
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "string", child["type"]
+        assert_equal "uuid", child["format"]
+      end
+
       # === Array items: description/nullable hoisting tests ===
 
       def test_array_ref_items_description_hoisted_to_outer_array
