@@ -83,36 +83,18 @@ module GrapeOAS
 
         # Build allOf schema for inheritance
         def build_all_of_schema
-          all_of_items = @schema.all_of.map do |item|
-            build_schema_or_ref(item)
-          end
-
-          result = { "allOf" => all_of_items }
-          result["type"] = @schema.type if @schema.type
-          result["format"] = @schema.format if @schema.format
-          result["description"] = @schema.description.to_s if @schema.description
-          result["default"] = @schema.default unless @schema.default.nil?
-          result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
-          apply_all_constraints(result)
-          result.merge!(@schema.extensions) if @schema.extensions
+          items = @schema.all_of.map { |item| build_schema_or_ref(item) }
+          result = { "allOf" => items }
+          apply_composition_attributes(result)
           apply_nullable(result)
           result
         end
 
         # Build oneOf schema for polymorphism
         def build_one_of_schema
-          one_of_items = @schema.one_of.map do |item|
-            build_schema_or_ref(item)
-          end
-
-          result = { "oneOf" => one_of_items }
-          result["type"] = @schema.type if @schema.type
-          result["format"] = @schema.format if @schema.format
-          result["description"] = @schema.description.to_s if @schema.description
-          result["default"] = @schema.default unless @schema.default.nil?
-          result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
-          apply_all_constraints(result)
-          result.merge!(@schema.extensions) if @schema.extensions
+          items = @schema.one_of.map { |item| build_schema_or_ref(item) }
+          result = { "oneOf" => items }
+          apply_composition_attributes(result)
           result["discriminator"] = build_discriminator if @schema.discriminator
           apply_nullable(result)
           result
@@ -120,11 +102,15 @@ module GrapeOAS
 
         # Build anyOf schema for polymorphism
         def build_any_of_schema
-          any_of_items = @schema.any_of.map do |item|
-            build_schema_or_ref(item)
-          end
+          items = @schema.any_of.map { |item| build_schema_or_ref(item) }
+          result = { "anyOf" => items }
+          apply_composition_attributes(result)
+          result["discriminator"] = build_discriminator if @schema.discriminator
+          apply_nullable(result)
+          result
+        end
 
-          result = { "anyOf" => any_of_items }
+        def apply_composition_attributes(result)
           result["type"] = @schema.type if @schema.type
           result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
@@ -132,9 +118,6 @@ module GrapeOAS
           result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
           apply_all_constraints(result)
           result.merge!(@schema.extensions) if @schema.extensions
-          result["discriminator"] = build_discriminator if @schema.discriminator
-          apply_nullable(result)
-          result
         end
 
         # Build OAS3 discriminator object
