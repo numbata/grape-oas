@@ -263,5 +263,48 @@ module GrapeOAS
       assert_equal 100, constraint_set.maximum
       assert constraint_set.exclusive_maximum
     end
+
+    def test_apply_numeric_range_coerces_bigdecimal_bounds_to_float
+      require "bigdecimal"
+
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
+      RangeUtils.apply_numeric_range(schema, BigDecimal("0.5")..BigDecimal("2.5"))
+
+      # BigDecimal#to_json emits a string like "0.5e0", which would produce
+      # invalid OpenAPI output. Bounds must be coerced to Float.
+      assert_kind_of Float, schema.minimum
+      assert_kind_of Float, schema.maximum
+      assert_in_delta 0.5, schema.minimum
+      assert_in_delta 2.5, schema.maximum
+    end
+
+    def test_apply_numeric_range_leaves_integer_and_float_bounds_unchanged
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
+      RangeUtils.apply_numeric_range(schema, 1..10)
+
+      assert_kind_of Integer, schema.minimum
+      assert_kind_of Integer, schema.maximum
+
+      float_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
+      RangeUtils.apply_numeric_range(float_schema, 1.5..9.5)
+
+      assert_kind_of Float, float_schema.minimum
+      assert_kind_of Float, float_schema.maximum
+    end
+
+    def test_apply_numeric_range_bigdecimal_bounds_serialize_as_json_numbers
+      require "bigdecimal"
+      require "json"
+
+      schema = ApiModel::Schema.new(type: Constants::SchemaTypes::NUMBER)
+      RangeUtils.apply_numeric_range(schema, BigDecimal(0)..BigDecimal(1))
+
+      payload = JSON.parse({ minimum: schema.minimum, maximum: schema.maximum }.to_json)
+
+      assert_kind_of Numeric, payload["minimum"]
+      assert_kind_of Numeric, payload["maximum"]
+      assert_in_delta 0.0, payload["minimum"]
+      assert_in_delta 1.0, payload["maximum"]
+    end
   end
 end

@@ -181,6 +181,47 @@ module GrapeOAS
         assert_in_delta(50.0, temp_param.schema.maximum)
       end
 
+      # === BigDecimal range values ===
+
+      def test_bigdecimal_range_values
+        require "bigdecimal"
+        require "bigdecimal/util"
+
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :discount_rate,
+                     type: BigDecimal,
+                     values: BigDecimal(0)..BigDecimal(1),
+                     desc: "Discount rate applied to the order",
+                     documentation: { example: 0.25 }
+          end
+          get "orders" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        discount_param = params.find { |p| p.name == "discount_rate" }
+
+        refute_nil discount_param
+        refute discount_param.required
+        assert_equal "number", discount_param.schema.type
+        assert_equal "double", discount_param.schema.format
+        assert_equal "Discount rate applied to the order", discount_param.description
+        assert_in_delta 0.25, discount_param.schema.examples
+        # Bounds are coerced to Float so they serialize as JSON numbers, not
+        # strings (BigDecimal#to_json emits "0.1e1" etc.).
+        assert_in_delta 0.0, discount_param.schema.minimum
+        assert_in_delta 1.0, discount_param.schema.maximum
+        assert_kind_of Float, discount_param.schema.minimum
+        assert_kind_of Float, discount_param.schema.maximum
+        refute discount_param.schema.exclusive_maximum
+      end
+
       # === String range values ===
 
       def test_string_range_values

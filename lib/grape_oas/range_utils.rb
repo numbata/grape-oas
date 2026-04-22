@@ -34,10 +34,10 @@ module GrapeOAS
 
         return if descending?(first_val, last_val)
 
-        target.minimum = first_val if finite_numeric?(first_val) && target.respond_to?(:minimum=)
+        target.minimum = coerce_for_json(first_val) if finite_numeric?(first_val) && target.respond_to?(:minimum=)
         return unless finite_numeric?(last_val)
 
-        target.maximum = last_val if target.respond_to?(:maximum=)
+        target.maximum = coerce_for_json(last_val) if target.respond_to?(:maximum=)
         target.exclusive_maximum = range.exclude_end? if target.respond_to?(:exclusive_maximum=)
       end
 
@@ -77,6 +77,13 @@ module GrapeOAS
 
       def finite_numeric?(val)
         val.is_a?(Numeric) && val.finite?
+      end
+
+      # BigDecimal serializes to JSON as a string (e.g. "0.1e1"), violating the
+      # OpenAPI/JSON-Schema requirement that `minimum`/`maximum` be numbers.
+      # Coerce to Float so it renders as a JSON number literal.
+      def coerce_for_json(val)
+        defined?(BigDecimal) && val.is_a?(BigDecimal) ? val.to_f : val
       end
 
       def descending?(first_val, last_val)
