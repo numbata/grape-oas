@@ -21,7 +21,17 @@ module GrapeOAS
           sanitize_enum_against_type(schema_hash)
           apply_extensions_and_extra_properties(schema_hash)
           apply_all_constraints(schema_hash)
+          normalize_file_type!(schema_hash)
           schema_hash.compact
+        end
+
+        # OAS3.0 does not support `type: file`. Files are represented as
+        # `type: string, format: binary`. OAS3.1 subclasses override this.
+        def normalize_file_type!(hash)
+          return unless hash["type"] == Constants::SchemaTypes::FILE
+
+          hash["type"] = Constants::SchemaTypes::STRING
+          hash["format"] = "binary"
         end
 
         def build_base_hash
@@ -190,7 +200,7 @@ module GrapeOAS
               result
             end
           else
-            built = Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            built = self.class.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
             strip_items_metadata(built) unless include_metadata
             built
           end

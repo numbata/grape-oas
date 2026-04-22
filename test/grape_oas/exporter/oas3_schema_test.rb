@@ -892,6 +892,39 @@ module GrapeOAS
         assert result["items"]["x-nullable"], "x-nullable should be on the composed items schema"
         assert result["items"]["oneOf"], "oneOf should be present on items"
       end
+
+      # === File type normalization (OAS 3.0) ===
+      # OAS 3.0 does not support `type: file`; files are represented as
+      # `type: string, format: binary`.
+
+      def test_file_type_becomes_string_with_binary_format
+        schema = ApiModel::Schema.new(type: "file")
+
+        result = OAS3::Schema.new(schema).build
+
+        assert_equal "string", result["type"]
+        assert_equal "binary", result["format"]
+      end
+
+      def test_array_of_files_items_become_string_with_binary_format
+        items = ApiModel::Schema.new(type: "file")
+        array = ApiModel::Schema.new(type: "array", items: items)
+
+        result = OAS3::Schema.new(array).build
+
+        assert_equal "array", result["type"]
+        assert_equal({ "type" => "string", "format" => "binary" }, result["items"])
+      end
+
+      def test_file_typed_property_becomes_string_with_binary_format
+        file_prop = ApiModel::Schema.new(type: "file")
+        object = ApiModel::Schema.new(type: "object")
+        object.add_property("avatar", file_prop)
+
+        result = OAS3::Schema.new(object).build
+
+        assert_equal({ "type" => "string", "format" => "binary" }, result["properties"]["avatar"])
+      end
     end
   end
 end

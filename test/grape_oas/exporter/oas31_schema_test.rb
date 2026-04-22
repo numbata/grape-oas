@@ -66,6 +66,55 @@ module GrapeOAS
         assert_equal 2, offset["maximum"]
       end
 
+      # === File type normalization (OAS 3.1) ===
+      # OAS 3.1 uses JSON Schema content-* keywords instead of the
+      # OAS 3.0 `format: binary` convention.
+
+      def test_file_type_becomes_string_with_content_keywords
+        schema = ApiModel::Schema.new(type: "file")
+
+        result = OAS31::Schema.new(schema).build
+
+        assert_equal "string", result["type"]
+        assert_equal "application/octet-stream", result["contentMediaType"]
+        assert_equal "binary", result["contentEncoding"]
+        refute result.key?("format"), "OAS 3.1 should not emit 'format: binary'"
+      end
+
+      def test_array_of_files_items_get_content_keywords
+        items = ApiModel::Schema.new(type: "file")
+        array = ApiModel::Schema.new(type: "array", items: items)
+
+        result = OAS31::Schema.new(array).build
+
+        assert_equal "array", result["type"]
+        assert_equal(
+          {
+            "type" => "string",
+            "contentMediaType" => "application/octet-stream",
+            "contentEncoding" => "binary"
+          },
+          result["items"],
+        )
+      end
+
+      def test_file_typed_property_gets_content_keywords
+        file_prop = ApiModel::Schema.new(type: "file")
+        object = ApiModel::Schema.new(type: "object")
+        object.add_property("avatar", file_prop)
+
+        result = OAS31::Schema.new(object).build
+
+        assert_equal(
+          {
+            "type" => "string",
+            "contentMediaType" => "application/octet-stream",
+            "contentEncoding" => "binary"
+          },
+          result["properties"]["avatar"],
+        )
+      end
+
       private
 
       def generate_doc_with_schema(schema)
