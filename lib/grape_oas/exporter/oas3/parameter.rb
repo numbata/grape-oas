@@ -12,14 +12,17 @@ module GrapeOAS
 
         def build
           Array(@op.parameters).map do |param|
+            schema_hash = Schema.new(param.schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            schema_description = schema_hash.delete("description")
+            description = param.description || schema_description
             {
               "name" => param.name,
               "in" => param.location,
               "required" => param.required,
-              "description" => param.description,
+              "description" => description,
               "style" => param.style,
               "explode" => param.explode,
-              "schema" => Schema.new(param.schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+              "schema" => schema_hash
             }.compact
           end.presence
         end
