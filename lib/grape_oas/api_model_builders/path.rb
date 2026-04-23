@@ -10,6 +10,11 @@ module GrapeOAS
       PATH_PARAMETER_PATTERN = %r{(?<=/):(?<param>[^/]+)}
       private_constant :PATH_PARAMETER_PATTERN
 
+      # Matches Grape's wildcard segments: /?*param or /*param
+      # The optional ? before * is Grape's syntax for an optional leading slash
+      WILDCARD_PARAMETER_PATTERN = /\??\*(?<param>[^\/()]+)/
+      private_constant :WILDCARD_PARAMETER_PATTERN
+
       NORMALIZED_PLACEHOLDER = /\{[^}]+\}/
       private_constant :NORMALIZED_PLACEHOLDER
 
@@ -98,7 +103,8 @@ module GrapeOAS
       def sanitize_path(path)
         path
           .gsub(EXTENSION_PATTERN, "") # Remove format extensions like (.json)
-          .gsub(PATH_PARAMETER_PATTERN, "{\\k<param>}") # Replace named parameters with curly braces
+          .gsub(WILDCARD_PARAMETER_PATTERN, "{\\k<param>}") # Replace *param / /?*param with {param}
+          .gsub(PATH_PARAMETER_PATTERN, "{\\k<param>}") # Replace :param with {param}
       end
 
       def normalize_template(path)
