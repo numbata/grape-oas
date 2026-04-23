@@ -28,9 +28,8 @@ module GrapeOAS
       def test_hidden_property_handling
         schema = EntityIntrospector.new(HiddenPropertiesEntity).build_schema
 
-        # Both properties should be in the schema (hidden is for swagger-ui, not schema)
         assert_includes schema.properties.keys, "visible"
-        assert_includes schema.properties.keys, "hidden_field"
+        refute_includes schema.properties.keys, "hidden_field"
       end
 
       # === Entity with string type references (grape-swagger #427) ===

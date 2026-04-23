@@ -73,8 +73,9 @@ module GrapeOAS
         #
         # @param exposure the entity exposure
         # @return [Boolean] true if exposed
-        def exposed?(_exposure)
-          true
+        def exposed?(exposure)
+          doc = normalize_doc_keys(exposure.documentation || {})
+          !doc[:hidden]
         end
 
         # Checks if an exposure is conditional.
