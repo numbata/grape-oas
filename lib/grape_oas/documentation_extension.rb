@@ -3,9 +3,7 @@
 module GrapeOAS
   module DocumentationExtension
     # Primary entry for grape-oas documentation
-    def add_oas_documentation(**options)
-      return if options.delete(:hide_documentation_path)
-
+    def add_oas_documentation(hide_documentation_path: true, **options)
       # Prefer grape-oas namespaced options to avoid clashing with grape-swagger
       default_mount_path = options.delete(:oas_mount_path) ||
                            options.delete(:mount_path) ||
@@ -25,13 +23,13 @@ module GrapeOAS
       api = self
 
       mount_paths.each do |key, path|
-        add_documentation_routes(path, key, default_format, cache_control, etag_value, options, api)
+        add_documentation_routes(path, key, default_format, cache_control, etag_value, options, api, hidden: hide_documentation_path)
       end
     end
 
-    def add_documentation_routes(path, key, default_format, cache_control, etag_value, options, api)
+    def add_documentation_routes(path, key, default_format, cache_control, etag_value, options, api, hidden: false)
       # Main route without namespace filter
-      add_route(path) do
+      add_route(path, hidden: hidden) do
         GrapeOAS::DocumentationExtension.generate_documentation(
           self, api, key, default_format, cache_control, etag_value, options, nil,
         )
@@ -39,7 +37,7 @@ module GrapeOAS
 
       # Route with namespace filter: /swagger_doc/:namespace
       # Supports nested namespaces via *namespace (catches slashes)
-      add_route("#{path}/*namespace") do
+      add_route("#{path}/*namespace", hidden: hidden) do
         namespace_filter = params[:namespace]&.sub(/\.json$/, "")
         GrapeOAS::DocumentationExtension.generate_documentation(
           self, api, key, default_format, cache_control, etag_value, options, namespace_filter,
@@ -89,10 +87,10 @@ module GrapeOAS
     private
 
     # Minimal route mounting helper
-    def add_route(path, &block)
+    def add_route(path, hidden: false, &block)
       api_class = self
       namespace do
-        get(path) { instance_exec(api_class, &block) }
+        get(path, hidden: hidden) { instance_exec(api_class, &block) }
       end
     end
 
