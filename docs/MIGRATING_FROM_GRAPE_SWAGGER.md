@@ -192,7 +192,7 @@ end
 |--------|---------------|-----------|-------|
 | `hidden` | ✅ | ✅ | Hide endpoint from docs |
 | `hidden` (lambda) | ✅ | ✅ | Conditional hiding |
-| `nickname` | ✅ | ❌ | Use auto-generated operationId |
+| `nickname` | ✅ | ✅ | Used as operationId |
 | `detail` | ✅ | ✅ | Extended description |
 | `summary` | ✅ | ✅ | Override summary |
 | `tags` | ✅ | ✅ | Override tags |
@@ -652,7 +652,7 @@ get ':id' do; end
 | Multiple present (`as:`) | ✅ | ✅ | Fully supported |
 | Root wrapping | ✅ | ❌ | Not implemented |
 | Nested namespace standalone | ✅ | ❌ | Not implemented |
-| Custom operationId (nickname) | ✅ | ❌ | Auto-generated only |
+| Custom operationId (nickname) | ✅ | ✅ | Used as operationId |
 | body_name override | ✅ | ✅ | OAS 2.0 only |
 
 ---
@@ -674,8 +674,6 @@ These grape-swagger features are not currently available in grape-oas:
 4. **Nested Namespace as Standalone** (`swagger: { nested: false }`)
    - All namespaces follow standard Grape routing
 
-5. **Custom operationId** (`nickname:`)
-   - operationId is auto-generated from method and path
 
 
 ---
@@ -793,7 +791,6 @@ See [EXPORTERS.md](EXPORTERS.md) for details.
 - [ ] Update OAuth2 security definitions format if targeting OAS 3.x
 - [ ] Remove any `endpoint_auth_wrapper`/`swagger_endpoint_guard`/`token_owner` options
 - [ ] Test generated output against your existing schema
-- [ ] Update any code that depends on `nickname` (operationId is now auto-generated)
 - [ ] Migrate custom model parsers to introspector registry (see [INTROSPECTORS.md](INTROSPECTORS.md))
 - [ ] Review any root element wrapping (not supported - create wrapper entity)
 
