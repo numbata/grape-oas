@@ -58,7 +58,7 @@ module GrapeOAS
 
         schema = response.media_types.first.schema
 
-        assert_equal "string", schema.type
+        assert_nil schema.type
       end
 
       def test_builds_object_schema_with_entity
