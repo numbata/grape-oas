@@ -56,16 +56,16 @@ module GrapeOAS
           schema_hash
         end
 
-        def apply_constraints(schema_hash)
-          schema_hash["minLength"] = @schema.min_length if @schema.min_length
-          schema_hash["maxLength"] = @schema.max_length if @schema.max_length
-          schema_hash["pattern"] = @schema.pattern if @schema.pattern
-          schema_hash["minimum"] = @schema.minimum if @schema.minimum
-          schema_hash["maximum"] = @schema.maximum if @schema.maximum
-          schema_hash["exclusiveMinimum"] = @schema.exclusive_minimum if @schema.exclusive_minimum
-          schema_hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
-          schema_hash["minItems"] = @schema.min_items if @schema.min_items
-          schema_hash["maxItems"] = @schema.max_items if @schema.max_items
+        def apply_constraints(schema_hash, schema = @schema)
+          schema_hash["minimum"] = schema.minimum unless schema.minimum.nil?
+          schema_hash["maximum"] = schema.maximum unless schema.maximum.nil?
+          schema_hash["exclusiveMinimum"] = schema.exclusive_minimum if schema.exclusive_minimum
+          schema_hash["exclusiveMaximum"] = schema.exclusive_maximum if schema.exclusive_maximum
+          schema_hash["minLength"] = schema.min_length unless schema.min_length.nil?
+          schema_hash["maxLength"] = schema.max_length unless schema.max_length.nil?
+          schema_hash["pattern"] = schema.pattern if schema.pattern
+          schema_hash["minItems"] = schema.min_items unless schema.min_items.nil?
+          schema_hash["maxItems"] = schema.max_items unless schema.max_items.nil?
         end
 
         def apply_extensions(schema_hash)
@@ -81,28 +81,42 @@ module GrapeOAS
 
         # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
         # Extensions are merged to allow x-anyOf/x-oneOf for consumers that support them
+        #
+        # Only description and extensions are applied from the composition node.
+        # Type-specific attributes (default, enum, format, constraints) are omitted
+        # because they describe the multi-type composition, not the single fallback
+        # branch selected here.
         def build_first_of_schema(composition_type)
           schemas = @schema.send(composition_type)
           first_schema = schemas.first
           return {} unless first_schema
 
-          # Build the first schema as the fallback
           result = build_schema_or_ref(first_schema)
           result["description"] = @schema.description.to_s if @schema.description
           apply_extensions(result)
+          if result.key?("$ref") && result.size > 1
+            ref = { "$ref" => result.delete("$ref") }
+            result["allOf"] = [ref]
+          end
           result
         end
 
         # Build allOf schema for inheritance
         def build_all_of_schema
-          all_of_items = @schema.all_of.map do |item|
-            build_schema_or_ref(item)
-          end
-
-          result = { "allOf" => all_of_items }
-          result["description"] = @schema.description.to_s if @schema.description
-          result["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
+          items = @schema.all_of.map { |item| build_schema_or_ref(item) }
+          result = { "allOf" => items }
+          apply_composition_attributes(result)
           result
+        end
+
+        def apply_composition_attributes(result)
+          result["type"] = @schema.type if @schema.type
+          result["format"] = @schema.format if @schema.format
+          result["description"] = @schema.description.to_s if @schema.description
+          result["default"] = @schema.default unless @schema.default.nil?
+          result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
+          apply_constraints(result)
+          apply_extensions(result)
         end
 
         def build_properties(properties)
@@ -126,6 +140,10 @@ module GrapeOAS
               result["x-nullable"] = true
             end
             result["description"] = schema.description.to_s if schema.description
+            result["default"] = schema.default unless schema.default.nil?
+            result["enum"] = normalize_enum(schema.enum, schema.type) if schema.enum
+            apply_constraints(result, schema)
+            result.merge!(schema.extensions) if schema.extensions
             if result.empty?
               ref_hash
             else
