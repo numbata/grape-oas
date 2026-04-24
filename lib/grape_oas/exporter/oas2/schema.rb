@@ -131,7 +131,7 @@ module GrapeOAS
         def build_schema_or_ref(schema, include_metadata: true)
           if schema.respond_to?(:canonical_name) && schema.canonical_name
             @ref_tracker << schema.canonical_name if @ref_tracker
-            ref_name = schema.canonical_name.gsub("::", "_")
+            ref_name = GrapeOAS.schema_ref_name.call(schema.canonical_name)
             ref_hash = { "$ref" => "#/definitions/#{ref_name}" }
             return ref_hash unless include_metadata
 

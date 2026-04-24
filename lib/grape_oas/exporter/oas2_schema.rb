@@ -78,7 +78,7 @@ module GrapeOAS
 
       def build_schema_or_ref(schema)
         if schema.respond_to?(:canonical_name) && schema.canonical_name
-          ref_name = schema.canonical_name.gsub("::", "_")
+          ref_name = GrapeOAS.schema_ref_name.call(schema.canonical_name)
           @ref_tracker << schema.canonical_name
           { "$ref" => "#/definitions/#{ref_name}" }
         else
@@ -106,7 +106,7 @@ module GrapeOAS
 
           processed << canonical_name
 
-          ref_name = canonical_name.gsub("::", "_")
+          ref_name = GrapeOAS.schema_ref_name.call(canonical_name)
           schema = find_schema_by_canonical_name(canonical_name)
           definitions[ref_name] = OAS2::Schema.new(schema, @ref_tracker, nullable_strategy: nullable_strategy).build if schema
           collect_refs(schema, pending) if schema

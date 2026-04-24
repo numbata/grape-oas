@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* Add configurable `GrapeOAS.schema_ref_name` callable that controls how a schema's canonical class name is mangled into its OAS component/definition ref name. Default behavior (`name.gsub("::", "_")`) is byte-identical to prior output; applies uniformly across OAS 2.0 and OAS 3 ref emission paths.
+
 ### Fixed
 
 * Your contribution here
