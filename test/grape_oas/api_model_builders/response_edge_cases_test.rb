@@ -81,6 +81,105 @@ module GrapeOAS
 
         refute_nil no_content, "Should have 204 response"
         assert_equal "No Content", no_content.description
+        assert_empty no_content.media_types,
+                     "204 response must not synthesize media types (no body per HTTP semantics)"
+      end
+
+      def test_204_drops_explicitly_declared_entity
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Delete item",
+               success: { code: 204, message: "No Content", model: ResponseEdgeCasesTest::ItemEntity }
+          delete "items/:id" do
+            status 204
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        no_content = responses.find { |r| r.http_status == "204" }
+
+        refute_nil no_content, "Should have 204 response"
+        assert_empty no_content.media_types,
+                     "204 must drop any declared entity (HTTP semantics: no body)"
+      end
+
+      def test_204_drops_one_of_response_schema
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Delete item",
+               success: {
+                 code: 204,
+                 message: "No Content",
+                 one_of: [
+                   { model: ResponseEdgeCasesTest::ItemEntity },
+                   { model: ResponseEdgeCasesTest::ErrorEntity }
+                 ]
+               }
+          delete "items/:id" do
+            status 204
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        no_content = responses.find { |r| r.http_status == "204" }
+
+        refute_nil no_content, "Should have 204 response"
+        assert_empty no_content.media_types,
+                     "204 must drop one_of schemas (HTTP semantics: no body)"
+      end
+
+      def test_204_drops_merged_as_response_schema
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Delete item",
+               success: {
+                 code: 204,
+                 message: "No Content",
+                 model: ResponseEdgeCasesTest::ItemEntity,
+                 as: :item
+               }
+          delete "items/:id" do
+            status 204
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        no_content = responses.find { |r| r.http_status == "204" }
+
+        refute_nil no_content, "Should have 204 response"
+        assert_empty no_content.media_types,
+                     "204 must drop merged response schemas (HTTP semantics: no body)"
+      end
+
+      def test_non_204_bodyless_response_preserves_media_types
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Conditional get",
+               success: { code: 200, model: ResponseEdgeCasesTest::ItemEntity },
+               failure: [[304, "Not Modified"]]
+          get "items/:id" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        not_modified = responses.find { |r| r.http_status == "304" }
+
+        refute_nil not_modified, "Should have 304 response"
+        refute_empty not_modified.media_types,
+                     "Non-204 bodyless responses preserve current media_types behavior (scope of this fix is 204 only)"
       end
 
       # === Response with headers ===

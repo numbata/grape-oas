@@ -65,6 +65,9 @@ module GrapeOAS
       # Else if any spec has `one_of:`, build a oneOf response from one_of entries and
       # any regular specs in the group (this branch only runs when no `as:` entries exist)
       def build_response_from_group(group_specs)
+        first_spec = group_specs.first
+        return build_response_without_content(first_spec, examples: merge_examples(group_specs)) if no_content_status?(first_spec[:code])
+
         has_one_of = group_specs.any? { |s| s[:one_of] && !s[:one_of].empty? }
         has_as = group_specs.any? { |s| !s[:as].nil? }
 
@@ -176,6 +179,7 @@ module GrapeOAS
       end
 
       def build_response_from_spec(spec)
+        code_str = spec[:code].to_s
         entity_schema = build_schema(spec[:entity])
         schema = wrap_with_root(entity_schema, spec[:entity], is_array: spec[:is_array])
         media_types = Array(response_content_types).map do |mime|
@@ -189,13 +193,31 @@ module GrapeOAS
         description = message.is_a?(String) ? message : message&.to_s
 
         GrapeOAS::ApiModel::Response.new(
-          http_status: spec[:code].to_s,
+          http_status: code_str,
           description: description || "Success",
           media_types: media_types,
           headers: normalize_headers(spec[:headers]) || headers_from_route,
           extensions: spec[:extensions] || extensions_from_route,
           examples: spec[:examples],
         )
+      end
+
+      def build_response_without_content(spec, examples:)
+        message = spec[:message]
+        description = message.is_a?(String) ? message : message&.to_s
+
+        GrapeOAS::ApiModel::Response.new(
+          http_status: spec[:code].to_s,
+          description: description || "Success",
+          media_types: [],
+          headers: normalize_headers(spec[:headers]) || headers_from_route,
+          extensions: spec[:extensions] || extensions_from_route,
+          examples: examples,
+        )
+      end
+
+      def no_content_status?(code)
+        code.to_s == "204"
       end
 
       def array_schema(schema)

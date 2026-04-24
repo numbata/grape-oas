@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Omit the `content` key entirely on `204 No Content` responses. Previously the generated spec synthesized an empty-schema media type (and kept the `content` object even when no body was declared), contradicting HTTP semantics and tripping spec validators. An explicitly declared entity on a `204` response is now also dropped so the emitted object is just `{ "description": "..." }`. Non-204 bodyless responses are untouched.
 * Your contribution here
 
 ### Changed

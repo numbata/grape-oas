@@ -96,6 +96,20 @@ module GrapeOAS
         # Should not double-wrap
         assert_equal({ "id" => 1 }, content["examples"]["success"]["value"])
       end
+
+      def test_204_omits_content_key_when_media_types_empty
+        resp = ApiModel::Response.new(
+          http_status: "204",
+          description: "No Content",
+          media_types: [],
+        )
+
+        result = Exporter::OAS3::Response.new([resp]).build
+
+        refute result["204"].key?("content"),
+               "204 response must not emit a 'content' key when no media types are present"
+        assert_equal "No Content", result["204"]["description"]
+      end
     end
   end
 end
