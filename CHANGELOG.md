@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-* Your contribution here
+* Honor `is_array: true` on the plain-entity response branch so a route declaring `entity:` + `is_array: true` (without `using:`, `as:`, or `one_of:`) emits an array schema wrapping the entity `$ref` instead of a bare `$ref`.
 
 ### Changed
 

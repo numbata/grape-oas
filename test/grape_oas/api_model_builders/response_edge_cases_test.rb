@@ -167,8 +167,33 @@ module GrapeOAS
         refute_nil success
         schema = success.media_types.first.schema
 
-        # NOTE: is_array handling depends on implementation
-        refute_nil schema
+        assert_equal "array", schema.type
+        refute_nil schema.items
+        assert_equal "object", schema.items.type
+        assert_equal "GrapeOAS::ApiModelBuilders::ResponseEdgeCasesTest::ItemEntity",
+                     schema.items.canonical_name
+      end
+
+      def test_response_with_entity_no_is_array_emits_plain_object
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Get item",
+               success: { code: 200, model: ResponseEdgeCasesTest::ItemEntity }
+          get "items/:id" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+
+        success = responses.find { |r| r.http_status == "200" }
+        schema = success.media_types.first.schema
+
+        assert_equal "object", schema.type
+        assert_equal "GrapeOAS::ApiModelBuilders::ResponseEdgeCasesTest::ItemEntity",
+                     schema.canonical_name
       end
 
       # === Empty success (no entity) ===
