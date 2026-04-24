@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* Add configurable `GrapeOAS.entity_exposure_required_default` (default `true`) that controls whether entity exposures without an explicit `documentation: { required: ... }` key are marked required. Default behavior is byte-identical to prior output; setting it to `false` opts out so only explicitly-required exposures end up in the `required` array. Conditional exposures and explicit `required:` values are unaffected.
+
 ### Fixed
 
 * Your contribution here
