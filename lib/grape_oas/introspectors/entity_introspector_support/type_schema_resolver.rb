@@ -94,7 +94,9 @@ module GrapeOAS
           if defined?(Grape::Entity) && type <= Grape::Entity
             GrapeOAS.introspectors.build_schema(type, stack: @stack, registry: @registry)
           else
-            GrapeOAS.type_resolvers.build_schema(type)
+            build_schema_for_primitive(type) ||
+              GrapeOAS.type_resolvers.build_schema(type) ||
+              default_string_schema
           end
         end
 
