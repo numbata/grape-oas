@@ -3,7 +3,7 @@
 module GrapeOAS
   module ApiModelBuilders
     class RequestParams
-      ROUTE_PARAM_REGEX = /(?<=:)\w+/
+      ROUTE_PARAM_REGEX = /(?<=[:*])\w+/
 
       attr_reader :api, :route, :path_param_name_map
 
