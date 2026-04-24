@@ -22,12 +22,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#76](https://github.com/numbata/grape-oas/pull/76): Emit OAS-version-correct schema for file types - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#82](https://github.com/numbata/grape-oas/pull/82): Fix: respect `documentation: { hidden: true }` on entity exposures - [@bogdan](https://github.com/bogdan).
 - [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
-* Your contribution here
+- Omit the `content` key entirely on `204 No Content` responses. Previously the generated spec synthesized an empty-schema media type (and kept the `content` object even when no body was declared), contradicting HTTP semantics and tripping spec validators. An explicitly declared entity on a `204` response is now also dropped so the emitted object is just `{ "description": "..." }`. Non-204 bodyless responses are untouched.
+- Your contribution here
 
 ### Changed
 
 - [#95](https://github.com/numbata/grape-oas/pull/95): Entity exposures now consult `GrapeOAS.type_resolvers` - [@numbata](https://github.com/numbata).
-* Your contribution here
+- Your contribution here
 
 ## [1.4.0] - 2026-04-23
 
