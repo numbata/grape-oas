@@ -9,10 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#96](https://github.com/numbata/grape-oas/pull/96): Pin rubocop versions and add performance/packaging/rake plugins - [@numbata](https://github.com/numbata).
-- [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
-- Your contribution here
 
+- Add configurable `GrapeOAS.schema_ref_name` callable that controls how a schema's canonical class name is mangled into its OAS component/definition ref name. Default behavior (`name.gsub("::", "_")`) is byte-identical to prior output; applies uniformly across OAS 2.0 and OAS 3 ref emission paths.
 ### Fixed
 
 - [#97](https://github.com/numbata/grape-oas/pull/97): Default OAS 2.0 nullable strategy to EXTENSION so nullable fields emit `x-nullable: true` without explicit opt-in - [@numbata](https://github.com/numbata).
@@ -22,12 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#76](https://github.com/numbata/grape-oas/pull/76): Emit OAS-version-correct schema for file types - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#82](https://github.com/numbata/grape-oas/pull/82): Fix: respect `documentation: { hidden: true }` on entity exposures - [@bogdan](https://github.com/bogdan).
 - [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
-* Your contribution here
+- Your contribution here
 
 ### Changed
 
 - [#95](https://github.com/numbata/grape-oas/pull/95): Entity exposures now consult `GrapeOAS.type_resolvers` - [@numbata](https://github.com/numbata).
-* Your contribution here
+- Your contribution here
 
 ## [1.4.0] - 2026-04-23
 
