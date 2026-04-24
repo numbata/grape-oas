@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * Your contribution here
+- [#89](https://github.com/numbata/grape-oas/pull/89): Add `GrapeOAS.entity_exposure_required_default` to make entity exposures without explicit required metadata optional in generated schemas - [@abeljim8am](https://github.com/abeljim8am).
 
 ### Fixed
 

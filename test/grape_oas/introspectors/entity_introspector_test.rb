@@ -184,6 +184,22 @@ module GrapeOAS
         assert_includes schema.required, "forced"
       end
 
+      def test_configured_required_default_preserves_explicit_and_conditional_rules
+        entity_class = Class.new(Grape::Entity) do
+          expose :implicit, documentation: { type: String }
+          expose :required, documentation: { type: String, required: true }
+          expose :optional, documentation: { type: String, required: false }
+          expose :conditional, documentation: { type: String }, if: ->(_object, _options) { true }
+        end
+        GrapeOAS.entity_exposure_required_default = false
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+
+        assert_equal ["required"], schema.required
+      ensure
+        GrapeOAS.entity_exposure_required_default = nil
+      end
+
       def test_x_nullable_documentation_sets_nullable_on_entity_exposure
         entity_class = Class.new(Grape::Entity) do
           expose :note, documentation: { type: String, x: { nullable: true } }

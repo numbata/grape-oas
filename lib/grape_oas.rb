@@ -91,6 +91,25 @@ module GrapeOAS
 
   module_function :logger, :logger=
 
+  # @return [Boolean] whether entity exposures without required metadata
+  #   default to required
+  def entity_exposure_required_default
+    return true if @entity_exposure_required_default.nil?
+
+    @entity_exposure_required_default
+  end
+
+  # @param value [true, false, nil] `nil` resets to the default (`true`)
+  def entity_exposure_required_default=(value)
+    unless value.nil? || value == true || value == false
+      raise ArgumentError, "entity_exposure_required_default must be true, false, or nil (got #{value.class})"
+    end
+
+    @entity_exposure_required_default = value
+  end
+
+  module_function :entity_exposure_required_default, :entity_exposure_required_default=
+
   # Returns the global introspector registry.
   #
   # The registry manages introspectors that build schemas from various sources

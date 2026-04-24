@@ -121,4 +121,29 @@ class GrapeOASTest < Minitest::Test
   ensure
     GrapeOAS.schema_ref_name = nil
   end
+
+  def test_entity_exposure_required_default_can_be_configured_and_reset
+    GrapeOAS.entity_exposure_required_default = nil
+
+    assert GrapeOAS.entity_exposure_required_default
+    GrapeOAS.entity_exposure_required_default = false
+
+    refute GrapeOAS.entity_exposure_required_default
+    GrapeOAS.entity_exposure_required_default = true
+
+    assert GrapeOAS.entity_exposure_required_default
+    GrapeOAS.entity_exposure_required_default = nil
+
+    assert GrapeOAS.entity_exposure_required_default
+  ensure
+    GrapeOAS.entity_exposure_required_default = nil
+  end
+
+  def test_entity_exposure_required_default_setter_raises_for_non_boolean
+    error = assert_raises(ArgumentError) { GrapeOAS.entity_exposure_required_default = "true" }
+    assert_match(/must be true, false, or nil/, error.message)
+    assert_match(/String/, error.message)
+  ensure
+    GrapeOAS.entity_exposure_required_default = nil
+  end
 end

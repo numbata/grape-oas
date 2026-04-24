@@ -6,6 +6,7 @@ This document covers all configuration options for Grape::OAS.
 
 - [Global Options](#global-options)
 - [Schema Ref Names](#schema-ref-names)
+- [Entity Exposure Requiredness](#entity-exposure-requiredness)
 - [Info Object](#info-object)
 - [Nullable Strategy](#nullable-strategy)
 - [OAS2 Composition Extensions](#oas2-composition-extensions)
@@ -64,6 +65,21 @@ GrapeOAS.schema_ref_name = nil
 
 The callable receives the canonical class name as a string and should return a
 valid OAS component key. Configure it once during application boot.
+
+## Entity Exposure Requiredness
+
+Unconditional `Grape::Entity` exposures are required in generated schemas by
+default. Set the global default to `false` during application boot when clients
+should tolerate those fields being absent:
+
+```ruby
+GrapeOAS.entity_exposure_required_default = false
+```
+
+An explicit `documentation: { required: true }` or `required: false` always
+wins, and conditional exposures remain optional. This setting affects only the
+generated OpenAPI schema; it does not change Grape's runtime serialization.
+Set it to `nil` to restore the default of `true`.
 
 ## Info Object
 
