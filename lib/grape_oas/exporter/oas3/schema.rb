@@ -73,34 +73,28 @@ module GrapeOAS
           schema_hash["discriminator"] = build_discriminator if @schema.discriminator
         end
 
-        def apply_all_constraints(schema_hash)
-          apply_numeric_constraints(schema_hash)
-          apply_string_constraints(schema_hash)
-          apply_array_constraints(schema_hash)
+        def apply_all_constraints(schema_hash, schema = @schema)
+          apply_numeric_constraints(schema_hash, schema)
+          apply_string_constraints(schema_hash, schema)
+          apply_array_constraints(schema_hash, schema)
         end
 
         private
 
         # Build allOf schema for inheritance
         def build_all_of_schema
-          all_of_items = @schema.all_of.map do |item|
-            build_schema_or_ref(item)
-          end
-
-          result = { "allOf" => all_of_items }
-          result["description"] = @schema.description.to_s if @schema.description
+          items = @schema.all_of.map { |item| build_schema_or_ref(item) }
+          result = { "allOf" => items }
+          apply_composition_attributes(result)
           apply_nullable(result)
           result
         end
 
         # Build oneOf schema for polymorphism
         def build_one_of_schema
-          one_of_items = @schema.one_of.map do |item|
-            build_schema_or_ref(item)
-          end
-
-          result = { "oneOf" => one_of_items }
-          result["description"] = @schema.description.to_s if @schema.description
+          items = @schema.one_of.map { |item| build_schema_or_ref(item) }
+          result = { "oneOf" => items }
+          apply_composition_attributes(result)
           result["discriminator"] = build_discriminator if @schema.discriminator
           apply_nullable(result)
           result
@@ -108,15 +102,23 @@ module GrapeOAS
 
         # Build anyOf schema for polymorphism
         def build_any_of_schema
-          any_of_items = @schema.any_of.map do |item|
-            build_schema_or_ref(item)
-          end
-
-          result = { "anyOf" => any_of_items }
-          result["description"] = @schema.description.to_s if @schema.description
+          items = @schema.any_of.map { |item| build_schema_or_ref(item) }
+          result = { "anyOf" => items }
+          apply_composition_attributes(result)
           result["discriminator"] = build_discriminator if @schema.discriminator
           apply_nullable(result)
           result
+        end
+
+        def apply_composition_attributes(result)
+          result["type"] = nullable_type if @schema.type
+          result["format"] = @schema.format if @schema.format
+          result["description"] = @schema.description.to_s if @schema.description
+          result["default"] = @schema.default unless @schema.default.nil?
+          result["enum"] = normalize_enum(@schema.enum, result["type"]) if @schema.enum
+          sanitize_enum_against_type(result)
+          apply_all_constraints(result)
+          result.merge!(@schema.extensions) if @schema.extensions
         end
 
         # Build OAS3 discriminator object
@@ -175,6 +177,11 @@ module GrapeOAS
 
             result = {}
             result["description"] = schema.description.to_s if schema.description
+            result["default"] = schema.default unless schema.default.nil?
+            result["enum"] = normalize_enum(schema.enum, schema.type) if schema.enum
+            sanitize_enum_against_type(result, type: schema.type)
+            apply_all_constraints(result, schema)
+            result.merge!(schema.extensions) if schema.extensions
             apply_nullable_to_ref(result, schema)
             if result.empty?
               ref_hash
@@ -225,40 +232,40 @@ module GrapeOAS
           result
         end
 
-        def apply_numeric_constraints(hash)
-          hash["minimum"] = @schema.minimum unless @schema.minimum.nil?
-          hash["maximum"] = @schema.maximum unless @schema.maximum.nil?
+        def apply_numeric_constraints(hash, schema = @schema)
+          hash["minimum"] = schema.minimum unless schema.minimum.nil?
+          hash["maximum"] = schema.maximum unless schema.maximum.nil?
 
           if @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY
-            if @schema.exclusive_minimum && !@schema.minimum.nil?
-              hash["exclusiveMinimum"] = @schema.minimum
+            if schema.exclusive_minimum && !schema.minimum.nil?
+              hash["exclusiveMinimum"] = schema.minimum
               hash.delete("minimum")
             end
-            if @schema.exclusive_maximum && !@schema.maximum.nil?
-              hash["exclusiveMaximum"] = @schema.maximum
+            if schema.exclusive_maximum && !schema.maximum.nil?
+              hash["exclusiveMaximum"] = schema.maximum
               hash.delete("maximum")
             end
           else
-            hash["exclusiveMinimum"] = @schema.exclusive_minimum if @schema.exclusive_minimum
-            hash["exclusiveMaximum"] = @schema.exclusive_maximum if @schema.exclusive_maximum
+            hash["exclusiveMinimum"] = schema.exclusive_minimum if schema.exclusive_minimum
+            hash["exclusiveMaximum"] = schema.exclusive_maximum if schema.exclusive_maximum
           end
         end
 
-        def apply_string_constraints(hash)
-          hash["minLength"] = @schema.min_length unless @schema.min_length.nil?
-          hash["maxLength"] = @schema.max_length unless @schema.max_length.nil?
-          hash["pattern"] = @schema.pattern if @schema.pattern
+        def apply_string_constraints(hash, schema = @schema)
+          hash["minLength"] = schema.min_length unless schema.min_length.nil?
+          hash["maxLength"] = schema.max_length unless schema.max_length.nil?
+          hash["pattern"] = schema.pattern if schema.pattern
         end
 
-        def apply_array_constraints(hash)
-          hash["minItems"] = @schema.min_items unless @schema.min_items.nil?
-          hash["maxItems"] = @schema.max_items unless @schema.max_items.nil?
+        def apply_array_constraints(hash, schema = @schema)
+          hash["minItems"] = schema.min_items unless schema.min_items.nil?
+          hash["maxItems"] = schema.max_items unless schema.max_items.nil?
         end
 
         # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs
-        def sanitize_enum_against_type(hash)
+        def sanitize_enum_against_type(hash, type: nil)
           enum_vals = hash["enum"]
-          type_val = hash["type"]
+          type_val = type || hash["type"]
           return unless enum_vals && type_val
 
           base_type = if type_val.is_a?(Array)

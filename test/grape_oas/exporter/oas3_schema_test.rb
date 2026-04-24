@@ -293,6 +293,498 @@ module GrapeOAS
         refute child.key?("type")
       end
 
+      # === Composition: default propagation tests ===
+
+      def test_allof_schema_with_default
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+        schema.default = { "role" => "guest" }
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal({ "role" => "guest" }, result["default"])
+      end
+
+      def test_oneof_schema_with_default
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(one_of: [variant])
+        schema.default = "option_a"
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("oneOf")
+        assert_equal "option_a", result["default"]
+      end
+
+      def test_anyof_schema_with_default
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(any_of: [variant])
+        schema.default = "option_a"
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("anyOf")
+        assert_equal "option_a", result["default"]
+      end
+
+      def test_allof_schema_without_default
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+
+        result = OAS3::Schema.new(schema).build
+
+        refute result.key?("default")
+      end
+
+      # === Composition: enum propagation tests ===
+
+      def test_allof_schema_with_enum
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+        schema.enum = %w[a b c]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal %w[a b c], result["enum"]
+      end
+
+      def test_oneof_schema_with_enum
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(one_of: [variant])
+        schema.enum = %w[x y]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("oneOf")
+        assert_equal %w[x y], result["enum"]
+      end
+
+      def test_anyof_schema_with_enum
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(any_of: [variant])
+        schema.enum = %w[x y]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("anyOf")
+        assert_equal %w[x y], result["enum"]
+      end
+
+      # === Composition: format and type propagation tests ===
+
+      def test_allof_schema_with_type_and_format
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "object")
+        schema.format = "custom"
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal "object", result["type"]
+        assert_equal "custom", result["format"]
+      end
+
+      def test_composition_with_nullable_type_array_emits_type_array
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(one_of: [child], type: "string", nullable: true)
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        assert result.key?("oneOf")
+        assert_equal %w[string null], result["type"]
+      end
+
+      def test_oneof_schema_with_format
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(one_of: [variant])
+        schema.format = "date-time"
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("oneOf")
+        assert_equal "date-time", result["format"]
+      end
+
+      # === Composition: constraints propagation tests ===
+
+      def test_allof_schema_with_constraints
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+        schema.minimum = 0
+        schema.maximum = 100
+        schema.min_length = 1
+        schema.max_length = 50
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal 0, result["minimum"]
+        assert_equal 100, result["maximum"]
+        assert_equal 1, result["minLength"]
+        assert_equal 50, result["maxLength"]
+      end
+
+      def test_oneof_schema_with_constraints
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(one_of: [variant])
+        schema.min_items = 1
+        schema.max_items = 5
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("oneOf")
+        assert_equal 1, result["minItems"]
+        assert_equal 5, result["maxItems"]
+      end
+
+      def test_anyof_schema_with_pattern
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(any_of: [variant])
+        schema.pattern = "^[a-z]+$"
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("anyOf")
+        assert_equal "^[a-z]+$", result["pattern"]
+      end
+
+      # === Composition: exclusive bounds under TYPE_ARRAY strategy ===
+
+      def test_allof_schema_with_exclusive_bounds_type_array
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child])
+        schema.minimum = 0
+        schema.exclusive_minimum = true
+        schema.maximum = 100
+        schema.exclusive_maximum = true
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        assert result.key?("allOf")
+        assert_equal 0, result["exclusiveMinimum"]
+        assert_equal 100, result["exclusiveMaximum"]
+        refute result.key?("minimum")
+        refute result.key?("maximum")
+      end
+
+      def test_ref_with_exclusive_bounds_type_array
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.minimum = 5
+        ref_schema.exclusive_minimum = true
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 5, child["exclusiveMinimum"]
+        refute child.key?("minimum")
+      end
+
+      # === Composition: enum normalization ===
+
+      def test_allof_schema_normalizes_integer_enum
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "integer")
+        schema.enum = %w[1 2 3]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert_equal [1, 2, 3], result["enum"]
+      end
+
+      def test_allof_schema_sanitizes_incompatible_enum
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "boolean")
+        schema.enum = %w[true false]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        refute result.key?("enum"), "string enum incompatible with boolean type should be dropped"
+      end
+
+      # === $ref + allOf wrapping: extensions propagation tests ===
+
+      def test_ref_with_extensions_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(
+          canonical_name: "MyEntity",
+          extensions: { "x-custom" => "value" },
+        )
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "value", child["x-custom"]
+      end
+
+      # === Composition: extensions propagation tests ===
+
+      def test_allof_schema_with_extensions
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(
+          all_of: [child],
+          extensions: { "x-custom" => "allof-value" },
+        )
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        assert_equal "allof-value", result["x-custom"]
+      end
+
+      def test_oneof_schema_with_extensions
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(
+          one_of: [variant],
+          extensions: { "x-tag" => "poly" },
+        )
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("oneOf")
+        assert_equal "poly", result["x-tag"]
+      end
+
+      def test_anyof_schema_with_extensions
+        variant = ApiModel::Schema.new(type: "string")
+        schema = ApiModel::Schema.new(
+          any_of: [variant],
+          extensions: { "x-tag" => "poly" },
+        )
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result.key?("anyOf")
+        assert_equal "poly", result["x-tag"]
+      end
+
+      # === $ref + allOf wrapping: default propagation tests ===
+
+      def test_ref_with_default_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.default = "guest"
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "guest", child["default"]
+        refute child.key?("$ref")
+      end
+
+      def test_ref_with_false_default_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.default = false
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal false, child["default"] # rubocop:disable Minitest/RefuteFalse
+      end
+
+      def test_ref_without_default_stays_plain
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/components/schemas/MyEntity", child["$ref"]
+        refute child.key?("default")
+      end
+
+      # === $ref + allOf wrapping: enum propagation tests ===
+
+      def test_ref_with_enum_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.enum = %w[admin user guest]
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal %w[admin user guest], child["enum"]
+        refute child.key?("$ref")
+      end
+
+      def test_ref_with_incompatible_enum_drops_enum
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "boolean")
+        ref_schema.enum = %w[true false]
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/components/schemas/MyEntity", child["$ref"]
+        refute child.key?("enum"), "string enum incompatible with boolean type should be dropped"
+      end
+
+      def test_ref_without_enum_stays_plain
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/components/schemas/MyEntity", child["$ref"]
+        refute child.key?("enum")
+      end
+
+      # === $ref + allOf wrapping: constraints propagation tests ===
+
+      def test_ref_with_numeric_constraints_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.minimum = 0
+        ref_schema.maximum = 100
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 0, child["minimum"]
+        assert_equal 100, child["maximum"]
+      end
+
+      def test_ref_with_string_constraints_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.min_length = 1
+        ref_schema.max_length = 255
+        ref_schema.pattern = "^[a-z]+$"
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 1, child["minLength"]
+        assert_equal 255, child["maxLength"]
+        assert_equal "^[a-z]+$", child["pattern"]
+      end
+
+      def test_ref_with_array_constraints_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.min_items = 1
+        ref_schema.max_items = 10
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 1, child["minItems"]
+        assert_equal 10, child["maxItems"]
+      end
+
+      def test_ref_with_exclusive_bounds_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        ref_schema.minimum = 0
+        ref_schema.exclusive_minimum = true
+        ref_schema.maximum = 100
+        ref_schema.exclusive_maximum = true
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal 0, child["minimum"]
+        assert child["exclusiveMinimum"]
+        assert_equal 100, child["maximum"]
+        assert child["exclusiveMaximum"]
+      end
+
+      def test_ref_without_constraints_stays_plain
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal "#/components/schemas/MyEntity", child["$ref"]
+        refute child.key?("minimum")
+        refute child.key?("minLength")
+        refute child.key?("minItems")
+      end
+
+      # === $ref + allOf wrapping: combined attributes test ===
+
+      def test_ref_with_multiple_attributes_wraps_in_allof
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(
+          canonical_name: "MyEntity",
+          description: "A related entity",
+          extensions: { "x-deprecated" => true },
+        )
+        ref_schema.default = "guest"
+        ref_schema.enum = %w[admin user guest]
+        ref_schema.min_length = 1
+        ref_schema.max_length = 50
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal "A related entity", child["description"]
+        assert_equal "guest", child["default"]
+        assert_equal %w[admin user guest], child["enum"]
+        assert_equal 1, child["minLength"]
+        assert_equal 50, child["maxLength"]
+        assert child["x-deprecated"]
+        refute child.key?("$ref")
+      end
+
       # === Array items: description/nullable hoisting tests ===
 
       def test_array_ref_items_description_hoisted_to_outer_array
