@@ -119,6 +119,97 @@ module GrapeOAS
         assert_equal "/users/{user_id}/posts/{post_id}", path.template
       end
 
+      def test_substitutes_concrete_version_into_path
+        api_class = Class.new(Grape::API) do
+          format :json
+          version "v1", using: :path
+          get "items" do
+            []
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes)
+        builder.build
+
+        path = @api.paths.first
+
+        assert_equal "/v1/items", path.template
+      end
+
+      def test_preserves_version_placeholder_without_concrete_version
+        api_class = Class.new(Grape::API) do
+          format :json
+          get "foo/:version" do
+            []
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes)
+        builder.build
+
+        path = @api.paths.first
+
+        assert_equal "/foo/{version}", path.template
+      end
+
+      def test_preserves_user_version_parameter_when_versioning_uses_header
+        api_class = Class.new(Grape::API) do
+          format :json
+          version "v1", using: :header, vendor: "test"
+          get "foo/:version" do
+            []
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes)
+        builder.build
+
+        path = @api.paths.first
+
+        assert_equal "/foo/{version}", path.template
+      end
+
+      def test_path_versioning_only_substitutes_grape_version_segment
+        api_class = Class.new(Grape::API) do
+          format :json
+          version "v1", using: :path
+          get "foo/:version" do
+            []
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes)
+        builder.build
+
+        path = @api.paths.first
+
+        assert_equal "/v1/foo/{version}", path.template
+      end
+
+      def test_concrete_version_preserves_format_extension_and_named_params
+        api_class = Class.new(Grape::API) do
+          version "v1", using: :path
+          get "items/:id(.json)" do
+            []
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes)
+        builder.build
+
+        path = @api.paths.first
+
+        assert_equal "/v1/items/{id}", path.template
+      end
+
+      def test_blank_version_does_not_replace_version_placeholder
+        builder = Path.new(api: @api, routes: [])
+
+        sanitized = builder.send(:sanitize_path, "/:version/items", version: "")
+
+        assert_equal "/{version}/items", sanitized
+      end
+
       # === Namespace filtering tests ===
 
       def test_namespace_filter_includes_matching_paths
@@ -266,6 +357,30 @@ module GrapeOAS
         assert_includes templates, "/users/posts/{id}"
         refute_includes templates, "/users"
         refute_includes templates, "/users/comments"
+      end
+
+      def test_namespace_filter_with_path_version
+        api_class = Class.new(Grape::API) do
+          format :json
+          version "v1", using: :path
+
+          get "items" do
+            {}
+          end
+
+          get "posts" do
+            {}
+          end
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes, namespace_filter: "v1/items")
+        builder.build
+
+        templates = @api.paths.map(&:template)
+
+        assert_equal 1, @api.paths.size
+        assert_includes templates, "/v1/items"
+        refute_includes templates, "/v1/posts"
       end
 
       def test_wildcard_path_converted_to_oas_template

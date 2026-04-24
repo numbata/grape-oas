@@ -33,7 +33,7 @@ module GrapeOAS
         @routes.each_with_object({}) do |route, api_routes|
           next if skip_route?(route)
 
-          route_path = sanitize_path(route.path)
+          route_path = sanitize_path(route.path, version: route.version)
           normalized = normalize_template(route_path)
 
           canonical_info = canonical_paths[normalized]
@@ -84,7 +84,7 @@ module GrapeOAS
       def filtered_by_namespace?(route)
         return false unless namespace_filter
 
-        route_path = sanitize_path(route.path)
+        route_path = sanitize_path(route.path, version: route.version)
         namespace_prefix = namespace_filter.start_with?("/") ? namespace_filter : "/#{namespace_filter}"
 
         # Match exact namespace or namespace followed by / or {
@@ -100,11 +100,27 @@ module GrapeOAS
           .build
       end
 
-      def sanitize_path(path)
-        path
-          .gsub(EXTENSION_PATTERN, "") # Remove format extensions like (.json)
-          .gsub(WILDCARD_PARAMETER_PATTERN, "{\\k<param>}") # Replace *param / /?*param with {param}
-          .gsub(PATH_PARAMETER_PATTERN, "{\\k<param>}") # Replace :param with {param}
+      def sanitize_path(path, version: nil)
+        sanitized = path.gsub(EXTENSION_PATTERN, "") # Remove format extensions like (.json)
+                        .gsub(WILDCARD_PARAMETER_PATTERN, "{\\k<param>}") # Replace *param / /?*param with {param}
+                        .gsub(PATH_PARAMETER_PATTERN, "{\\k<param>}") # Replace :param with {param}
+
+        concrete_version = concrete_path_version(version)
+        sanitized = sanitized.sub("{version}", concrete_version) if concrete_version && path_version_segment?(path)
+
+        sanitized
+      end
+
+      def path_version_segment?(path)
+        path.start_with?("/:version/", "/:version(") || path == "/:version"
+      end
+
+      def concrete_path_version(version)
+        values = Array(version)
+        return nil unless values.length == 1
+
+        value = values.first.to_s
+        value.empty? ? nil : value
       end
 
       def normalize_template(path)
