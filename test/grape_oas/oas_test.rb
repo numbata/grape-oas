@@ -71,4 +71,46 @@ class GrapeOASTest < Minitest::Test
   ensure
     GrapeOAS.logger = nil
   end
+
+  def test_entity_exposure_required_default_defaults_to_true
+    GrapeOAS.entity_exposure_required_default = nil
+
+    assert GrapeOAS.entity_exposure_required_default
+  ensure
+    GrapeOAS.entity_exposure_required_default = nil
+  end
+
+  def test_entity_exposure_required_default_setter_accepts_false
+    GrapeOAS.entity_exposure_required_default = false
+
+    refute GrapeOAS.entity_exposure_required_default
+  ensure
+    GrapeOAS.entity_exposure_required_default = nil
+  end
+
+  def test_entity_exposure_required_default_setter_accepts_true
+    GrapeOAS.entity_exposure_required_default = false
+    GrapeOAS.entity_exposure_required_default = true
+
+    assert GrapeOAS.entity_exposure_required_default
+  ensure
+    GrapeOAS.entity_exposure_required_default = nil
+  end
+
+  def test_entity_exposure_required_default_setter_accepts_nil_to_reset_to_default
+    GrapeOAS.entity_exposure_required_default = false
+    GrapeOAS.entity_exposure_required_default = nil
+
+    assert GrapeOAS.entity_exposure_required_default
+  ensure
+    GrapeOAS.entity_exposure_required_default = nil
+  end
+
+  def test_entity_exposure_required_default_setter_raises_for_non_boolean
+    error = assert_raises(ArgumentError) { GrapeOAS.entity_exposure_required_default = "true" }
+    assert_match(/must be true, false, or nil/, error.message)
+    assert_match(/String/, error.message)
+  ensure
+    GrapeOAS.entity_exposure_required_default = nil
+  end
 end
