@@ -11,23 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#96](https://github.com/numbata/grape-oas/pull/96): Pin rubocop versions and add performance/packaging/rake plugins - [@numbata](https://github.com/numbata).
 - [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
+- Fix `SchemaIndexer#index_schema` to recurse into `schema.items` so entities reachable only through an array wrapper (e.g. a property declared as `Array<OtherEntity>`) are included in the indexed schemas set.
 - Your contribution here
 
 ### Fixed
 
-- [#97](https://github.com/numbata/grape-oas/pull/97): Default OAS 2.0 nullable strategy to EXTENSION so nullable fields emit `x-nullable: true` without explicit opt-in - [@numbata](https://github.com/numbata).
-- [#79](https://github.com/numbata/grape-oas/pull/79): Fix docs: `nickname` is supported in grape-oas - [@bogdan](https://github.com/bogdan).
-- [#78](https://github.com/numbata/grape-oas/pull/78): Fix: use empty schema for undocumented responses instead of `{ type: string }` - [@bogdan](https://github.com/bogdan).
-- [#74](https://github.com/numbata/grape-oas/pull/74): Fix BigDecimal range bounds serializing as JSON strings - [@olivier-thatch](https://github.com/olivier-thatch).
-- [#76](https://github.com/numbata/grape-oas/pull/76): Emit OAS-version-correct schema for file types - [@olivier-thatch](https://github.com/olivier-thatch).
-- [#82](https://github.com/numbata/grape-oas/pull/82): Fix: respect `documentation: { hidden: true }` on entity exposures - [@bogdan](https://github.com/bogdan).
-- [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
-* Your contribution here
+- Your contribution here
 
 ### Changed
 
 - [#95](https://github.com/numbata/grape-oas/pull/95): Entity exposures now consult `GrapeOAS.type_resolvers` - [@numbata](https://github.com/numbata).
-* Your contribution here
+- Your contribution here
 
 ## [1.4.0] - 2026-04-23
 
