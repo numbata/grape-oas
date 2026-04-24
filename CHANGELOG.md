@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+* Substitute the concrete path version into route templates when a route is mounted with `version "...", using: :path`. Previously the literal `{version}` placeholder leaked into the generated spec; now the version value is inlined (e.g. `/v1/items`). Routes without a concrete Grape version are unaffected.
 * Your contribution here
 
 ### Changed

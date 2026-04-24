@@ -212,8 +212,8 @@ module GrapeOAS
 
         paths = @api.paths.map(&:template)
 
-        # Grape converts version to :version path param, which becomes {version}
-        assert paths.any? { |p| p.include?("{version}") }, "Version parameter should be in path"
+        assert paths.any? { |p| p.include?("/v1/") }, "Concrete version should be substituted into path"
+        refute paths.any? { |p| p.include?("{version}") }, "Literal {version} placeholder should not remain"
       end
 
       # === Prefix handling ===
