@@ -9,20 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#79](https://github.com/numbata/grape-oas/pull/79): Fix docs: `nickname` is supported in grape-oas - [@bogdan](https://github.com/bogdan).
+- Your contribution here
+
+### Changed
+
+* Your contribution here
+
+## [1.4.0] - 2026-04-23
+
+### Fixed
+
 - [#60](https://github.com/numbata/grape-oas/pull/60): Fix `Dangerfile` to properly look for tests - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#58](https://github.com/numbata/grape-oas/pull/58): Fix contract extraction compatibility with Grape 3.2 - [@numbata](https://github.com/numbata).
 - [#57](https://github.com/numbata/grape-oas/pull/57): Fix `Array<Array<...>>` double-wrap when `is_array: true` is used with typed array notation like `type: [String]` — the redundant `is_array` flag no longer produces a nested array schema - [@numbata](https://github.com/numbata).
 - [#59](https://github.com/numbata/grape-oas/pull/59): Export `default` param values to OAS2 and OAS3 output - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#61](https://github.com/numbata/grape-oas/pull/61): Respect `entity_name` on `grape::entity` subclasses - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#68](https://github.com/numbata/grape-oas/pull/68): De-duplicate parameter `description` between the Parameter Object and its nested `schema` in OAS 3 output - [@olivier-thatch](https://github.com/olivier-thatch).
-- [#79](https://github.com/numbata/grape-oas/pull/79): Fix docs: `nickname` is supported in grape-oas - [@bogdan](https://github.com/bogdan).
-- Your contribution here
+- [#70](https://github.com/numbata/grape-oas/pull/70): Propagate schema attributes (`default`, `enum`, constraints, extensions) through `$ref` and composition paths - [@numbata](https://github.com/numbata).
 
 ### Changed
 
 - [#64](https://github.com/numbata/grape-oas/pull/64): Memoize content-type and default-format resolution per generation — eliminates redundant calls that scaled with route × response count - [@JuniorJoanis](https://github.com/JuniorJoanis).
 - [#62](https://github.com/numbata/grape-oas/pull/62): Default to body params for post/put/patch routes - [@olivier-thatch](https://github.com/olivier-thatch).
-- Your contribution here
 
 ## [1.3.0] - 2026-03-27
 
