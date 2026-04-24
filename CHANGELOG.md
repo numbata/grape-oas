@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#78](https://github.com/numbata/grape-oas/pull/78): Fix: use empty schema for undocumented responses instead of `{ type: string }` - [@bogdan](https://github.com/bogdan).
 - [#74](https://github.com/numbata/grape-oas/pull/74): Fix BigDecimal range bounds serializing as JSON strings - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#76](https://github.com/numbata/grape-oas/pull/76): Emit OAS-version-correct schema for file types - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
 * Your contribution here
 
 ### Changed
