@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#92](https://github.com/numbata/grape-oas/pull/92): Add `AGENTS.md` and cross-tool agent contributor guidance (`agents/` docs, `/critique` and `/pr-description` slash commands, thin pointers for Cursor/Copilot/Gemini); tighten `grape-oas.gemspec` `spec.files` to ship only consumer-facing docs - [@numbata](https://github.com/numbata).
+- [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
 * Your contribution here
 
 ### Fixed

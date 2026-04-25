@@ -242,6 +242,11 @@ is opened. Order of operations:
      user-readable summary - [@handle](https://github.com/handle).
    ```
 
+   Keep the summary tight — one phrase describing the user-visible
+   change, not the implementation. Aim for under ~120 characters of
+   summary text. Skim recent entries in `CHANGELOG.md` for examples
+   of the right length.
+
 2. Push the CHANGELOG commit to the PR branch. Danger
    (`changelog.check!`) does two things: it warns when
    `CHANGELOG.md` is unmodified and fails when any line breaks
