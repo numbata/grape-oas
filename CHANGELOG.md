@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- [#92](https://github.com/numbata/grape-oas/pull/92): Add `AGENTS.md` and cross-tool agent contributor guidance (`agents/` docs, `/critique` and `/pr-description` slash commands, thin pointers for Cursor/Copilot/Gemini); tighten `grape-oas.gemspec` `spec.files` to ship only consumer-facing docs - [@numbata](https://github.com/numbata).
+* Your contribution here
+
 ### Fixed
 
 - [#78](https://github.com/numbata/grape-oas/pull/78): Fix: use empty schema for undocumented responses instead of `{ type: string }` - [@bogdan](https://github.com/bogdan).
