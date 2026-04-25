@@ -238,7 +238,7 @@ module GrapeOAS
       # Build schema for response body
       # Delegates to EntityIntrospector when entity is present
       def build_schema(entity_class)
-        return GrapeOAS::ApiModel::Schema.new(type: Constants::SchemaTypes::STRING) unless entity_class
+        return GrapeOAS::ApiModel::Schema.new unless entity_class
 
         GrapeOAS.introspectors.build_schema(entity_class, stack: [], registry: {})
       end
