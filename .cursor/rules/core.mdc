@@ -1,0 +1,19 @@
+---
+description: Core grape-oas contributor rules
+alwaysApply: true
+---
+
+This repository uses [AGENTS.md](mdc:AGENTS.md) as its source of truth
+for contributor rules. Follow it strictly. This rule file only adds
+Cursor-specific reminders; everything else lives in AGENTS.md and the
+[agents/](mdc:agents) docs.
+
+- Run `bundle exec rake` (test + rubocop) before opening a PR.
+- This project uses **Minitest**, not RSpec.
+- Use `bundle exec rubocop -a` for safe autocorrections; `-A` only after
+  reviewing unsafe ones.
+- Never modify CHANGELOG.md's released sections — only add to
+  `## [Unreleased]`.
+- Stage files by name; never `git add -A`.
+- For PR bodies, follow [agents/pr-description.md](mdc:agents/pr-description.md).
+- For code review, follow [agents/code-review.md](mdc:agents/code-review.md).
