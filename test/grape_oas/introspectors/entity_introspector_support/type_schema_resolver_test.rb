@@ -129,6 +129,94 @@ module GrapeOAS
         # subsequently raises NameError (e.g. concurrent autoload failure). This cannot be
         # triggered deterministically in a unit test without unsafe global monkey-patching
         # of Object.const_get. Accepted as an untestable defensive branch.
+
+        # === Custom type resolver registry integration ===
+        #
+        # When an exposure declares a class that is not a Grape::Entity and not a
+        # known primitive, build_exposure_base_schema consults GrapeOAS.type_resolvers
+        # before falling back to { type: "string" }.
+
+        # Marker class used to target a custom resolver. Not a Grape::Entity, not a
+        # known primitive — so without a registered resolver, falls back to string.
+        CustomTypeMarker = Class.new
+
+        class CustomTypeMarkerResolver
+          extend GrapeOAS::TypeResolvers::Base
+
+          def self.handles?(type)
+            type == CustomTypeMarker
+          end
+
+          def self.build_schema(_type)
+            ApiModel::Schema.new(type: Constants::SchemaTypes::STRING, format: "custom-format")
+          end
+        end
+
+        def test_class_type_consults_type_resolvers_registry_before_string_fallback
+          with_isolated_type_resolvers do
+            GrapeOAS.type_resolvers.register(CustomTypeMarkerResolver)
+
+            schema = @resolver.build_exposure_base_schema(CustomTypeMarker)
+
+            assert_equal Constants::SchemaTypes::STRING, schema.type
+            assert_equal "custom-format", schema.format
+          end
+        end
+
+        def test_class_type_falls_back_to_string_when_no_resolver_matches
+          # Regression guard: existing default behavior (no custom resolver registered)
+          # must remain identical — unknown classes resolve to plain string schema.
+          unknown = Class.new
+          schema = @resolver.build_exposure_base_schema(unknown)
+
+          assert_equal Constants::SchemaTypes::STRING, schema.type
+          assert_nil schema.format
+        end
+
+        def test_first_matching_type_resolver_wins_for_class_exposure
+          first = Class.new do
+            extend GrapeOAS::TypeResolvers::Base
+
+            def self.handles?(type)
+              type == CustomTypeMarker
+            end
+
+            def self.build_schema(_type)
+              ApiModel::Schema.new(type: Constants::SchemaTypes::STRING, format: "first-wins")
+            end
+          end
+
+          second = Class.new do
+            extend GrapeOAS::TypeResolvers::Base
+
+            def self.handles?(type)
+              type == CustomTypeMarker
+            end
+
+            def self.build_schema(_type)
+              ApiModel::Schema.new(type: Constants::SchemaTypes::STRING, format: "second-should-not-win")
+            end
+          end
+
+          with_isolated_type_resolvers do
+            GrapeOAS.type_resolvers.register(first)
+            GrapeOAS.type_resolvers.register(second, after: first)
+
+            schema = @resolver.build_exposure_base_schema(CustomTypeMarker)
+
+            assert_equal "first-wins", schema.format
+          end
+        end
+
+        private
+
+        def with_isolated_type_resolvers
+          original = GrapeOAS.type_resolvers.to_a.dup
+          yield
+        ensure
+          GrapeOAS.type_resolvers.clear
+          original.each { |r| GrapeOAS.type_resolvers.register(r) }
+        end
       end
     end
   end

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+* Entity exposures whose declared type is a class that is neither a `Grape::Entity` nor a known primitive now consult `GrapeOAS.type_resolvers` before falling back to `{ type: "string" }`. Apps can register a custom `TypeResolvers::Base` implementation to supply a richer schema (e.g. UUID, Dry::Types wrappers, app-specific value objects) for entity exposures, mirroring the first-match-wins semantics already used for request parameters.
+
 ### Fixed
 
 - [#78](https://github.com/numbata/grape-oas/pull/78): Fix: use empty schema for undocumented responses instead of `{ type: string }` - [@bogdan](https://github.com/bogdan).
