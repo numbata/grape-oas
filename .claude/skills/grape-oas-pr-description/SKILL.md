@@ -1,6 +1,7 @@
 ---
 name: grape-oas-pr-description
 description: Write a grape-oas PR description following the project's required template — Problem, Fix, Example (a minimal Grape API snippet), Schema before / after, Backward compatibility, optional Open questions. Use when the user asks for a PR body or commit-message-style summary on grape-oas changes, when running `gh pr create` for grape-oas, and in autonomous "fix the code and push a PR" workflows where the agent must produce the PR body without further user input. Output is a single Markdown block ready to paste into the PR body.
+allowed-tools: Read Grep Glob Bash(git diff:*) Bash(git log:*) Bash(git status:*)
 ---
 
 # Generate a grape-oas PR description

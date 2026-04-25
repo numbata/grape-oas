@@ -1,6 +1,7 @@
 ---
 name: grape-oas-critique
 description: Apply the grape-oas review checklist (six axes — schema correctness, test coverage, boundary violations, backward compatibility, CHANGELOG and PR body, code quality) when reviewing a working tree, branch, or PR in the grape-oas repository. Use when the user asks for a code review, critique, or audit on grape-oas changes — including before opening a PR, before committing, and in chained workflows where the agent reviews its own work before pushing. Output uses Block / Should fix / Consider / Nit severity labels and avoids invented findings.
+allowed-tools: Read Grep Glob Bash(git diff:*) Bash(git log:*) Bash(git show:*) Bash(git status:*) Bash(gh pr view:*) Bash(gh pr diff:*)
 ---
 
 # Critique grape-oas changes
