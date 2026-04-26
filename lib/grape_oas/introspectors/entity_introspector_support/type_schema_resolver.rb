@@ -22,7 +22,7 @@ module GrapeOAS
         # @return [ApiModel::Schema]
         def build_exposure_base_schema(type)
           if type.is_a?(Array)
-            inner = type.first ? schema_for_type(type.first) : ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+            inner = schema_for_type(type.first)
             ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: inner)
           elsif type == Array
             # Array class itself - create array with string items
