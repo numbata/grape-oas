@@ -12,7 +12,7 @@ module GrapeOAS
 
         result = Exporter::OAS2::Response.new([resp]).build
 
-        assert_equal({}, result["200"]["schema"])
+        assert_empty(result["200"]["schema"])
       end
 
       def test_includes_headers_and_examples

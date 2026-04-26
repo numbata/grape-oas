@@ -12,7 +12,7 @@ module GrapeOAS
 
       # Matches Grape's wildcard segments: /?*param or /*param
       # The optional ? before * is Grape's syntax for an optional leading slash
-      WILDCARD_PARAMETER_PATTERN = /\??\*(?<param>[^\/()]+)/
+      WILDCARD_PARAMETER_PATTERN = %r{\??\*(?<param>[^/()]+)}
       private_constant :WILDCARD_PARAMETER_PATTERN
 
       NORMALIZED_PLACEHOLDER = /\{[^}]+\}/

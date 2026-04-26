@@ -12,7 +12,7 @@ module GrapeOAS
 
         result = Exporter::OAS3::Response.new([resp]).build
 
-        assert_equal({}, result["200"]["content"]["application/json"]["schema"])
+        assert_empty(result["200"]["content"]["application/json"]["schema"])
       end
 
       def test_headers_have_schema_wrapper

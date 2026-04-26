@@ -356,7 +356,7 @@ module GrapeOAS
         path_params = op.parameters.select { |p| p.location == "path" }
 
         assert(path_params.any? { |p| p.name == "path" },
-               "wildcard *path param should be classified as path location, not query")
+               "wildcard *path param should be classified as path location, not query",)
       end
 
       private
