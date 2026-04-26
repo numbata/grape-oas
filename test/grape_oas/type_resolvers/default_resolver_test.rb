@@ -31,6 +31,14 @@ module GrapeOAS
 
         assert_equal Constants::SchemaTypes::STRING, schema.type
       end
+
+      def test_logs_debug_message_on_fallback
+        output = capture_grape_oas_log(level: Logger::DEBUG) do
+          DefaultResolver.build_schema("MyUnknownType")
+        end
+
+        assert_match(/No type resolver matched.*MyUnknownType/, output)
+      end
     end
   end
 end

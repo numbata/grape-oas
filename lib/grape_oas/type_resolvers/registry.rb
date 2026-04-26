@@ -78,8 +78,9 @@ module GrapeOAS
         !find(type).nil?
       end
 
-      # Backward-compatible alias for {#registered_resolver_for?}.
+      # @deprecated Use {#registered_resolver_for?} instead.
       def handles?(type)
+        warn "GrapeOAS::TypeResolvers::Registry#handles? is deprecated, use #registered_resolver_for? instead", uplevel: 1
         registered_resolver_for?(type)
       end
 

@@ -106,16 +106,12 @@ module GrapeOAS
         refute @registry.registered_resolver_for?(:unknown)
       end
 
-      def test_handles_returns_true_for_matching_registered_resolver
+      def test_handles_emits_deprecation_warning
         @registry.register(MockResolver)
 
-        assert @registry.handles?(:mock)
-      end
-
-      def test_handles_returns_false_for_no_match
-        @registry.register(MockResolver)
-
-        refute @registry.handles?(:unknown)
+        assert_output(nil, /deprecated.*registered_resolver_for\?/) do
+          @registry.handles?(:mock)
+        end
       end
 
       # === build_schema tests ===
