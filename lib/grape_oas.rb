@@ -194,7 +194,7 @@ module GrapeOAS
   def generate(app:, schema_type: :oas3, **options)
     if options[:nullable_strategy].nil? && options.key?(:nullable_keyword)
       options[:nullable_strategy] = case schema_type
-                                    when :oas2, :oas20
+                                    when :oas2
                                       Constants::NullableStrategy::OAS2_DEFAULT
                                     when :oas3, :oas30
                                       if options[:nullable_keyword] == false
