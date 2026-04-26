@@ -19,8 +19,6 @@ module GrapeOAS
         # @param schema [ApiModel::Schema] the schema to populate
         def add_exposures_to_schema(schema)
           exposures.each do |exposure|
-            next unless exposed?(exposure)
-
             add_exposure_to_schema(schema, exposure)
           end
         end
@@ -75,7 +73,9 @@ module GrapeOAS
         # @return [Boolean] true if exposed
         def exposed?(exposure)
           doc = normalize_doc_keys(exposure.documentation || {})
-          !doc[:hidden]
+          hidden = doc[:hidden]
+          hidden = hidden.call if hidden.respond_to?(:call)
+          !hidden
         end
 
         # Checks if an exposure is conditional.
@@ -129,6 +129,8 @@ module GrapeOAS
         end
 
         def add_exposure_to_schema(schema, exposure)
+          return unless exposed?(exposure)
+
           doc = normalize_doc_keys(exposure.documentation || {})
           opts = exposure_options(exposure)
 

@@ -32,6 +32,37 @@ module GrapeOAS
         refute_includes schema.properties.keys, "hidden_field"
       end
 
+      # === Entity with nested hidden exposures ===
+
+      class NestedHiddenEntity < Grape::Entity
+        expose :wrapper do
+          expose :secret, documentation: { type: String, hidden: true }
+          expose :visible_nested, documentation: { type: String }
+        end
+      end
+
+      def test_nested_hidden_property_handling
+        schema = EntityIntrospector.new(NestedHiddenEntity).build_schema
+
+        wrapper = schema.properties["wrapper"]
+        refute_includes wrapper.properties.keys, "secret"
+        assert_includes wrapper.properties.keys, "visible_nested"
+      end
+
+      class ProcHiddenEntity < Grape::Entity
+        expose :visible, documentation: { type: String }
+        expose :secret, documentation: { type: String, hidden: proc { true } }
+        expose :shown, documentation: { type: String, hidden: proc { false } }
+      end
+
+      def test_hidden_proc_property_handling
+        schema = EntityIntrospector.new(ProcHiddenEntity).build_schema
+
+        assert_includes schema.properties.keys, "visible"
+        refute_includes schema.properties.keys, "secret"
+        assert_includes schema.properties.keys, "shown"
+      end
+
       # === Entity with string type references (grape-swagger #427) ===
 
       class ReferencedEntity < Grape::Entity
