@@ -674,8 +674,6 @@ These grape-swagger features are not currently available in grape-oas:
 4. **Nested Namespace as Standalone** (`swagger: { nested: false }`)
    - All namespaces follow standard Grape routing
 
-
-
 ---
 
 ## New Features in grape-oas
