@@ -53,12 +53,12 @@ module GrapeOAS
     def build_registered_schemas(models)
       return [] unless models
 
-      Array(models).map do |model|
+      Array(models).filter_map do |model|
         model = model.constantize if model.is_a?(String)
         GrapeOAS.introspectors.build_schema(model, stack: [], registry: {})
       rescue StandardError
         nil
-      end.compact
+      end
     end
   end
 end

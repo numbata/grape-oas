@@ -49,8 +49,7 @@ module GrapeOAS
           slug = route
                  .pattern
                  .origin
-                 .gsub(/[^a-z0-9]+/i, "_")
-                 .gsub(/_+/, "_")
+                 .gsub(/[^a-z0-9]+/i, "_").squeeze("_")
                  .sub(/^_|_$/, "")
 
           "#{http_method}_#{slug}"

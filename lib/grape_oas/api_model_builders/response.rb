@@ -169,7 +169,7 @@ module GrapeOAS
 
       # Merges examples from multiple specs
       def merge_examples(specs)
-        examples = specs.map { |s| s[:examples] }.compact
+        examples = specs.filter_map { |s| s[:examples] }
         return nil if examples.empty?
 
         examples.reduce({}, :merge)

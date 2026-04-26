@@ -26,8 +26,11 @@ group :development, :test do
   gem "rack"
   gem "rack-test"
   gem "rake"
-  gem "rubocop", require: false
-  gem "rubocop-minitest", require: false
+  gem "rubocop", "~> 1.86", require: false
+  gem "rubocop-minitest", "~> 0.38", require: false
+  gem "rubocop-packaging", "~> 0.5", require: false
+  gem "rubocop-performance", "~> 1.25", require: false
+  gem "rubocop-rake", "~> 0.6", require: false
 
   gem "danger", "~> 9", require: false
   gem "danger-changelog", "~> 0.8", require: false

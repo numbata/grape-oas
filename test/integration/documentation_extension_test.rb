@@ -158,7 +158,7 @@ class DocumentationExtensionTest < Minitest::Test
 
     add_oas_documentation(
       oas_mount_path: "/docs",
-      host: ->(request) { request.host =~ /staging/ ? "staging-api.example.com" : "api.example.com" },
+      host: ->(request) { request.host.include?("staging") ? "staging-api.example.com" : "api.example.com" },
       base_path: ->(request) { request.path_info.start_with?("/v2") ? "/v2" : "/v1" },
     )
   end
