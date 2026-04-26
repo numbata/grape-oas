@@ -202,6 +202,8 @@ module GrapeOAS
                                       else
                                         Constants::NullableStrategy::OAS3_DEFAULT
                                       end
+                                    when :oas31
+                                      Constants::NullableStrategy::OAS31_DEFAULT
                                     end
     end
 
