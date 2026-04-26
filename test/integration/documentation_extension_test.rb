@@ -320,13 +320,13 @@ class DocumentationExtensionTest < Minitest::Test
 
   class HideDocPathAPI < Grape::API
     format :json
-    get "ping" do; end
+    get("ping") { nil }
     add_oas_documentation(oas_mount_path: "/spec")
   end
 
   class ShowDocPathAPI < Grape::API
     format :json
-    get "ping" do; end
+    get("ping") { nil }
     add_oas_documentation(oas_mount_path: "/spec", hide_documentation_path: false)
   end
 
@@ -343,19 +343,19 @@ class DocumentationExtensionTest < Minitest::Test
     resp = Rack::MockRequest.new(ShowDocPathAPI).get("/spec")
     body = JSON.parse(resp.body)
 
-    assert body["paths"].keys.any? { |p| p.start_with?("/spec") }
+    assert(body["paths"].keys.any? { |p| p.start_with?("/spec") })
     assert_includes body["paths"].keys, "/ping"
   end
 
   class SwaggerCompatHideAPI < Grape::API
     format :json
-    get "ping" do; end
+    get("ping") { nil }
     add_swagger_documentation(mount_path: "/swagger_doc.json")
   end
 
   class SwaggerCompatShowAPI < Grape::API
     format :json
-    get "ping" do; end
+    get("ping") { nil }
     add_swagger_documentation(mount_path: "/swagger_doc.json", hide_documentation_path: false)
   end
 
@@ -363,7 +363,7 @@ class DocumentationExtensionTest < Minitest::Test
     resp = Rack::MockRequest.new(SwaggerCompatHideAPI).get("/swagger_doc.json")
     body = JSON.parse(resp.body)
 
-    refute body["paths"].keys.any? { |p| p.start_with?("/swagger_doc") }
+    refute(body["paths"].keys.any? { |p| p.start_with?("/swagger_doc") })
     assert_includes body["paths"].keys, "/ping"
   end
 
@@ -371,7 +371,7 @@ class DocumentationExtensionTest < Minitest::Test
     resp = Rack::MockRequest.new(SwaggerCompatShowAPI).get("/swagger_doc.json")
     body = JSON.parse(resp.body)
 
-    assert body["paths"].keys.any? { |p| p.start_with?("/swagger_doc") }
+    assert(body["paths"].keys.any? { |p| p.start_with?("/swagger_doc") })
     assert_includes body["paths"].keys, "/ping"
   end
 end
