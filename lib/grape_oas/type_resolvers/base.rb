@@ -55,7 +55,6 @@ module GrapeOAS
       end
 
       # Builds an OpenAPI schema from the given type.
-      # Return nil to pass to the next resolver in the chain.
       #
       # @param type [String, Class, Object] The type to build schema for
       # @return [ApiModel::Schema, nil]
