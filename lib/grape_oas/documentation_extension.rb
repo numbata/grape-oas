@@ -79,10 +79,9 @@ module GrapeOAS
       return super if defined?(::GrapeSwagger)
 
       options = options.dup
-      hide_doc = options.delete(:hide_documentation_path) { true }
       options[:oas_doc_version] ||= :oas2
       options[:oas_mount_path] ||= options[:mount_path] || "/swagger_doc.json"
-      add_oas_documentation(hide_documentation_path: hide_doc, **options)
+      add_oas_documentation(**options)
     end
 
     private
