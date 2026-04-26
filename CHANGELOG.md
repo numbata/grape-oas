@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Entity exposures now consult `GrapeOAS.type_resolvers` before falling back to `{ type: "string" }`, matching the behavior already used for request parameters - [@numbata](https://github.com/numbata).
+- [#95](https://github.com/numbata/grape-oas/pull/95): Entity exposures now consult `GrapeOAS.type_resolvers` before falling back to `{ type: "string" }`, matching the behavior already used for request parameters - [@numbata](https://github.com/numbata).
 * Your contribution here
 
 ## [1.4.0] - 2026-04-23
