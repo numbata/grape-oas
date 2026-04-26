@@ -195,12 +195,12 @@ module GrapeOAS
     if options[:nullable_strategy].nil? && options.key?(:nullable_keyword)
       options[:nullable_strategy] = case schema_type
                                     when :oas2, :oas20
-                                      Constants::NullableStrategy::EXTENSION
+                                      Constants::NullableStrategy::OAS2_DEFAULT
                                     when :oas3, :oas30
                                       if options[:nullable_keyword] == false
                                         Constants::NullableStrategy::TYPE_ARRAY
                                       else
-                                        Constants::NullableStrategy::KEYWORD
+                                        Constants::NullableStrategy::OAS3_DEFAULT
                                       end
                                     end
     end

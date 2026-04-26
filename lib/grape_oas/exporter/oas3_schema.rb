@@ -120,7 +120,7 @@ module GrapeOAS
       end
 
       def nullable_strategy
-        @api.nullable_strategy || Constants::NullableStrategy::KEYWORD
+        @api.nullable_strategy || Constants::NullableStrategy::OAS3_DEFAULT
       end
     end
   end

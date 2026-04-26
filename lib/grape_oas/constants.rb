@@ -45,6 +45,11 @@ module GrapeOAS
       TYPE_ARRAY = :type_array
       # OAS 2.0: emits `"x-nullable": true` extension
       EXTENSION = :extension
+
+      # Version-specific defaults used by exporters
+      OAS2_DEFAULT = EXTENSION
+      OAS3_DEFAULT = KEYWORD
+      OAS31_DEFAULT = TYPE_ARRAY
     end
 
     # Maximum number of elements to expand from a non-numeric Range into an enum array.
