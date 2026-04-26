@@ -46,7 +46,6 @@ module GrapeOAS
 
         private
 
-        # Single lookup used by both handles? and build_schema.
         # Returns [type, format] or nil.
         def find_mapping(type)
           type_str = normalize_type(type)
