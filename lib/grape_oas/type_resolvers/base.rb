@@ -47,6 +47,9 @@ module GrapeOAS
     #
     module Base
       # Checks if this resolver can handle the given type.
+      # A true return does not guarantee build_schema will return non-nil —
+      # the registry treats a nil build_schema as "pass" and tries the next
+      # resolver in the chain.
       #
       # @param type [String, Class, Object] The type to check (stringified or actual)
       # @return [Boolean] true if this resolver can handle the type
@@ -55,9 +58,11 @@ module GrapeOAS
       end
 
       # Builds an OpenAPI schema from the given type.
+      # Returns nil if this resolver cannot produce a schema, allowing
+      # the registry to fall back to the next resolver or DefaultResolver.
       #
       # @param type [String, Class, Object] The type to build schema for
-      # @return [ApiModel::Schema] The built schema
+      # @return [ApiModel::Schema, nil] The built schema, or nil
       def build_schema(type)
         raise NotImplementedError, "#{self} must implement .build_schema(type)"
       end

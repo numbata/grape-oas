@@ -148,7 +148,7 @@ module GrapeOAS
       registry.register(TypeResolvers::ArrayResolver)
       # DryTypeResolver handles Dry::Types (standalone, not arrays)
       registry.register(TypeResolvers::DryTypeResolver)
-      # PrimitiveResolver is the fallback for basic types
+      # PrimitiveResolver handles known Ruby primitives
       registry.register(TypeResolvers::PrimitiveResolver)
       registry
     end

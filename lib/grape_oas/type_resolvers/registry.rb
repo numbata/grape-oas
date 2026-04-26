@@ -50,31 +50,37 @@ module GrapeOAS
         self
       end
 
-      # Finds the first resolver that can handle the given type.
-      #
-      # @param type [String, Class, Object] The type to resolve
-      # @return [Class, nil] The resolver class, or nil if none found
-      def find(type)
-        @resolvers.find { |resolver| resolver.handles?(type) }
-      end
-
-      # Builds a schema using the appropriate resolver.
+      # Builds a schema using the first resolver that returns non-nil.
+      # Falls back to DefaultResolver when no registered resolver produces
+      # a schema, guaranteeing a non-nil return.
       #
       # @param type [String, Class, Object] The type to build schema for
-      # @return [ApiModel::Schema, nil] The built schema, or nil if no handler found
+      # @return [ApiModel::Schema] The built schema
       def build_schema(type)
-        resolver = find(type)
-        return nil unless resolver
+        @resolvers.each do |resolver|
+          next unless resolver.handles?(type)
 
-        resolver.build_schema(type)
+          schema = resolver.build_schema(type)
+          return schema if schema
+        end
+
+        DefaultResolver.build_schema(type)
       end
 
-      # Checks if any resolver can handle the given type.
+      # Checks if any registered resolver produces a schema for this type.
+      # Does not account for the built-in DefaultResolver fallback, so
+      # returning false does not mean build_schema will return nil — it
+      # will still produce a string schema via DefaultResolver.
       #
       # @param type [String, Class, Object] The type to check
       # @return [Boolean]
+      def registered_resolver_for?(type)
+        !find(type).nil?
+      end
+
+      # Backward-compatible alias for {#registered_resolver_for?}.
       def handles?(type)
-        @resolvers.any? { |resolver| resolver.handles?(type) }
+        registered_resolver_for?(type)
       end
 
       # Iterates over all registered resolvers.
@@ -108,7 +114,16 @@ module GrapeOAS
 
       private
 
+      def find(type)
+        @resolvers.find { |resolver| resolver.handles?(type) }
+      end
+
       def validate_resolver!(resolver)
+        if resolver == DefaultResolver
+          raise ArgumentError,
+                "DefaultResolver is the built-in fallback and must not be registered in the chain"
+        end
+
         return if resolver.respond_to?(:handles?) && resolver.respond_to?(:build_schema)
 
         raise ArgumentError,

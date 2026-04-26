@@ -4,8 +4,9 @@ module GrapeOAS
   module TypeResolvers
     # Resolves primitive types like "Integer", "String", "Boolean", "Float".
     #
-    # This is the fallback resolver that handles basic Ruby types and their
-    # string representations. It's registered last in the resolver chain.
+    # Handles basic Ruby types and their string representations, including
+    # OpenAPI type name aliases via Constants. Registered before the
+    # catch-all DefaultResolver in the resolver chain.
     #
     class PrimitiveResolver
       extend Base
@@ -33,33 +34,34 @@ module GrapeOAS
 
       class << self
         def handles?(type)
-          type_str = normalize_type(type)
-          PRIMITIVES.key?(type_str) || resolvable_to_primitive?(type)
+          !find_mapping(type).nil?
         end
 
         def build_schema(type)
-          type_str = normalize_type(type)
+          schema_type, format = find_mapping(type)
+          return nil unless schema_type
 
-          # Check direct mapping first
-          if PRIMITIVES.key?(type_str)
-            mapping = PRIMITIVES[type_str]
-            return ApiModel::Schema.new(
-              type: mapping[:type],
-              format: mapping[:format],
-            )
-          end
-
-          # Try to resolve and build schema
-          resolved = resolve_class(type_str)
-          if resolved
-            build_from_resolved(resolved)
-          else
-            # Default fallback
-            ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
-          end
+          ApiModel::Schema.new(type: schema_type, format: format)
         end
 
         private
+
+        # Single lookup used by both handles? and build_schema.
+        # Returns [type, format] or nil.
+        def find_mapping(type)
+          type_str = normalize_type(type)
+
+          if (mapping = PRIMITIVES[type_str])
+            return [mapping[:type], mapping[:format]]
+          end
+
+          # OpenAPI type name aliases ("object", "number", "boolean")
+          schema_type = Constants.primitive_type(type_str)
+          return [schema_type, Constants.format_for_type(type_str)] if schema_type
+
+          mapping = resolved_primitive_mapping(resolve_class(type_str))
+          [mapping[:type], mapping[:format]] if mapping
+        end
 
         def normalize_type(type)
           case type
@@ -72,32 +74,14 @@ module GrapeOAS
           end
         end
 
-        def resolvable_to_primitive?(type)
-          resolved = resolve_class(normalize_type(type))
-          return false unless resolved
+        def resolved_primitive_mapping(resolved)
+          return nil unless resolved
+          return nil if resolved.respond_to?(:primitive) # Dry::Types handled by DryTypeResolver
 
-          # Dry::Types should be handled by DryTypeResolver.
-          return false if resolved.respond_to?(:primitive)
+          resolved_name = resolved.respond_to?(:name) ? resolved.name : nil
+          return nil if resolved_name.nil? || resolved_name.empty?
 
-          resolved_name = resolved.respond_to?(:name) ? resolved.name : resolved.to_s
-          return false if resolved_name.nil? || resolved_name.empty?
-
-          PRIMITIVES.key?(resolved_name)
-        end
-
-        def build_from_resolved(klass)
-          # Find mapping by class name
-          type_str = klass.name
-          mapping = PRIMITIVES[type_str]
-
-          if mapping
-            ApiModel::Schema.new(
-              type: mapping[:type],
-              format: mapping[:format],
-            )
-          else
-            ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
-          end
+          PRIMITIVES[resolved_name]
         end
       end
     end

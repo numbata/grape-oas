@@ -64,6 +64,11 @@ module GrapeOAS
         assert_match(/must respond to/, error.message)
       end
 
+      def test_register_rejects_default_resolver
+        error = assert_raises(ArgumentError) { @registry.register(DefaultResolver) }
+        assert_match(/must not be registered/, error.message)
+      end
+
       def test_register_before_inserts_at_correct_position
         @registry.register(MockResolver)
         @registry.register(AnotherMockResolver, before: MockResolver)
@@ -87,22 +92,30 @@ module GrapeOAS
         assert_equal 0, @registry.size
       end
 
-      # === Finding tests ===
+      # === Resolver lookup tests ===
 
-      def test_find_returns_matching_resolver
+      def test_registered_resolver_for_returns_true_for_matching_resolver
         @registry.register(MockResolver)
 
-        result = @registry.find(:mock)
-
-        assert_equal MockResolver, result
+        assert @registry.registered_resolver_for?(:mock)
       end
 
-      def test_find_returns_nil_for_no_match
+      def test_registered_resolver_for_returns_false_for_no_match
         @registry.register(MockResolver)
 
-        result = @registry.find(:unknown)
+        refute @registry.registered_resolver_for?(:unknown)
+      end
 
-        assert_nil result
+      def test_handles_returns_true_for_matching_registered_resolver
+        @registry.register(MockResolver)
+
+        assert @registry.handles?(:mock)
+      end
+
+      def test_handles_returns_false_for_no_match
+        @registry.register(MockResolver)
+
+        refute @registry.handles?(:unknown)
       end
 
       # === build_schema tests ===
@@ -116,22 +129,32 @@ module GrapeOAS
         assert_equal "mock", schema.description
       end
 
-      def test_build_schema_returns_nil_for_no_match
-        result = @registry.build_schema(:unknown)
+      def test_build_schema_skips_resolver_that_handles_but_returns_nil
+        # Resolver claims to handle :flaky but returns nil from build_schema
+        flaky = Class.new do
+          extend Base
 
-        assert_nil result
-      end
+          def self.handles?(type)
+            type == :flaky
+          end
 
-      # === handles? tests ===
+          def self.build_schema(_type)
+            nil
+          end
+        end
 
-      def test_handles_returns_true_when_resolver_found
+        @registry.register(flaky)
         @registry.register(MockResolver)
 
-        assert @registry.handles?(:mock)
+        schema = @registry.build_schema(:flaky)
+
+        assert_equal Constants::SchemaTypes::STRING, schema.type
       end
 
-      def test_handles_returns_false_when_no_resolver
-        refute @registry.handles?(:unknown)
+      def test_build_schema_falls_back_to_default_resolver_for_no_match
+        schema = @registry.build_schema(:unknown)
+
+        assert_equal Constants::SchemaTypes::STRING, schema.type
       end
 
       # === Enumerable tests ===

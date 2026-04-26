@@ -70,6 +70,13 @@ module GrapeOAS
           assert_equal Constants::SchemaTypes::INTEGER, schema.items.type
         end
 
+        def test_empty_array_literal_defaults_to_string_items
+          schema = @resolver.build_exposure_base_schema([])
+
+          assert_equal Constants::SchemaTypes::ARRAY, schema.type
+          assert_equal Constants::SchemaTypes::STRING, schema.items.type
+        end
+
         # === String-to-entity resolution with a valid entity class ===
 
         def test_string_type_resolving_to_entity_produces_object_schema

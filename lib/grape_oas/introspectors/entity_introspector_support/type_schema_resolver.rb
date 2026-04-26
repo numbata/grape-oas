@@ -22,8 +22,7 @@ module GrapeOAS
         # @return [ApiModel::Schema]
         def build_exposure_base_schema(type)
           if type.is_a?(Array)
-            # Array instance like [String] - extract inner type
-            inner = schema_for_type(type.first)
+            inner = type.first ? schema_for_type(type.first) : ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
             ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: inner)
           elsif type == Array
             # Array class itself - create array with string items
@@ -34,7 +33,7 @@ module GrapeOAS
           elsif type.is_a?(Hash) || type == Hash
             ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
           else
-            schema_for_type(type) || ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
+            schema_for_type(type)
           end
         end
 
@@ -87,7 +86,7 @@ module GrapeOAS
           when String, Symbol
             schema_for_string_type(type.to_s)
           else
-            default_string_schema
+            GrapeOAS.type_resolvers.build_schema(type)
           end
         end
 
@@ -95,7 +94,7 @@ module GrapeOAS
           if defined?(Grape::Entity) && type <= Grape::Entity
             GrapeOAS.introspectors.build_schema(type, stack: @stack, registry: @registry)
           else
-            build_schema_for_primitive(type) || default_string_schema
+            GrapeOAS.type_resolvers.build_schema(type)
           end
         end
 
@@ -104,13 +103,8 @@ module GrapeOAS
           if entity_class
             GrapeOAS.introspectors.build_schema(entity_class, stack: @stack, registry: @registry)
           else
-            schema_type = Constants.primitive_type(type_name) || Constants::SchemaTypes::STRING
-            ApiModel::Schema.new(type: schema_type)
+            GrapeOAS.type_resolvers.build_schema(type_name)
           end
-        end
-
-        def default_string_schema
-          ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
         end
 
         def resolve_entity_from_string(type_name)
@@ -122,16 +116,6 @@ module GrapeOAS
           klass if klass.is_a?(Class) && klass <= Grape::Entity
         rescue NameError
           nil
-        end
-
-        def build_schema_for_primitive(type)
-          schema_type = Constants.primitive_type(type)
-          return nil unless schema_type
-
-          ApiModel::Schema.new(
-            type: schema_type,
-            format: Constants.format_for_type(type),
-          )
         end
       end
     end
