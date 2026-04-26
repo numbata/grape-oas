@@ -271,12 +271,9 @@ module GrapeOAS
       def test_wildcard_path_converted_to_oas_template
         api_class = Class.new(Grape::API) do
           format :json
-          get "files/*path" do
-          end
-          get "a/:id/*rest" do
-          end
-          get "*all" do
-          end
+          get("files/*path") { nil }
+          get("a/:id/*rest") { nil }
+          get("*all") { nil }
         end
 
         builder = Path.new(api: @api, routes: api_class.routes)
