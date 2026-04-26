@@ -21,13 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-* Entity exposures now consult `GrapeOAS.type_resolvers` before falling back to `{ type: "string" }`, matching the behavior already used for request parameters. Custom resolvers registered in the chain apply to both paths.
-* `TypeResolvers::Registry#build_schema` now guarantees a non-nil return by falling back to `DefaultResolver` when no registered resolver matches.
-* `TypeResolvers::PrimitiveResolver#build_schema` returns `nil` for unknown types instead of silently defaulting to string schema.
-
-### Deprecated
-
-* `TypeResolvers::Registry#handles?` — use `#registered_resolver_for?` instead.
+- Entity exposures now consult `GrapeOAS.type_resolvers` before falling back to `{ type: "string" }`, matching the behavior already used for request parameters - [@numbata](https://github.com/numbata).
 * Your contribution here
 
 ## [1.4.0] - 2026-04-23
