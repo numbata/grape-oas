@@ -14,9 +14,7 @@ module GrapeOAS
 
         def build_schema(type)
           logger = GrapeOAS.logger
-          if logger.respond_to?(:debug)
-            logger.debug { "No type resolver matched #{type.inspect}, falling back to string schema" }
-          end
+          logger.debug { "No type resolver matched #{type.inspect}, falling back to string schema" } if logger.respond_to?(:debug)
           ApiModel::Schema.new(type: Constants::SchemaTypes::STRING)
         end
       end

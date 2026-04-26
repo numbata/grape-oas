@@ -148,18 +148,18 @@ module GrapeOAS
           next unless constants_type
 
           assert_equal mapping[:type], constants_type,
-            "Type mismatch for #{type_name}: PRIMITIVES says #{mapping[:type]}, " \
-            "Constants says #{constants_type}"
+                       "Type mismatch for #{type_name}: PRIMITIVES says #{mapping[:type]}, " \
+                       "Constants says #{constants_type}"
 
           constants_format = Constants.format_for_type(type_name)
           if mapping[:format].nil?
             assert_nil constants_format,
-              "Format mismatch for #{type_name}: PRIMITIVES says nil, " \
-              "Constants says #{constants_format.inspect}"
+                       "Format mismatch for #{type_name}: PRIMITIVES says nil, " \
+                       "Constants says #{constants_format.inspect}"
           else
             assert_equal mapping[:format], constants_format,
-              "Format mismatch for #{type_name}: PRIMITIVES says #{mapping[:format].inspect}, " \
-              "Constants says #{constants_format.inspect}"
+                         "Format mismatch for #{type_name}: PRIMITIVES says #{mapping[:format].inspect}, " \
+                         "Constants says #{constants_format.inspect}"
           end
         end
 
@@ -170,8 +170,8 @@ module GrapeOAS
           next unless mapping
 
           assert_equal mapping[:type], entry[:type],
-            "Type mismatch for #{key}: Constants says #{entry[:type]}, " \
-            "PRIMITIVES says #{mapping[:type]}"
+                       "Type mismatch for #{key}: Constants says #{entry[:type]}, " \
+                       "PRIMITIVES says #{mapping[:type]}"
         end
       end
 
