@@ -650,5 +650,22 @@ module GrapeOAS
         assert_equal 2, offset["maximum"]
       end
     end
+
+    class OAS2NullableDefaultStrategyTest < Minitest::Test
+      def test_nullable_strategy_defaults_to_extension_when_api_has_no_strategy
+        api = ApiModel::API.new(title: "Test", version: "1.0")
+        exporter = Exporter::OAS2Schema.new(api_model: api)
+
+        assert_equal Constants::NullableStrategy::EXTENSION, exporter.send(:nullable_strategy)
+      end
+
+      def test_nullable_strategy_uses_api_value_when_set
+        api = ApiModel::API.new(title: "Test", version: "1.0")
+        api.nullable_strategy = Constants::NullableStrategy::KEYWORD
+        exporter = Exporter::OAS2Schema.new(api_model: api)
+
+        assert_equal Constants::NullableStrategy::KEYWORD, exporter.send(:nullable_strategy)
+      end
+    end
   end
 end

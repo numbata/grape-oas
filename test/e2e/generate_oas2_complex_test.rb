@@ -526,16 +526,39 @@ module GrapeOAS
       assert status_prop["x-nullable"], "nullable contract field should have x-nullable"
     end
 
-    def test_default_oas2_does_not_emit_x_nullable
-      # Without nullable_strategy, nullable fields should not have x-nullable
+    def test_default_oas2_emits_x_nullable
+      # Default OAS 2.0 strategy is EXTENSION — nullable fields get x-nullable
       defs = @schema["definitions"]
       detail_def = defs[defs.keys.find { |k| k.include?("DetailEntity") }]
       zip_prop = detail_def["properties"]["zip"]
 
-      refute zip_prop.key?("x-nullable"), "default OAS2 should not emit x-nullable"
+      assert zip_prop["x-nullable"], "default OAS2 should emit x-nullable on nullable fields"
+      refute detail_def["properties"]["city"].key?("x-nullable"), "non-nullable field should not have x-nullable"
     end
 
     # --- backward compatibility: nullable_keyword option ---
+
+    def test_legacy_nullable_keyword_false_with_oas2_maps_to_extension
+      schema = GrapeOAS.generate(app: API, schema_type: :oas2, nullable_keyword: false)
+      defs = schema["definitions"]
+
+      detail_def = defs[defs.keys.find { |k| k.include?("DetailEntity") }]
+      zip_prop = detail_def["properties"]["zip"]
+
+      assert zip_prop["x-nullable"], "nullable_keyword: false with OAS 2.0 should produce x-nullable"
+      assert_equal "string", zip_prop["type"]
+    end
+
+    def test_legacy_nullable_keyword_true_with_oas2_maps_to_extension
+      schema = GrapeOAS.generate(app: API, schema_type: :oas2, nullable_keyword: true)
+      defs = schema["definitions"]
+
+      detail_def = defs[defs.keys.find { |k| k.include?("DetailEntity") }]
+      zip_prop = detail_def["properties"]["zip"]
+
+      assert zip_prop["x-nullable"], "nullable_keyword: true with OAS 2.0 should produce x-nullable"
+      assert_equal "string", zip_prop["type"]
+    end
 
     def test_legacy_nullable_keyword_false_maps_to_type_array
       schema = GrapeOAS.generate(app: API, schema_type: :oas3, nullable_keyword: false)

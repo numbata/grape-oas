@@ -192,11 +192,18 @@ module GrapeOAS
   #   # Only includes paths like /users, /users/{id}, etc.
   #
   def generate(app:, schema_type: :oas3, **options)
-    if options[:nullable_strategy].nil? && options.key?(:nullable_keyword) && %i[oas3 oas30].include?(schema_type)
-      options[:nullable_strategy] = if options[:nullable_keyword] == false
-                                      Constants::NullableStrategy::TYPE_ARRAY
-                                    else
-                                      Constants::NullableStrategy::KEYWORD
+    if options[:nullable_strategy].nil? && options.key?(:nullable_keyword)
+      options[:nullable_strategy] = case schema_type
+                                    when :oas2
+                                      Constants::NullableStrategy::OAS2_DEFAULT
+                                    when :oas3, :oas30
+                                      if options[:nullable_keyword] == false
+                                        Constants::NullableStrategy::TYPE_ARRAY
+                                      else
+                                        Constants::NullableStrategy::OAS3_DEFAULT
+                                      end
+                                    when :oas31
+                                      Constants::NullableStrategy::OAS31_DEFAULT
                                     end
     end
 
