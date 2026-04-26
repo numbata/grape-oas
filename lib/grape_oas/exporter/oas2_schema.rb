@@ -67,7 +67,7 @@ module GrapeOAS
       end
 
       def nullable_strategy
-        @api.nullable_strategy
+        @api.nullable_strategy || Constants::NullableStrategy::EXTENSION
       end
 
       def build_paths
