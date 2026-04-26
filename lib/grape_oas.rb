@@ -202,8 +202,6 @@ module GrapeOAS
                                       else
                                         Constants::NullableStrategy::KEYWORD
                                       end
-                                    when :oas31 # ignored for OAS 3.1 which always uses type arrays
-                                      Constants::NullableStrategy::TYPE_ARRAY
                                     end
     end
 
