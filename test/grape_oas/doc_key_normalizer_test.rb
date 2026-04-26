@@ -46,7 +46,7 @@ module GrapeOAS
     def test_empty_hash_returns_empty_hash
       result = DocKeyNormalizer.normalize({})
 
-      assert_equal({}, result)
+      assert_empty(result)
     end
 
     def test_values_are_preserved

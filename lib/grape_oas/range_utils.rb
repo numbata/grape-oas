@@ -34,10 +34,17 @@ module GrapeOAS
 
         return if descending?(first_val, last_val)
 
-        target.minimum = first_val if finite_numeric?(first_val) && target.respond_to?(:minimum=)
+        if finite_numeric?(first_val) && target.respond_to?(:minimum=)
+          coerced_min = coerce_for_json(first_val)
+          target.minimum = coerced_min unless coerced_min.nil?
+        end
+
         return unless finite_numeric?(last_val)
 
-        target.maximum = last_val if target.respond_to?(:maximum=)
+        coerced_max = coerce_for_json(last_val)
+        return if coerced_max.nil?
+
+        target.maximum = coerced_max if target.respond_to?(:maximum=)
         target.exclusive_maximum = range.exclude_end? if target.respond_to?(:exclusive_maximum=)
       end
 
@@ -77,6 +84,22 @@ module GrapeOAS
 
       def finite_numeric?(val)
         val.is_a?(Numeric) && val.finite?
+      end
+
+      # Coerce BigDecimal to Float so min/max render as JSON numbers, not strings.
+      # Returns nil when the result overflows to Infinity.
+      def coerce_for_json(val)
+        return val unless defined?(BigDecimal) && val.is_a?(BigDecimal)
+
+        coerced = val.to_f
+        unless coerced.finite?
+          GrapeOAS.logger.warn("BigDecimal value #{val} overflows to Float::INFINITY and cannot be represented in JSON; skipping bound")
+          return nil
+        end
+        if val != BigDecimal(coerced, Float::DIG + 1)
+          GrapeOAS.logger.debug("BigDecimal value #{val} lost precision when coerced to Float #{coerced}")
+        end
+        coerced
       end
 
       def descending?(first_val, last_val)

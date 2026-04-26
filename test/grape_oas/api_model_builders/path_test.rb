@@ -267,6 +267,24 @@ module GrapeOAS
         refute_includes templates, "/users"
         refute_includes templates, "/users/comments"
       end
+
+      def test_wildcard_path_converted_to_oas_template
+        api_class = Class.new(Grape::API) do
+          format :json
+          get("files/*path") { nil }
+          get("a/:id/*rest") { nil }
+          get("*all") { nil }
+        end
+
+        builder = Path.new(api: @api, routes: api_class.routes)
+        builder.build
+
+        templates = @api.paths.map(&:template)
+
+        assert_includes templates, "/files/{path}"
+        assert_includes templates, "/a/{id}/{rest}"
+        assert_includes templates, "/{all}"
+      end
     end
   end
 end

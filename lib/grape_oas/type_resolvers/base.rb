@@ -49,7 +49,7 @@ module GrapeOAS
       # Checks if this resolver can handle the given type.
       #
       # @param type [String, Class, Object] The type to check (stringified or actual)
-      # @return [Boolean] true if this resolver can handle the type
+      # @return [Boolean]
       def handles?(type)
         raise NotImplementedError, "#{self} must implement .handles?(type)"
       end
@@ -57,7 +57,7 @@ module GrapeOAS
       # Builds an OpenAPI schema from the given type.
       #
       # @param type [String, Class, Object] The type to build schema for
-      # @return [ApiModel::Schema] The built schema
+      # @return [ApiModel::Schema, nil]
       def build_schema(type)
         raise NotImplementedError, "#{self} must implement .build_schema(type)"
       end

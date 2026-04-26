@@ -40,6 +40,29 @@ module GrapeOAS
           assert_equal Constants::SchemaTypes::STRING, schema.type
         end
 
+        # Regression: #67 — Date/DateTime/Time on entity exposures must
+        # produce the same type and format as on request params.
+        def test_datetime_class_produces_string_schema_with_date_time_format
+          schema = @resolver.build_exposure_base_schema(DateTime)
+
+          assert_equal Constants::SchemaTypes::STRING, schema.type
+          assert_equal "date-time", schema.format
+        end
+
+        def test_date_class_produces_string_schema_with_date_format
+          schema = @resolver.build_exposure_base_schema(Date)
+
+          assert_equal Constants::SchemaTypes::STRING, schema.type
+          assert_equal "date", schema.format
+        end
+
+        def test_time_class_produces_string_schema_with_date_time_format
+          schema = @resolver.build_exposure_base_schema(Time)
+
+          assert_equal Constants::SchemaTypes::STRING, schema.type
+          assert_equal "date-time", schema.format
+        end
+
         # === Hash / Hash class produces object schema ===
 
         def test_hash_class_produces_object_schema
@@ -68,6 +91,13 @@ module GrapeOAS
 
           assert_equal Constants::SchemaTypes::ARRAY, schema.type
           assert_equal Constants::SchemaTypes::INTEGER, schema.items.type
+        end
+
+        def test_empty_array_literal_defaults_to_string_items
+          schema = @resolver.build_exposure_base_schema([])
+
+          assert_equal Constants::SchemaTypes::ARRAY, schema.type
+          assert_equal Constants::SchemaTypes::STRING, schema.items.type
         end
 
         # === String-to-entity resolution with a valid entity class ===

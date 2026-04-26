@@ -47,10 +47,10 @@ require "logger"
 require "stringio"
 
 module LoggerCaptureHelper
-  def capture_grape_oas_log
+  def capture_grape_oas_log(level: Logger::WARN)
     log_output = StringIO.new
     original_logger = GrapeOAS.logger
-    captured_logger = Logger.new(log_output, progname: "grape-oas", level: Logger::WARN)
+    captured_logger = Logger.new(log_output, progname: "grape-oas", level: level)
     captured_logger.formatter = GrapeOAS::LOG_FORMATTER
     GrapeOAS.logger = captured_logger
     begin

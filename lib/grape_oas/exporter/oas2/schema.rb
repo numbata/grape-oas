@@ -10,6 +10,8 @@ module GrapeOAS
           @nullable_strategy = nullable_strategy
         end
 
+        # OAS 2.0 (Swagger) natively supports `type: file`, so no
+        # file-type normalization is needed here (unlike OAS 3.x).
         def build
           return {} unless @schema
 
@@ -151,7 +153,9 @@ module GrapeOAS
               result
             end
           else
-            built = Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            # self.class preserves any subclass so nested schemas use
+            # the version-correct builder.
+            built = self.class.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
             built.delete("description") unless include_metadata
             built
           end

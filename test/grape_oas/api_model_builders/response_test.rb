@@ -44,7 +44,7 @@ module GrapeOAS
         assert_equal "application/json", media_type.mime_type
       end
 
-      def test_builds_string_schema_when_no_entity
+      def test_builds_empty_schema_when_no_entity
         api_class = Class.new(Grape::API) do
           format :json
           get "users" do
@@ -58,7 +58,7 @@ module GrapeOAS
 
         schema = response.media_types.first.schema
 
-        assert_equal "string", schema.type
+        assert_nil schema.type
       end
 
       def test_builds_object_schema_with_entity

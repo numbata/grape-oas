@@ -203,7 +203,7 @@ module GrapeOAS
 
         result = EntityIntrospectorSupport.exposures(klass)
 
-        assert_equal [], result
+        assert_empty result
       end
     end
   end

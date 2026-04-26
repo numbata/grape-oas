@@ -5,6 +5,16 @@ require "test_helper"
 module GrapeOAS
   module Exporter
     class OAS3ResponseTest < Minitest::Test
+      def test_emits_empty_schema_when_no_entity
+        schema = ApiModel::Schema.new
+        media = ApiModel::MediaType.new(mime_type: "application/json", schema: schema)
+        resp = ApiModel::Response.new(http_status: "200", description: "Success", media_types: [media])
+
+        result = Exporter::OAS3::Response.new([resp]).build
+
+        assert_empty(result["200"]["content"]["application/json"]["schema"])
+      end
+
       def test_headers_have_schema_wrapper
         schema = ApiModel::Schema.new(type: "string")
         media = ApiModel::MediaType.new(mime_type: "application/json", schema: schema)

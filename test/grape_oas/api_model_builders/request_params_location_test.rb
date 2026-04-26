@@ -337,6 +337,28 @@ module GrapeOAS
         assert_includes path_names, "user_id"
       end
 
+      # === Wildcard path param location ===
+
+      def test_wildcard_param_classified_as_path
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :path, type: String
+          end
+          get "files/*path" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        op = build_operation(route, api_class)
+
+        path_params = op.parameters.select { |p| p.location == "path" }
+
+        assert(path_params.any? { |p| p.name == "path" },
+               "wildcard *path param should be classified as path location, not query",)
+      end
+
       private
 
       def build_operation(route, app)
