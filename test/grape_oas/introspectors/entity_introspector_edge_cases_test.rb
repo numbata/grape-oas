@@ -45,6 +45,7 @@ module GrapeOAS
         schema = EntityIntrospector.new(NestedHiddenEntity).build_schema
 
         wrapper = schema.properties["wrapper"]
+
         refute_includes wrapper.properties.keys, "secret"
         assert_includes wrapper.properties.keys, "visible_nested"
       end
