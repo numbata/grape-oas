@@ -7,8 +7,6 @@ module GrapeOAS
     # in the chain — called automatically by the registry as a built-in
     # fallback.
     class DefaultResolver
-      extend Base
-
       class << self
         def handles?(_type)
           true

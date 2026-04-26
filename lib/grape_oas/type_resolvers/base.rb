@@ -46,23 +46,24 @@ module GrapeOAS
     #   GrapeOAS.type_resolvers.register(MyCustomTypeResolver)
     #
     module Base
-      # Checks if this resolver can handle the given type.
-      # A true return does not guarantee build_schema will return non-nil —
-      # the registry treats a nil build_schema as "pass" and tries the next
-      # resolver in the chain.
+      # Quick check used by the registry to short-circuit resolvers that
+      # clearly don't apply. The registry also checks the build_schema
+      # return value, so a nil from build_schema is treated as "pass"
+      # even if handles? returned true.
       #
       # @param type [String, Class, Object] The type to check (stringified or actual)
-      # @return [Boolean] true if this resolver can handle the type
+      # @return [Boolean] true if this resolver may be able to handle the type
       def handles?(type)
         raise NotImplementedError, "#{self} must implement .handles?(type)"
       end
 
       # Builds an OpenAPI schema from the given type.
-      # Returns nil if this resolver cannot produce a schema, allowing
-      # the registry to fall back to the next resolver or DefaultResolver.
+      # Return nil to signal that this resolver cannot produce a schema;
+      # the registry will try the next resolver and ultimately fall back
+      # to DefaultResolver.
       #
       # @param type [String, Class, Object] The type to build schema for
-      # @return [ApiModel::Schema, nil] The built schema, or nil
+      # @return [ApiModel::Schema, nil] The built schema, or nil to pass
       def build_schema(type)
         raise NotImplementedError, "#{self} must implement .build_schema(type)"
       end
