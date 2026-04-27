@@ -180,6 +180,48 @@ module GrapeOAS
         assert_equal "binary", result["contentEncoding"]
       end
 
+      # === Enum normalization under OAS 3.1 (always TYPE_ARRAY) ===
+
+      def test_nullable_integer_enum_normalized_oas31
+        schema = ApiModel::Schema.new(type: "integer", nullable: true)
+        schema.enum = %w[1 2 3]
+
+        result = OAS31::Schema.new(
+          schema, nil,
+          nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,
+        ).build
+
+        assert_equal %w[integer null], result["type"]
+        assert_equal [1, 2, 3], result["enum"]
+      end
+
+      def test_allof_nullable_integer_enum_normalized_oas31
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "integer", nullable: true)
+        schema.enum = %w[1 2 3]
+
+        result = OAS31::Schema.new(
+          schema, nil,
+          nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,
+        ).build
+
+        assert_equal %w[integer null], result["type"]
+        assert_equal [1, 2, 3], result["enum"]
+      end
+
+      def test_nullable_integer_enum_preserves_nil_oas31
+        schema = ApiModel::Schema.new(type: "integer", nullable: true)
+        schema.enum = [1, 2, nil]
+
+        result = OAS31::Schema.new(
+          schema, nil,
+          nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,
+        ).build
+
+        assert_equal %w[integer null], result["type"]
+        assert_equal [1, 2, nil], result["enum"]
+      end
+
       def test_anyof_with_nullable_file_type_normalizes
         variant = ApiModel::Schema.new(type: "object")
         schema = ApiModel::Schema.new(any_of: [variant], type: "file", nullable: true)
