@@ -181,6 +181,8 @@ module GrapeOAS
           nesting_accum = {}
           nesting_required = Hash.new { |h, k| h[k] = [] }
           Array(exposure.nested_exposures).each do |child_exposure|
+            next unless exposed?(child_exposure)
+
             if nesting_exposure?(child_exposure)
               key = child_exposure.key.to_s
               child_doc = normalize_doc_keys(child_exposure.documentation || {})

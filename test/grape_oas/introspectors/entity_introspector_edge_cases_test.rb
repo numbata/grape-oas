@@ -50,6 +50,24 @@ module GrapeOAS
         assert_includes wrapper.properties.keys, "visible_nested"
       end
 
+      class HiddenNestingEntity < Grape::Entity
+        expose :wrapper do
+          expose :internal_group, documentation: { hidden: true } do
+            expose :secret_field, documentation: { type: String }
+          end
+          expose :public_field, documentation: { type: String }
+        end
+      end
+
+      def test_hidden_nesting_exposure_excluded
+        schema = EntityIntrospector.new(HiddenNestingEntity).build_schema
+
+        wrapper = schema.properties["wrapper"]
+
+        refute_includes wrapper.properties.keys, "internal_group"
+        assert_includes wrapper.properties.keys, "public_field"
+      end
+
       class ProcHiddenEntity < Grape::Entity
         expose :visible, documentation: { type: String }
         expose :secret, documentation: { type: String, hidden: proc { true } }
