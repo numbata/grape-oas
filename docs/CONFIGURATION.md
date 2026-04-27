@@ -73,19 +73,18 @@ Control how nullable fields are represented in the generated schema. Each OpenAP
 |----------|--------|-------------|
 | `:keyword` | `"nullable": true` | OAS 3.0 |
 | `:type_array` | `"type": ["string", "null"]` | OAS 3.1 (always) |
-| `:extension` | `"x-nullable": true` | _(none)_ |
+| `:extension` | `"x-nullable": true` | OAS 2.0 |
 
 ```ruby
+# OAS 2.0 — default uses "x-nullable: true" extension
+GrapeOAS.generate(app: API, schema_type: :oas2)
+
 # OAS 3.0 — default uses "nullable: true" keyword
 GrapeOAS.generate(app: API, schema_type: :oas3)
 
 # OAS 3.0 — use JSON Schema null unions instead
 GrapeOAS.generate(app: API, schema_type: :oas3,
                   nullable_strategy: :type_array)
-
-# OAS 2.0 — emit x-nullable extension for nullable fields
-GrapeOAS.generate(app: API, schema_type: :oas2,
-                  nullable_strategy: :extension)
 
 # OAS 3.1 — always uses type arrays, nullable_strategy is ignored
 GrapeOAS.generate(app: API, schema_type: :oas31)
@@ -102,7 +101,7 @@ The legacy `nullable_keyword` option is still accepted for OAS 3.0 and mapped au
 | `nullable_keyword: true` | `nullable_strategy: :keyword` |
 | `nullable_keyword: false` | `nullable_strategy: :type_array` |
 
-If both `nullable_strategy` and `nullable_keyword` are provided, `nullable_strategy` takes precedence. The `nullable_keyword` option has no effect on OAS 2.0 or OAS 3.1.
+If both `nullable_strategy` and `nullable_keyword` are provided, `nullable_strategy` takes precedence. The `nullable_keyword` option has no effect on OAS 3.1 (which always uses `:type_array`). For OAS 2.0, `nullable_keyword` maps to `:extension` regardless of its value, since `:extension` is the only valid strategy for Swagger 2.0.
 
 ## Security Definitions
 
