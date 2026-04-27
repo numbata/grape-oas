@@ -24,15 +24,9 @@ module GrapeOAS
           apply_default(schema, spec, doc)
         end
 
-        # Extracts nullable flag from a documentation hash.
-        #
-        # @param doc [Hash] the documentation hash
-        # @return [Boolean] true if nullable
-        def self.extract_nullable(doc)
-          doc[:nullable] || (doc[:x].is_a?(Hash) && doc[:x][:nullable]) || false
-        end
-
         class << self
+          include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
+
           private
 
           def apply_additional_properties(schema, doc)

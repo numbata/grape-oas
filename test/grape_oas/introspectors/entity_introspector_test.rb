@@ -184,6 +184,17 @@ module GrapeOAS
         assert_includes schema.required, "forced"
       end
 
+      def test_x_nullable_documentation_sets_nullable_on_entity_exposure
+        entity_class = Class.new(Grape::Entity) do
+          expose :note, documentation: { type: String, x: { nullable: true } }
+        end
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+        note_schema = schema.properties["note"]
+
+        assert note_schema.nullable, "Expected x: { nullable: true } to set schema.nullable on entity exposure"
+      end
+
       def test_merge_flattens_properties
         schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
 

@@ -32,5 +32,29 @@ module GrapeOAS
 
       assert_equal "query", params.first["in"]
     end
+
+    class XNullableEntity < Grape::Entity
+      expose :note, documentation: { type: String, x: { nullable: true } }
+    end
+
+    class XNullableEntityAPI < Grape::API
+      format :json
+
+      namespace :notes do
+        get entity: XNullableEntity do
+          {}
+        end
+      end
+    end
+
+    def test_oas31_emits_type_array_for_entity_exposure_with_documentation_x_nullable
+      schema = GrapeOAS.generate(app: XNullableEntityAPI, schema_type: :oas31)
+      components = schema.dig("components", "schemas")
+      entity_def = components[components.keys.find { |k| k.include?("XNullableEntity") }]
+      note_prop = entity_def["properties"]["note"]
+
+      assert_equal %w[string null], note_prop["type"], "OAS 3.1 should use type array for x: { nullable: true } on entity"
+      refute note_prop.key?("nullable"), "OAS 3.1 must not emit nullable keyword"
+    end
   end
 end
