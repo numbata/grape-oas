@@ -7,6 +7,8 @@ module GrapeOAS
       # All methods are stateless and can be called directly on the class.
       class PropertyExtractor
         class << self
+          include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
+
           # Extracts description from a documentation hash.
           #
           # @param hash [Hash] the documentation hash
@@ -14,18 +16,6 @@ module GrapeOAS
           def extract_description(hash)
             desc = hash[:description] || hash[:desc]
             desc.is_a?(String) ? desc : nil
-          end
-
-          # Extracts nullable flag from a documentation hash.
-          # Supports both `documentation: { nullable: true }` and the
-          # `documentation: { x: { nullable: true } }` namespaced form.
-          #
-          # @param doc [Hash] the documentation hash
-          # @return [Boolean] true if nullable
-          def extract_nullable(doc)
-            doc[:nullable] || doc["nullable"] ||
-              (doc[:x].is_a?(Hash) && (doc[:x][:nullable] || doc[:x]["nullable"])) ||
-              false
           end
 
           # Extracts merge flag from exposure options and documentation.

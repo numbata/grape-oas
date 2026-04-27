@@ -24,6 +24,19 @@ module GrapeOAS
           OasUtilities.extract_extensions(hash)
         end
 
+        # Extracts nullable flag from a documentation hash.
+        #
+        # @param doc [Hash] the documentation hash
+        # @return [Boolean] true if nullable
+        def self.extract_nullable(doc)
+          doc[:nullable] || (doc[:x].is_a?(Hash) && doc[:x][:nullable]) || false
+        end
+
+        # Instance method version
+        def extract_nullable(doc)
+          OasUtilities.extract_nullable(doc)
+        end
+
         # Converts a CamelCase string to snake_case.
         #
         # @param str [String] the string to convert
