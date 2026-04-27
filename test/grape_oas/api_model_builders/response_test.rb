@@ -106,6 +106,96 @@ module GrapeOAS
         assert_equal "TestUserEntity", schema.canonical_name
       end
 
+      def test_infers_201_for_post_without_entity
+        api_class = Class.new(Grape::API) do
+          format :json
+          post "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        response = Response.new(api: @api, route: route).build.first
+
+        assert_equal "201", response.http_status
+        assert_equal "Success", response.description
+      end
+
+      def test_infers_200_for_get_without_entity
+        api_class = Class.new(Grape::API) do
+          format :json
+          get "users" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        response = Response.new(api: @api, route: route).build.first
+
+        assert_equal "200", response.http_status
+      end
+
+      def test_success_entity_class_defaults_to_201_for_post
+        entity_class = Class.new(Grape::Entity)
+        api_class = Class.new(Grape::API) do
+          format :json
+          post "users", success: entity_class do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        response = Response.new(api: @api, route: route).build.first
+
+        assert_equal "201", response.http_status
+      end
+
+      def test_success_entity_class_defaults_to_200_for_get
+        entity_class = Class.new(Grape::Entity)
+        api_class = Class.new(Grape::API) do
+          format :json
+          get "users", success: entity_class do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        response = Response.new(api: @api, route: route).build.first
+
+        assert_equal "200", response.http_status
+      end
+
+      def test_success_entity_class_defaults_to_200_for_put
+        entity_class = Class.new(Grape::Entity)
+        api_class = Class.new(Grape::API) do
+          format :json
+          put "users/:id", success: entity_class do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        response = Response.new(api: @api, route: route).build.first
+
+        assert_equal "200", response.http_status
+      end
+
+      def test_success_hash_with_explicit_code_is_respected_for_post
+        entity_class = Class.new(Grape::Entity)
+        api_class = Class.new(Grape::API) do
+          format :json
+          post "users", success: { code: 202, model: entity_class, message: "Accepted" } do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        response = Response.new(api: @api, route: route).build.first
+
+        assert_equal "202", response.http_status
+        assert_equal "Accepted", response.description
+      end
+
       def test_builds_multiple_responses_from_success_and_failure
         entity_class = Class.new(Grape::Entity)
         api_class = Class.new(Grape::API) do
