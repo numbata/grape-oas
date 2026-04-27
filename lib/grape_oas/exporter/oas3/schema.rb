@@ -51,7 +51,7 @@ module GrapeOAS
             end
           end
           schema_hash["required"] = @schema.required if @schema.required && !@schema.required.empty?
-          schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"]) if @schema.enum
+          schema_hash["enum"] = normalize_enum(@schema.enum, schema_hash["type"], nullable: nullable?) if @schema.enum
           schema_hash["default"] = @schema.default unless @schema.default.nil?
           schema_hash
         end
@@ -81,6 +81,10 @@ module GrapeOAS
         end
 
         private
+
+        def base_type_for(type)
+          type.is_a?(Array) ? (type - ["null"]).first : type
+        end
 
         # Rewrites `type: file` (or `type: ["file", "null"]`) to the
         # version-appropriate representation. Type detection lives here;
@@ -136,7 +140,7 @@ module GrapeOAS
           result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
-          result["enum"] = normalize_enum(@schema.enum, result["type"]) if @schema.enum
+          result["enum"] = normalize_enum(@schema.enum, result["type"], nullable: nullable?) if @schema.enum
           sanitize_enum_against_type(result)
           apply_all_constraints(result)
           result.merge!(@schema.extensions) if @schema.extensions
@@ -161,7 +165,7 @@ module GrapeOAS
         end
 
         def nullable?
-          @schema.respond_to?(:nullable) && @schema.nullable
+          @schema.respond_to?(:nullable) && !!@schema.nullable
         end
 
         def nullable_type
@@ -201,7 +205,8 @@ module GrapeOAS
             result = {}
             result["description"] = schema.description.to_s if schema.description
             result["default"] = schema.default unless schema.default.nil?
-            result["enum"] = normalize_enum(schema.enum, schema.type) if schema.enum
+            nullable_ref = schema.respond_to?(:nullable) && !!schema.nullable
+            result["enum"] = normalize_enum(schema.enum, schema.type, nullable: nullable_ref) if schema.enum
             sanitize_enum_against_type(result, type: schema.type)
             apply_all_constraints(result, schema)
             result.merge!(schema.extensions) if schema.extensions
@@ -240,18 +245,23 @@ module GrapeOAS
           end
         end
 
-        def normalize_enum(enum_vals, type)
+        def normalize_enum(enum_vals, type, nullable: false)
           return nil unless enum_vals.is_a?(Array)
 
-          # rubocop:disable Performance/MapCompact -- filter_map drops `false` for boolean enums
+          nullable ||= type.is_a?(Array) && type.include?("null")
+          resolved_type = base_type_for(type)
+
           coerced = enum_vals.map do |v|
-            case type
+            next v if v.nil?
+
+            case resolved_type
             when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
             when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
             else v
             end
-          end.compact
-          # rubocop:enable Performance/MapCompact
+          end
+          coerced.compact!
+          coerced.push(nil) if nullable && enum_vals.include?(nil)
 
           result = coerced.uniq
           return nil if result.empty?
@@ -289,41 +299,31 @@ module GrapeOAS
           hash["maxItems"] = schema.max_items unless schema.max_items.nil?
         end
 
-        # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs
+        # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs.
         def sanitize_enum_against_type(hash, type: nil)
           enum_vals = hash["enum"]
           type_val = type || hash["type"]
           return unless enum_vals && type_val
 
-          base_type = if type_val.is_a?(Array)
-                        (type_val - ["null"]).first
-                      else
-                        type_val
-                      end
+          base = base_type_for(type_val)
+          return hash.delete("enum") if base.nil? || base == Constants::SchemaTypes::ARRAY || base == Constants::SchemaTypes::OBJECT
 
-          # Remove enum for unsupported base types or mismatches
-          case base_type
-          when Constants::SchemaTypes::ARRAY, Constants::SchemaTypes::OBJECT, nil
-            hash.delete("enum")
+          non_nil_vals = enum_vals.compact
+
+          case base
           when Constants::SchemaTypes::INTEGER
-            hash.delete("enum") unless enum_vals.all?(Integer)
+            hash.delete("enum") unless non_nil_vals.all?(Integer)
           when Constants::SchemaTypes::NUMBER
-            hash.delete("enum") unless enum_vals.all?(Numeric)
+            hash.delete("enum") unless non_nil_vals.all?(Numeric)
           when Constants::SchemaTypes::BOOLEAN
-            hash.delete("enum") unless enum_vals.all? { |v| v == true || v == false } # rubocop:disable Style/MultipleComparison
+            hash.delete("enum") unless non_nil_vals.all? { |v| v == true || v == false } # rubocop:disable Style/MultipleComparison
           else # string and fallback
-            hash.delete("enum") unless enum_vals.all?(String)
+            hash.delete("enum") unless non_nil_vals.all?(String)
           end
         end
 
         def coerce_example(example, type_val)
-          base_type = if type_val.is_a?(Array)
-                        (type_val - ["null"]).first
-                      else
-                        type_val
-                      end
-
-          case base_type
+          case base_type_for(type_val)
           when Constants::SchemaTypes::INTEGER
             example.to_i
           when Constants::SchemaTypes::NUMBER
