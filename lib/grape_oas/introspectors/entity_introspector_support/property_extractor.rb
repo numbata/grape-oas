@@ -17,11 +17,15 @@ module GrapeOAS
           end
 
           # Extracts nullable flag from a documentation hash.
+          # Supports both `documentation: { nullable: true }` and the
+          # `documentation: { x: { nullable: true } }` namespaced form.
           #
           # @param doc [Hash] the documentation hash
           # @return [Boolean] true if nullable
           def extract_nullable(doc)
-            doc[:nullable] || doc["nullable"] || false
+            doc[:nullable] || doc["nullable"] ||
+              (doc[:x].is_a?(Hash) && (doc[:x][:nullable] || doc[:x]["nullable"])) ||
+              false
           end
 
           # Extracts merge flag from exposure options and documentation.
