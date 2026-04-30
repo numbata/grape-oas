@@ -88,7 +88,7 @@ module GrapeOAS
 
           processed << canonical_name
 
-          ref_name = canonical_name.gsub("::", "_")
+          ref_name = GrapeOAS.schema_ref_name.call(canonical_name)
           schema = find_schema_by_canonical_name(canonical_name)
           if schema
             schemas[ref_name] =
