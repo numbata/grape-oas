@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#96](https://github.com/numbata/grape-oas/pull/96): Pin rubocop versions and add performance/packaging/rake plugins - [@numbata](https://github.com/numbata).
 - [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
+- Entity exposures whose declared type is a class that is neither a `Grape::Entity` nor a known primitive now consult `GrapeOAS.type_resolvers` before falling back to `{ type: "string" }`. Apps can register a custom `TypeResolvers::Base` implementation to supply a richer schema (e.g. UUID, Dry::Types wrappers, app-specific value objects) for entity exposures, mirroring the first-match-wins semantics already used for request parameters.
 - Your contribution here
 
 ### Fixed
@@ -22,12 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#76](https://github.com/numbata/grape-oas/pull/76): Emit OAS-version-correct schema for file types - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#82](https://github.com/numbata/grape-oas/pull/82): Fix: respect `documentation: { hidden: true }` on entity exposures - [@bogdan](https://github.com/bogdan).
 - [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
-* Your contribution here
+- Your contribution here
 
 ### Changed
 
 - [#95](https://github.com/numbata/grape-oas/pull/95): Entity exposures now consult `GrapeOAS.type_resolvers` - [@numbata](https://github.com/numbata).
-* Your contribution here
+- Your contribution here
 
 ## [1.4.0] - 2026-04-23
 
