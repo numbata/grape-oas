@@ -215,6 +215,81 @@ module GrapeOAS
           assert_equal %w[a b], items.enum
         end
       end
+
+      # Unit tests for determine_required respecting GrapeOAS.entity_exposure_required_default
+      class ExposureProcessorDetermineRequiredTest < Minitest::Test
+        def setup
+          @processor = ExposureProcessor.new(Class.new, stack: [], registry: {})
+        end
+
+        def teardown
+          GrapeOAS.entity_exposure_required_default = nil
+        end
+
+        def build_exposure(conditional: false)
+          exposure = Object.new
+          conditions = conditional ? [->(_o, _opts) { true }] : []
+          exposure.instance_variable_set(:@conditions, conditions)
+          exposure
+        end
+
+        # === Explicit required: always wins regardless of config flag ===
+
+        def test_explicit_required_true_wins_when_flag_is_false
+          GrapeOAS.entity_exposure_required_default = false
+
+          assert @processor.determine_required({ required: true }, build_exposure)
+        end
+
+        def test_explicit_required_false_wins_when_flag_is_true
+          GrapeOAS.entity_exposure_required_default = true
+
+          refute @processor.determine_required({ required: false }, build_exposure)
+        end
+
+        def test_explicit_required_true_on_conditional_wins_when_flag_is_false
+          GrapeOAS.entity_exposure_required_default = false
+          exposure = build_exposure(conditional: true)
+
+          assert @processor.determine_required({ required: true }, exposure)
+        end
+
+        # === Conditional exposures stay false regardless of flag ===
+
+        def test_conditional_exposure_is_false_when_flag_is_true
+          GrapeOAS.entity_exposure_required_default = true
+          exposure = build_exposure(conditional: true)
+
+          refute @processor.determine_required({}, exposure)
+        end
+
+        def test_conditional_exposure_is_false_when_flag_is_false
+          GrapeOAS.entity_exposure_required_default = false
+          exposure = build_exposure(conditional: true)
+
+          refute @processor.determine_required({}, exposure)
+        end
+
+        # === Unconditional exposures without explicit required: consult the flag ===
+
+        def test_unconditional_exposure_is_required_when_flag_is_true_default
+          GrapeOAS.entity_exposure_required_default = nil
+
+          assert @processor.determine_required({}, build_exposure)
+        end
+
+        def test_unconditional_exposure_is_not_required_when_flag_is_false
+          GrapeOAS.entity_exposure_required_default = false
+
+          refute @processor.determine_required({}, build_exposure)
+        end
+
+        def test_unconditional_exposure_is_required_when_flag_explicitly_true
+          GrapeOAS.entity_exposure_required_default = true
+
+          assert @processor.determine_required({}, build_exposure)
+        end
+      end
     end
   end
 end
