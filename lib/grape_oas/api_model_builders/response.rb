@@ -177,6 +177,7 @@ module GrapeOAS
 
       def build_response_from_spec(spec)
         entity_schema = build_schema(spec[:entity])
+        entity_schema = array_schema(entity_schema) if spec[:is_array]
         schema = wrap_with_root(entity_schema, spec[:entity], is_array: spec[:is_array])
         media_types = Array(response_content_types).map do |mime|
           build_media_type(

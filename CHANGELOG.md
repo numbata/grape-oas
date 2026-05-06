@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#82](https://github.com/numbata/grape-oas/pull/82): Fix: respect `documentation: { hidden: true }` on entity exposures - [@bogdan](https://github.com/bogdan).
 - [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
 - [#98](https://github.com/numbata/grape-oas/pull/98): Honor `documentation: { x: { nullable: true } }` on entity exposures - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#85](https://github.com/numbata/grape-oas/pull/85): Honor `is_array: true` on the plain-entity response branch - [@abeljim8am](https://github.com/abeljim8am).
 * Your contribution here
 
 ### Changed
