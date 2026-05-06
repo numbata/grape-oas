@@ -205,7 +205,7 @@ module GrapeOAS
         end
 
         def apply_exposure_properties(schema, doc)
-          schema.nullable = doc[:nullable] || false
+          schema.nullable = PropertyExtractor.extract_nullable(doc)
           raw_values = doc[:values]
           if raw_values
             normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
