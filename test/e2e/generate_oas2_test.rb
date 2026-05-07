@@ -34,5 +34,29 @@ module GrapeOAS
       assert_equal "path", parameters.first["in"]
       assert parameters.first["required"]
     end
+
+    class XNullableEntity < Grape::Entity
+      expose :note, documentation: { type: String, x: { nullable: true } }
+    end
+
+    class XNullableEntityAPI < Grape::API
+      format :json
+
+      namespace :notes do
+        get entity: XNullableEntity do
+          {}
+        end
+      end
+    end
+
+    def test_oas2_emits_x_nullable_for_entity_exposure_with_documentation_x_nullable
+      schema = GrapeOAS.generate(app: XNullableEntityAPI, schema_type: :oas2)
+      defs = schema["definitions"]
+      entity_def = defs[defs.keys.find { |k| k.include?("XNullableEntity") }]
+      note_prop = entity_def["properties"]["note"]
+
+      assert_equal "string", note_prop["type"]
+      assert note_prop["x-nullable"], "OAS 2.0 default (EXTENSION) should emit x-nullable for x: { nullable: true } on entity"
+    end
   end
 end

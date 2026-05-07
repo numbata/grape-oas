@@ -22,12 +22,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#76](https://github.com/numbata/grape-oas/pull/76): Emit OAS-version-correct schema for file types - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#82](https://github.com/numbata/grape-oas/pull/82): Fix: respect `documentation: { hidden: true }` on entity exposures - [@bogdan](https://github.com/bogdan).
 - [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
-- Omit the `content` key entirely on `204 No Content` responses. Previously the generated spec synthesized an empty-schema media type (and kept the `content` object even when no body was declared), contradicting HTTP semantics and tripping spec validators. An explicitly declared entity on a `204` response is now also dropped so the emitted object is just `{ "description": "..." }`. Non-204 bodyless responses are untouched.
+- [#98](https://github.com/numbata/grape-oas/pull/98): Honor `documentation: { x: { nullable: true } }` on entity exposures - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#85](https://github.com/numbata/grape-oas/pull/85): Honor `is_array: true` on the plain-entity response branch - [@abeljim8am](https://github.com/abeljim8am).
+- [#87](https://github.com/numbata/grape-oas/pull/87): Fix `SchemaIndexer#index_schema` to recurse into `schema.items` so entities reachable only through an array wrapper (e.g. a property declared as `Array<OtherEntity>`) are included in the indexed schemas set - [@abeljim8am](https://github.com/abeljim8am).
 - Your contribution here
 
 ### Changed
 
 - [#95](https://github.com/numbata/grape-oas/pull/95): Entity exposures now consult `GrapeOAS.type_resolvers` - [@numbata](https://github.com/numbata).
+- [#86](https://github.com/numbata/grape-oas/pull/86): Omit content key on 204 No Content responses; entity declarations on 204 are now silently dropped - [@abeljim8am](https://github.com/abeljim8am).
 - Your contribution here
 
 ## [1.4.0] - 2026-04-23
