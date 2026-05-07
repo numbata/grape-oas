@@ -42,7 +42,7 @@ module GrapeOAS
         end
 
         def build_content(media_types, response_examples = nil)
-          return nil unless media_types
+          return nil if media_types.nil? || media_types.empty?
 
           media_types.each_with_object({}) do |mt, h|
             entry = { "schema" => build_schema_or_ref(mt.schema) }
