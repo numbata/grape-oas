@@ -47,10 +47,15 @@ module GrapeOAS
           end
         end
 
-        def index_schema(schema, index)
-          return unless schema.respond_to?(:canonical_name) && schema.canonical_name
+        def index_schema(schema, index, seen = Set.new)
+          return unless schema
 
-          index[schema.canonical_name] ||= schema
+          schema_id = schema.object_id
+          return if seen.include?(schema_id)
+
+          seen << schema_id
+          index[schema.canonical_name] ||= schema if schema.respond_to?(:canonical_name) && schema.canonical_name
+          index_schema(schema.items, index, seen) if schema.respond_to?(:items) && schema.items
         end
 
         def collect_refs(schema, pending, seen = Set.new)

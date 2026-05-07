@@ -24,12 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
 - [#98](https://github.com/numbata/grape-oas/pull/98): Honor `documentation: { x: { nullable: true } }` on entity exposures - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#85](https://github.com/numbata/grape-oas/pull/85): Honor `is_array: true` on the plain-entity response branch - [@abeljim8am](https://github.com/abeljim8am).
+- [#87](https://github.com/numbata/grape-oas/pull/87): Fix `SchemaIndexer#index_schema` to recurse into `schema.items` so entities reachable only through an array wrapper (e.g. a property declared as `Array<OtherEntity>`) are included in the indexed schemas set - [@abeljim8am](https://github.com/abeljim8am).
 * Your contribution here
 
 ### Changed
 
 - [#95](https://github.com/numbata/grape-oas/pull/95): Entity exposures now consult `GrapeOAS.type_resolvers` - [@numbata](https://github.com/numbata).
-* Your contribution here
+- Your contribution here
 
 ## [1.4.0] - 2026-04-23
 
