@@ -678,6 +678,29 @@ module GrapeOAS
         assert_equal 0, score.minimum
         assert_equal 100, score.maximum
       end
+
+      # === Nullable entity ref must not mutate the shared schema ===
+
+      class SharedChildEntity < Grape::Entity
+        expose :id, documentation: { type: Integer }
+      end
+
+      class NullableRefParentEntity < Grape::Entity
+        expose :child,
+               using: SharedChildEntity,
+               documentation: { type: SharedChildEntity, x: { nullable: true } }
+      end
+
+      def test_nullable_ref_does_not_mutate_shared_child_schema
+        registry = {}
+        EntityIntrospector.build_schema(SharedChildEntity, registry: registry)
+        original_nullable = registry[SharedChildEntity].nullable
+
+        EntityIntrospector.build_schema(NullableRefParentEntity, registry: registry)
+
+        assert_equal original_nullable, registry[SharedChildEntity].nullable,
+                     "nullable exposure in parent must not mutate the shared child entity schema"
+      end
     end
   end
 end

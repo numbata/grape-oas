@@ -8,7 +8,7 @@ class GrapeOASTest < Minitest::Test
   end
 
   def test_module_defined
-    assert defined?(GrapeOAS)
+    assert(defined?(GrapeOAS))
   end
 
   def test_logger_returns_default_logger
