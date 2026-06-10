@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#96](https://github.com/numbata/grape-oas/pull/96): Pin rubocop versions and add performance/packaging/rake plugins - [@numbata](https://github.com/numbata).
 - [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
+- [#103](https://github.com/numbata/grape-oas/pull/103): Add `array_use_braces` option to append `[]` to array query params and form/multipart body property names - [@olivier-thatch](https://github.com/olivier-thatch).
 - Your contribution here
 
 ### Fixed
