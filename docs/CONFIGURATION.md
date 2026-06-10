@@ -103,6 +103,31 @@ The legacy `nullable_keyword` option is still accepted for OAS 3.0 and mapped au
 
 If both `nullable_strategy` and `nullable_keyword` are provided, `nullable_strategy` takes precedence. The `nullable_keyword` option has no effect on OAS 3.1 (which always uses `:type_array`). For OAS 2.0, `nullable_keyword` maps to `:extension` regardless of its value, since `:extension` is the only valid strategy for Swagger 2.0.
 
+## Array Use Braces
+
+Some clients (Rails/PHP/`qs`-style) expect array request fields to be named with a trailing `[]` — e.g. `ids[]` instead of `ids`. Set `array_use_braces: true` to append `[]` to the **name** of array parameters that are:
+
+- query-string parameters (`in: query`), or
+- body properties served under `application/x-www-form-urlencoded` or `multipart/form-data`.
+
+JSON body properties (`application/json`), path parameters, and header parameters are never modified. The option defaults to `false`, so existing output is unchanged unless you opt in. It applies identically to OAS 2.0, 3.0, and 3.1.
+
+```ruby
+GrapeOAS.generate(app: API, schema_type: :oas3, array_use_braces: true)
+```
+
+For an array query parameter `ids`:
+
+```jsonc
+// array_use_braces: false (default)
+{ "name": "ids", "in": "query", "schema": { "type": "array", "items": { "type": "integer" } } }
+
+// array_use_braces: true
+{ "name": "ids[]", "in": "query", "schema": { "type": "array", "items": { "type": "integer" } } }
+```
+
+For a form-encoded body, only the array properties (and their `required` entries) gain `[]`; the `application/json` representation of the same body is left untouched (it keeps its shared `$ref`). When a form/multipart media type is braced, its schema is inlined so the rename does not affect the JSON-facing schema. Only top-level form properties are braced — nested object structures (uncommon in form encodings) are left as-is.
+
 ## Security Definitions
 
 Security definitions are passed through directly to the OpenAPI output. Use the format appropriate for your target OpenAPI version.

@@ -4,10 +4,12 @@ module GrapeOAS
   module Exporter
     module OAS3
       class Parameter
-        def initialize(operation, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD)
+        def initialize(operation, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD,
+                       array_use_braces: false)
           @op = operation
           @ref_tracker = ref_tracker
           @nullable_strategy = nullable_strategy
+          @array_use_braces = array_use_braces
         end
 
         def build
@@ -16,7 +18,7 @@ module GrapeOAS
             schema_description = schema_hash.delete("description")
             description = param.description || schema_description
             {
-              "name" => param.name,
+              "name" => Base::ArrayBraces.param_name(param, enabled: @array_use_braces),
               "in" => param.location,
               "required" => param.required,
               "description" => description,
