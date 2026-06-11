@@ -195,6 +195,20 @@ module GrapeOAS
         assert note_schema.nullable, "Expected x: { nullable: true } to set schema.nullable on entity exposure"
       end
 
+      def test_nullable_array_marks_array_not_items
+        entity_class = Class.new(Grape::Entity) do
+          expose :species, documentation: { type: "string", is_array: true, x: { nullable: true } }
+        end
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+        species = schema.properties["species"]
+
+        assert_equal "array", species.type
+        assert species.nullable, "Expected the array itself to be nullable"
+        assert_equal "string", species.items.type
+        refute species.items.nullable, "Expected array items to remain non-nullable"
+      end
+
       def test_merge_flattens_properties
         schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
 

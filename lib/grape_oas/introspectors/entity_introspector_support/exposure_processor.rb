@@ -158,7 +158,12 @@ module GrapeOAS
           is_array = doc[:is_array]
           return prop_schema unless is_array
 
-          ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
+          array_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
+          # nullable describes the array itself, not its elements: a nullable
+          # array may be null, but its items remain non-null.
+          array_schema.nullable = prop_schema.nullable
+          prop_schema.nullable = false
+          array_schema
         end
 
         # Detects block-based nesting exposures (NestingExposure) that should become
