@@ -319,6 +319,11 @@ module GrapeOAS
         end
 
         def coerce_example(example, type_val)
+          # Composite examples (e.g. an array-valued example on an array schema,
+          # or a hash on an object schema) are passed through untouched; scalar
+          # coercion like #to_i only makes sense for scalar values.
+          return example if example.is_a?(Array) || example.is_a?(Hash)
+
           base_type = if type_val.is_a?(Array)
                         (type_val - ["null"]).first
                       else
