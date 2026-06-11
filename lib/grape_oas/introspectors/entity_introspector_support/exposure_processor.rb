@@ -167,6 +167,8 @@ module GrapeOAS
           return prop_schema unless is_array
 
           array_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
+          array_schema.nullable = prop_schema.nullable
+          prop_schema.nullable = false
           array_schema.examples = doc[:example] if array_valued_example?(doc)
           array_schema
         end
