@@ -205,7 +205,16 @@ module GrapeOAS
         end
 
         def apply_exposure_properties(schema, doc)
-          schema.nullable = PropertyExtractor.extract_nullable(doc)
+          nullable = PropertyExtractor.extract_nullable(doc)
+          if nullable && schema.canonical_name
+            # Don't mutate the shared cached entity schema. Create a wrapper with
+            # all_of so the exporter emits { nullable: true, allOf: [{ $ref }] }.
+            # collect_refs traverses all_of and registers the original schema as a
+            # component, keeping its definition free of this property's nullable.
+            schema = ApiModel::Schema.new(nullable: true, all_of: [schema])
+          else
+            schema.nullable = nullable
+          end
           raw_values = doc[:values]
           if raw_values
             normalized = ValuesNormalizer.normalize(raw_values, context: "entity exposure values")
