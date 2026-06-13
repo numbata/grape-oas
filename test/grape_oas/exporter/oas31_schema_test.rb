@@ -129,6 +129,22 @@ module GrapeOAS
         refute result.key?("format")
       end
 
+      def test_nullable_allof_wraps_as_any_of_with_null_sibling
+        ref = ApiModel::Schema.new(canonical_name: "Child")
+        schema = ApiModel::Schema.new(nullable: true, all_of: [ref])
+
+        result = OAS31::Schema.new(
+          schema, nil,
+          nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,
+        ).build
+
+        refute result.key?("allOf"), "bare allOf loses nullability — must be promoted to anyOf"
+        assert result.key?("anyOf")
+        assert_equal 2, result["anyOf"].size
+        assert result["anyOf"].any?({ "type" => "null" })
+        assert result["anyOf"].any? { |s| s.key?("allOf") }
+      end
+
       def test_allof_with_file_type_normalizes_to_content_keywords
         child = ApiModel::Schema.new(type: "object")
         schema = ApiModel::Schema.new(all_of: [child], type: "file")

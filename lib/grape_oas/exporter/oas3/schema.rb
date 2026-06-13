@@ -179,6 +179,19 @@ module GrapeOAS
             schema_hash["nullable"] = true
           when Constants::NullableStrategy::EXTENSION
             schema_hash["x-nullable"] = true
+          when Constants::NullableStrategy::TYPE_ARRAY
+            composition_key = %w[allOf oneOf anyOf].find { |k| schema_hash.key?(k) }
+            if schema_hash["type"].nil? && composition_key
+              # Adding type: ["null"] to an allOf/oneOf/anyOf wrapper would be
+              # conjunctive and can make the schema unsatisfiable. Wrap instead
+              # as anyOf: [{ <key>: [...] }, { type: "null" }].
+              schema_hash["anyOf"] = [
+                { composition_key => schema_hash.delete(composition_key) },
+                { "type" => "null" }
+              ]
+            else
+              schema_hash["type"] = (Array(schema_hash["type"]) | ["null"])
+            end
           end
         end
 

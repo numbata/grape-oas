@@ -688,7 +688,7 @@ module GrapeOAS
       class NullableRefParentEntity < Grape::Entity
         expose :child,
                using: SharedChildEntity,
-               documentation: { type: SharedChildEntity, x: { nullable: true } }
+               documentation: { type: SharedChildEntity, x: { nullable: true }, desc: "a nullable child", example: { id: 1 } }
       end
 
       def test_nullable_ref_does_not_mutate_shared_child_schema
@@ -696,10 +696,15 @@ module GrapeOAS
         EntityIntrospector.build_schema(SharedChildEntity, registry: registry)
         original_nullable = registry[SharedChildEntity].nullable
 
-        EntityIntrospector.build_schema(NullableRefParentEntity, registry: registry)
+        parent_schema = EntityIntrospector.build_schema(NullableRefParentEntity, registry: registry)
 
         assert_equal original_nullable, registry[SharedChildEntity].nullable,
                      "nullable exposure in parent must not mutate the shared child entity schema"
+
+        child_schema = parent_schema.properties[:child] || parent_schema.properties["child"]
+        assert child_schema.all_of, "nullable ref should produce an all_of wrapper"
+        assert_equal "a nullable child", child_schema.description
+        assert_equal({ id: 1 }, child_schema.examples)
       end
     end
   end
