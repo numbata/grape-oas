@@ -106,16 +106,31 @@ module GrapeOAS
           assert_equal "Created", specs.first[:message]
         end
 
+        def test_desc_block_plain_entity_on_post_infers_201
+          entity = Class.new
+          route = mock_route(
+            settings: { description: { success: entity } },
+            request_method: "POST",
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal 201, specs.first[:code]
+          assert_equal entity, specs.first[:entity]
+        end
+
         private
 
         def mock_route_with_desc_block(desc_data)
           mock_route(settings: { description: desc_data })
         end
 
-        def mock_route(options: {}, settings: {})
+        def mock_route(options: {}, settings: {}, request_method: "GET")
           route = Object.new
           route.define_singleton_method(:options) { options }
           route.define_singleton_method(:settings) { settings }
+          route.define_singleton_method(:request_method) { request_method }
           route
         end
       end

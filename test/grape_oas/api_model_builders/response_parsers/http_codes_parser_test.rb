@@ -259,10 +259,33 @@ module GrapeOAS
           assert specs[0][:required]
         end
 
+        def test_success_plain_entity_class_defaults_to_200_for_get
+          entity = Class.new
+          route = mock_route(success: entity)
+          route.request_method = "GET"
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal 200, specs[0][:code]
+          assert_equal entity, specs[0][:entity]
+        end
+
+        def test_success_plain_entity_class_defaults_to_201_for_post
+          entity = Class.new
+          route = mock_route(success: entity)
+          route.request_method = "POST"
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal 201, specs[0][:code]
+        end
+
         private
 
         def mock_route(options = {})
-          OpenStruct.new(options: options)
+          OpenStruct.new(options: options, request_method: nil)
         end
       end
     end
