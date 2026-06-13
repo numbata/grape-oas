@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#82](https://github.com/numbata/grape-oas/pull/82): Fix: respect `documentation: { hidden: true }` on entity exposures - [@bogdan](https://github.com/bogdan).
 - [#80](https://github.com/numbata/grape-oas/pull/80): Fix: hide documentation routes from generated spec by default - [@bogdan](https://github.com/bogdan).
 - [#98](https://github.com/numbata/grape-oas/pull/98): Honor `documentation: { x: { nullable: true } }` on entity exposures - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#106](https://github.com/numbata/grape-oas/pull/106): Apply `nullable` to the array, not its items, on `is_array: true` entity exposures - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#85](https://github.com/numbata/grape-oas/pull/85): Honor `is_array: true` on the plain-entity response branch - [@abeljim8am](https://github.com/abeljim8am).
 - [#87](https://github.com/numbata/grape-oas/pull/87): Fix `SchemaIndexer#index_schema` to recurse into `schema.items` so entities reachable only through an array wrapper (e.g. a property declared as `Array<OtherEntity>`) are included in the indexed schemas set - [@abeljim8am](https://github.com/abeljim8am).
 - [#102](https://github.com/numbata/grape-oas/pull/102): Fix: nullable entity ref must not mutate shared cached schema - [@bogdan](https://github.com/bogdan).
