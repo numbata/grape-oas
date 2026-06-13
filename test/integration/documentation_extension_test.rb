@@ -347,6 +347,29 @@ class DocumentationExtensionTest < Minitest::Test
     assert_includes body["paths"].keys, "/ping"
   end
 
+  class ArrayUseBracesAPI < Grape::API
+    format :json
+
+    params do
+      optional :ids, type: [Integer], documentation: { param_type: "query" }
+    end
+    get "items" do
+      {}
+    end
+
+    add_oas_documentation(oas_mount_path: "/spec", array_use_braces: true)
+  end
+
+  def test_array_use_braces_passed_through_add_oas_documentation
+    resp = Rack::MockRequest.new(ArrayUseBracesAPI).get("/spec?oas=3")
+
+    assert_equal 200, resp.status
+    body = JSON.parse(resp.body)
+    names = body.dig("paths", "/items", "get", "parameters").map { |p| p["name"] }
+
+    assert_includes names, "ids[]", "array_use_braces should flow from add_oas_documentation to the output"
+  end
+
   class SwaggerCompatHideAPI < Grape::API
     format :json
     get("ping") { nil }

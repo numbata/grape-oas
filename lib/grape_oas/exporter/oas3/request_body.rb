@@ -4,10 +4,12 @@ module GrapeOAS
   module Exporter
     module OAS3
       class RequestBody
-        def initialize(request_body, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD)
+        def initialize(request_body, ref_tracker = nil, nullable_strategy: Constants::NullableStrategy::KEYWORD,
+                       array_use_braces: false)
           @request_body = request_body
           @ref_tracker = ref_tracker
           @nullable_strategy = nullable_strategy
+          @array_use_braces = array_use_braces
         end
 
         def build
@@ -29,7 +31,7 @@ module GrapeOAS
           return nil unless media_types
 
           media_types.each_with_object({}) do |mt, h|
-            schema_entry = build_schema_or_ref(mt.schema)
+            schema_entry = build_schema_entry(mt)
             entry = {
               "schema" => schema_entry,
               "examples" => mt.examples
@@ -37,6 +39,18 @@ module GrapeOAS
             entry.merge!(mt.extensions) if mt.extensions&.any?
             h[mt.mime_type] = entry
           end
+        end
+
+        # When array_use_braces is on and this media type is form/multipart encoded, inline the
+        # schema (instead of emitting a shared $ref) so we can append `[]` to its array property
+        # names without affecting the JSON media type or the shared component schema.
+        def build_schema_entry(media_type)
+          if @array_use_braces && Base::ArrayBraces.form_encoded?(media_type.mime_type)
+            inline = Schema.new(media_type.schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            return Base::ArrayBraces.apply_to_schema(inline)
+          end
+
+          build_schema_or_ref(media_type.schema)
         end
 
         def build_schema_or_ref(schema)
