@@ -702,6 +702,7 @@ module GrapeOAS
                      "nullable exposure in parent must not mutate the shared child entity schema"
 
         child_schema = parent_schema.properties[:child] || parent_schema.properties["child"]
+
         assert child_schema.all_of, "nullable ref should produce an all_of wrapper"
         assert_equal "a nullable child", child_schema.description
         assert_equal({ id: 1 }, child_schema.examples)

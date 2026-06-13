@@ -142,7 +142,7 @@ module GrapeOAS
         assert result.key?("anyOf")
         assert_equal 2, result["anyOf"].size
         assert result["anyOf"].any?({ "type" => "null" })
-        assert result["anyOf"].any? { |s| s.key?("allOf") }
+        assert(result["anyOf"].any? { |s| s.key?("allOf") })
       end
 
       def test_allof_with_file_type_normalizes_to_content_keywords
