@@ -13,10 +13,12 @@ module GrapeOAS
         def build
           hash = super
 
-          # swap example -> examples if present
+          # swap example -> examples if present. The OAS3 `example` is a single
+          # value, so wrap it as a one-element list (a value that is itself an
+          # array is one array-valued example, not many examples).
           if hash.key?("example")
             ex = hash.delete("example")
-            hash["examples"] ||= ex
+            hash["examples"] ||= [ex]
           end
           normalize_examples!(hash)
           hash

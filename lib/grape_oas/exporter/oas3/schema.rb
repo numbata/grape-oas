@@ -59,8 +59,10 @@ module GrapeOAS
         def apply_examples(schema_hash)
           return unless @schema.examples
 
-          examples = Array(@schema.examples).map { |ex| coerce_example(ex, schema_hash["type"]) }
-          schema_hash["example"] = examples.first
+          # A schema holds exactly one example value, which may itself be an
+          # array (e.g. an Array[String] parameter). Coerce and assign it as-is
+          # rather than treating it as a list of examples.
+          schema_hash["example"] = coerce_example(@schema.examples, schema_hash["type"])
         end
 
         def apply_extensions_and_extra_properties(schema_hash)
@@ -330,6 +332,11 @@ module GrapeOAS
         end
 
         def coerce_example(example, type_val)
+          # Composite examples (e.g. an array-valued example on an array schema,
+          # or a hash on an object schema) are passed through untouched; scalar
+          # coercion like #to_i only makes sense for scalar values.
+          return example if example.is_a?(Array) || example.is_a?(Hash)
+
           base_type = if type_val.is_a?(Array)
                         (type_val - ["null"]).first
                       else
