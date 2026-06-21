@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#100](https://github.com/numbata/grape-oas/pull/100): Fix enum coercion and nil preservation under TYPE_ARRAY nullable strategy - [@numbata](https://github.com/numbata).
 - [#97](https://github.com/numbata/grape-oas/pull/97): Default OAS 2.0 nullable strategy to EXTENSION so nullable fields emit `x-nullable: true` without explicit opt-in - [@numbata](https://github.com/numbata).
 - [#79](https://github.com/numbata/grape-oas/pull/79): Fix docs: `nickname` is supported in grape-oas - [@bogdan](https://github.com/bogdan).
 - [#78](https://github.com/numbata/grape-oas/pull/78): Fix: use empty schema for undocumented responses instead of `{ type: string }` - [@bogdan](https://github.com/bogdan).
