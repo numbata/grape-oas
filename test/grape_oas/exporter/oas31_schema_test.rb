@@ -238,6 +238,17 @@ module GrapeOAS
         assert_equal [1, 2, nil], result["enum"]
       end
 
+      def test_allof_schema_drops_enum_key_when_normalization_yields_nil_oas31
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "string")
+        schema.enum = [nil]
+
+        result = OAS31::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        refute result.key?("enum"), "a nil-only enum on a non-nullable schema must not leak `enum: null`"
+      end
+
       def test_anyof_with_nullable_file_type_normalizes
         variant = ApiModel::Schema.new(type: "object")
         schema = ApiModel::Schema.new(any_of: [variant], type: "file", nullable: true)

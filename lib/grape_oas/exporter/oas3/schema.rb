@@ -170,6 +170,7 @@ module GrapeOAS
           schema.respond_to?(:nullable) && !!schema.nullable
         end
 
+        # Convenience wrapper so call sites don't need to pass @schema explicitly.
         def nullable?
           schema_nullable?(@schema)
         end
@@ -263,6 +264,9 @@ module GrapeOAS
           end
         end
 
+        # `nullable:` is redundant under TYPE_ARRAY (nullability is already encoded in `type`),
+        # but load-bearing for KEYWORD/EXTENSION and for the $ref path, where `type` alone
+        # can't tell whether the referenced schema allows a null enum member.
         def normalize_enum(enum_vals, type, nullable: false)
           return nil unless enum_vals.is_a?(Array)
 
@@ -321,6 +325,8 @@ module GrapeOAS
 
         # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs.
         def sanitize_enum_against_type(hash, type: nil)
+          return hash.delete("enum") if hash.key?("enum") && hash["enum"].nil?
+
           enum_vals = hash["enum"]
           type_val = type || hash["type"]
           return unless enum_vals && type_val
@@ -343,6 +349,8 @@ module GrapeOAS
         end
 
         def coerce_example(example, type_val)
+          return nil if example.nil?
+
           case base_type_for(type_val)
           when Constants::SchemaTypes::INTEGER
             example.to_i
