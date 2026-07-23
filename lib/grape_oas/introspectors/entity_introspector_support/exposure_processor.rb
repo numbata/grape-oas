@@ -110,7 +110,8 @@ module GrapeOAS
 
         # Determines whether a property should be marked required.
         # Explicit doc[:required] takes precedence; conditional exposures
-        # default to false; unconditional exposures default to true.
+        # default to false; unconditional exposures fall back to
+        # GrapeOAS.entity_exposure_required_default (default `true`).
         #
         # @param doc [Hash] normalized documentation hash
         # @param exposure the entity exposure
@@ -119,7 +120,7 @@ module GrapeOAS
           return doc[:required] unless doc[:required].nil?
           return false if conditional?(exposure)
 
-          true
+          GrapeOAS.entity_exposure_required_default
         end
 
         private

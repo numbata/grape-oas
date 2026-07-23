@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#96](https://github.com/numbata/grape-oas/pull/96): Pin rubocop versions and add performance/packaging/rake plugins - [@numbata](https://github.com/numbata).
 - [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
+- [#89](https://github.com/numbata/grape-oas/pull/89): Add configurable `GrapeOAS.entity_exposure_required_default` (default `true`) that controls whether entity exposures without an explicit `documentation: { required: ... }` key are marked required. Default behavior is byte-identical to prior output; setting it to `false` opts out so only explicitly-required exposures end up in the `required` array. Conditional exposures and explicit `required:` values are unaffected - [@abeljim8am](https://github.com/abeljim8am).
 - Your contribution here
 
 ### Fixed
@@ -26,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#85](https://github.com/numbata/grape-oas/pull/85): Honor `is_array: true` on the plain-entity response branch - [@abeljim8am](https://github.com/abeljim8am).
 - [#87](https://github.com/numbata/grape-oas/pull/87): Fix `SchemaIndexer#index_schema` to recurse into `schema.items` so entities reachable only through an array wrapper (e.g. a property declared as `Array<OtherEntity>`) are included in the indexed schemas set - [@abeljim8am](https://github.com/abeljim8am).
 - [#102](https://github.com/numbata/grape-oas/pull/102): Fix: nullable entity ref must not mutate shared cached schema - [@bogdan](https://github.com/bogdan).
-* Your contribution here
+- Your contribution here
 
 ### Changed
 
