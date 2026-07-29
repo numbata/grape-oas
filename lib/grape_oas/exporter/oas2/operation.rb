@@ -11,11 +11,13 @@ module GrapeOAS
         # OAS2-specific fields: consumes, produces, parameters (including body)
         def build_version_specific_fields
           strategy = @options[:nullable_strategy]
+          braces = @options[:array_use_braces] || false
 
           {
             "consumes" => consumes,
             "produces" => produces,
-            "parameters" => Parameter.new(@op, @ref_tracker, nullable_strategy: strategy).build,
+            "parameters" => Parameter.new(@op, @ref_tracker, nullable_strategy: strategy,
+                                                             array_use_braces: braces,).build,
             "responses" => Response.new(@op.responses, @ref_tracker, nullable_strategy: strategy).build
           }
         end

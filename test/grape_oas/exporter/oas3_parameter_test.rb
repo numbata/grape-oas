@@ -58,6 +58,36 @@ module GrapeOAS
         refute size_param.key?("description")
         refute size_param["schema"].key?("description")
       end
+
+      def test_array_use_braces_appends_brackets_to_array_query_param
+        schema = ApiModel::Schema.new(type: "array", items: ApiModel::Schema.new(type: "string"))
+        param = ApiModel::Parameter.new(location: "query", name: "ids", schema: schema)
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = OAS3::Parameter.new(operation, nil, array_use_braces: true).build
+
+        assert_equal "ids[]", result.first["name"]
+      end
+
+      def test_array_use_braces_off_leaves_array_query_param_unchanged
+        schema = ApiModel::Schema.new(type: "array", items: ApiModel::Schema.new(type: "string"))
+        param = ApiModel::Parameter.new(location: "query", name: "ids", schema: schema)
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = OAS3::Parameter.new(operation, nil, array_use_braces: false).build
+
+        assert_equal "ids", result.first["name"]
+      end
+
+      def test_array_use_braces_ignores_non_array_query_param
+        schema = ApiModel::Schema.new(type: "string")
+        param = ApiModel::Parameter.new(location: "query", name: "name", schema: schema)
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = OAS3::Parameter.new(operation, nil, array_use_braces: true).build
+
+        assert_equal "name", result.first["name"]
+      end
     end
   end
 end

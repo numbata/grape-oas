@@ -20,6 +20,7 @@ module GrapeOAS
           "tags" => build_tags,
           "paths" => OAS3::Paths.new(@api, @ref_tracker,
                                      nullable_strategy: nullable_strategy,
+                                     array_use_braces: array_use_braces,
                                      suppress_default_error_response: @api.suppress_default_error_response,).build,
           "components" => build_components,
           "security" => build_security
@@ -121,6 +122,10 @@ module GrapeOAS
 
       def nullable_strategy
         @api.nullable_strategy || Constants::NullableStrategy::OAS3_DEFAULT
+      end
+
+      def array_use_braces
+        @api.array_use_braces || false
       end
     end
   end

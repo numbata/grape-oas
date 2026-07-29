@@ -529,6 +529,36 @@ module GrapeOAS
 
         refute status_param.key?("enum")
       end
+
+      def test_array_use_braces_appends_brackets_to_array_query_param
+        schema = ApiModel::Schema.new(type: "array", items: ApiModel::Schema.new(type: "string"))
+        param = ApiModel::Parameter.new(location: "query", name: "ids", schema: schema)
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = OAS2::Parameter.new(operation, nil, array_use_braces: true).build
+
+        assert(result.any? { |p| p["name"] == "ids[]" })
+      end
+
+      def test_array_use_braces_off_leaves_array_query_param_unchanged
+        schema = ApiModel::Schema.new(type: "array", items: ApiModel::Schema.new(type: "string"))
+        param = ApiModel::Parameter.new(location: "query", name: "ids", schema: schema)
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = OAS2::Parameter.new(operation, nil, array_use_braces: false).build
+
+        assert(result.any? { |p| p["name"] == "ids" })
+      end
+
+      def test_array_use_braces_ignores_non_array_query_param
+        schema = ApiModel::Schema.new(type: "string")
+        param = ApiModel::Parameter.new(location: "query", name: "name", schema: schema)
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = OAS2::Parameter.new(operation, nil, array_use_braces: true).build
+
+        assert(result.any? { |p| p["name"] == "name" })
+      end
     end
   end
 end

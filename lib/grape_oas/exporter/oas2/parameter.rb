@@ -18,10 +18,11 @@ module GrapeOAS
           "uuid" => { type: Constants::SchemaTypes::STRING, format: "uuid" }
         }.freeze
 
-        def initialize(operation, ref_tracker = nil, nullable_strategy: nil)
+        def initialize(operation, ref_tracker = nil, nullable_strategy: nil, array_use_braces: false)
           @op = operation
           @ref_tracker = ref_tracker
           @nullable_strategy = nullable_strategy
+          @array_use_braces = array_use_braces
         end
 
         def build
@@ -35,13 +36,14 @@ module GrapeOAS
         def build_parameter(param)
           type = param.schema&.type
           format = param.schema&.format
+          name = Base::ArrayBraces.param_name(param, enabled: @array_use_braces)
           primitive_types = PRIMITIVE_MAPPINGS.keys + %w[object string boolean file json array number]
           is_primitive = type && primitive_types.include?(type)
 
           if is_primitive && param.location != "body"
             mapping = PRIMITIVE_MAPPINGS[type]
             result = {
-              "name" => param.name,
+              "name" => name,
               "in" => param.location,
               "required" => param.required,
               "description" => param.description,
@@ -53,7 +55,7 @@ module GrapeOAS
             result.compact
           else
             {
-              "name" => param.name,
+              "name" => name,
               "in" => param.location,
               "required" => param.required,
               "description" => param.description,
@@ -135,7 +137,21 @@ module GrapeOAS
 
         def build_body_schema(request_body)
           mt = Array(request_body.media_types).first
-          mt ? build_schema_or_ref(mt.schema) : nil
+          return nil unless mt
+
+          # When array_use_braces is on and the body is form/multipart encoded, inline the
+          # schema (OAS 2.0 has a single body schema, normally a $ref) so we can append `[]`
+          # to its array property names without mutating the shared, JSON-facing definition.
+          if @array_use_braces && form_encoded_body?(request_body)
+            inline = Schema.new(mt.schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            return Base::ArrayBraces.apply_to_schema(inline)
+          end
+
+          build_schema_or_ref(mt.schema)
+        end
+
+        def form_encoded_body?(request_body)
+          Array(request_body.media_types).any? { |mt| Base::ArrayBraces.form_encoded?(mt.mime_type) }
         end
 
         def build_schema_or_ref(schema)

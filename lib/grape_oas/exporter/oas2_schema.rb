@@ -70,9 +70,14 @@ module GrapeOAS
         @api.nullable_strategy || Constants::NullableStrategy::OAS2_DEFAULT
       end
 
+      def array_use_braces
+        @api.array_use_braces || false
+      end
+
       def build_paths
         OAS2::Paths.new(@api, @ref_tracker,
                         nullable_strategy: nullable_strategy,
+                        array_use_braces: array_use_braces,
                         suppress_default_error_response: @api.suppress_default_error_response,).build
       end
 
