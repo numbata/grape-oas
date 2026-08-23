@@ -15,7 +15,7 @@ module GrapeOAS
 
       def build
         route_params = route.path.scan(ROUTE_PARAM_REGEX)
-        all_params = route.options[:params] || {}
+        all_params = declared_params
 
         # Check if we have nested params (bracket notation)
         has_nested = all_params.keys.any? { |k| k.include?("[") }
@@ -150,6 +150,32 @@ module GrapeOAS
 
       def extract_collection_format(spec)
         spec.dig(:documentation, :collectionFormat) || spec.dig(:documentation, :collection_format)
+      end
+
+      # Grape 3.x stores documented params in `route.options[:params]`.
+      # Grape 4.0 moved them to `Route#params` (grape#2785) and no longer
+      # copies the hash into options. Path captures that are not Hash specs
+      # (empty-string defaults from the pattern) are dropped.
+      def declared_params
+        specs = params_from_options || params_from_route
+        return {} unless specs.is_a?(Hash)
+
+        specs.select { |_name, spec| spec.is_a?(Hash) }
+      end
+
+      def params_from_options
+        params = route.options[:params]
+        params if params.is_a?(Hash) && params.any?
+      end
+
+      def params_from_route
+        return unless route.respond_to?(:params)
+        # Grape 3.x Route#params(input = nil) merges path captures; skip it.
+        # Grape 4.0 Route#params takes no arguments and is the documentation hash.
+        return unless route.method(:params).arity.zero?
+
+        params = route.params
+        params if params.is_a?(Hash) && params.any?
       end
 
       def location_resolver

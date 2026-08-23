@@ -119,6 +119,14 @@ module GrapeOAS
           assert_equal "array", resolve_schema_type("[String]")
         end
 
+        def test_grape_33_array_prefix_string_notation
+          assert_equal "array", resolve_schema_type("Array[String]")
+        end
+
+        def test_grape_33_variant_collection_notation
+          assert_equal "array", resolve_schema_type("Array[Integer, String]")
+        end
+
         def test_typed_array_integer_notation
           assert_equal "array", resolve_schema_type("[Integer]")
         end
@@ -133,11 +141,14 @@ module GrapeOAS
           assert_equal "String", extract_typed_array_member("[String]")
           assert_equal "Integer", extract_typed_array_member("[Integer]")
           assert_equal "MyEntity", extract_typed_array_member("[MyEntity]")
+          assert_equal "String", extract_typed_array_member("Array[String]")
+          assert_equal "Integer", extract_typed_array_member("Set[Integer]")
         end
 
         def test_extract_member_returns_nil_for_non_array
           assert_nil extract_typed_array_member("String")
           assert_nil extract_typed_array_member("Array")
+          assert_nil extract_typed_array_member("Array[String, Integer]")
           assert_nil extract_typed_array_member(nil)
         end
       end

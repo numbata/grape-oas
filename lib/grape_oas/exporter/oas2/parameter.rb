@@ -76,6 +76,7 @@ module GrapeOAS
           result["maxLength"] = schema.max_length if schema.respond_to?(:max_length) && !schema.max_length.nil?
           result["minItems"] = schema.min_items if schema.respond_to?(:min_items) && !schema.min_items.nil?
           result["maxItems"] = schema.max_items if schema.respond_to?(:max_items) && !schema.max_items.nil?
+          result["uniqueItems"] = true if schema.respond_to?(:unique_items) && schema.unique_items
           result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
           result["enum"] = normalize_enum(schema.enum, result["type"]) if schema.respond_to?(:enum) && schema.enum
           result["default"] = schema.default if schema.respond_to?(:default) && !schema.default.nil?

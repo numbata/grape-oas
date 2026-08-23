@@ -68,6 +68,7 @@ module GrapeOAS
           schema_hash["pattern"] = schema.pattern if schema.pattern
           schema_hash["minItems"] = schema.min_items unless schema.min_items.nil?
           schema_hash["maxItems"] = schema.max_items unless schema.max_items.nil?
+          schema_hash["uniqueItems"] = true if schema.unique_items
         end
 
         def apply_extensions(schema_hash)

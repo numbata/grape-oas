@@ -167,7 +167,7 @@ module GrapeOAS
     @type_resolvers ||= begin
       registry = TypeResolvers::Registry.new
       # Register built-in resolvers in order of precedence
-      # ArrayResolver handles "[Type]" patterns first
+      # ArrayResolver handles "[Type]" / "Array[Type, ...]" patterns first
       registry.register(TypeResolvers::ArrayResolver)
       # DryTypeResolver handles Dry::Types (standalone, not arrays)
       registry.register(TypeResolvers::DryTypeResolver)

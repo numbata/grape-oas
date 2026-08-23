@@ -399,6 +399,7 @@ module GrapeOAS
         refute simple_param.key?("enum")
         refute simple_param.key?("minItems")
         refute simple_param.key?("maxItems")
+        refute simple_param.key?("uniqueItems")
         refute simple_param.key?("exclusiveMinimum")
         refute simple_param.key?("exclusiveMaximum")
       end

@@ -347,6 +347,14 @@ module GrapeOAS
         assert_equal 0, result["minItems"]
       end
 
+      def test_inline_schema_with_unique_items
+        schema = ApiModel::Schema.new(type: "array", items: ApiModel::Schema.new(type: "string"), unique_items: true)
+
+        result = OAS2::Schema.new(schema).build
+
+        assert result["uniqueItems"]
+      end
+
       # === Composition: constraints propagation tests ===
 
       def test_allof_schema_with_constraints

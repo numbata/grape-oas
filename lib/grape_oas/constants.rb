@@ -58,12 +58,18 @@ module GrapeOAS
     MAX_ENUM_RANGE_SIZE = 100
 
     # Regex patterns for Grape's stringified type notations.
-    # Grape converts `type: [SomeClass]` to "[SomeClass]" and
-    # `type: [String, Integer]` to "[String, Integer]" for documentation.
+    # Grape's ParamsDocumentation TypeCache stores `coerce_type.to_s`:
+    # - `type: [SomeClass]` / `type: Array[SomeClass]` → "[SomeClass]" (Array#to_s)
+    # - `types: [String, Integer]` → "[String, Integer]" (Array#to_s of the types list)
+    # - Grape 3.3+ `type: Array[Integer, String]` → "Array[Integer, String]"
+    #   (VariantCollectionCoercer#to_s, grape#2758). Distinct from the `types:`
+    #   form so a collection of variant members is not confused with a scalar
+    #   that accepts multiple types. `Set[...]` is the same for Set containers.
     module TypePatterns
       CONST_NAME = /(?:::)?[A-Z]\w*(?:::[A-Z]\w*)*/
-      TYPED_ARRAY = /\A\[(?<inner>#{CONST_NAME})\]\z/
+      TYPED_ARRAY = /\A(?:(?<container>Array|Set))?\[(?<inner>#{CONST_NAME})\]\z/
       MULTI_TYPE = /\A\[(#{CONST_NAME}(?:,\s*#{CONST_NAME})+)\]\z/
+      VARIANT_COLLECTION = /\A(?<container>Array|Set)\[(?<inner>#{CONST_NAME}(?:,\s*#{CONST_NAME})+)\]\z/
     end
 
     # Default values for OpenAPI spec when not provided by user
