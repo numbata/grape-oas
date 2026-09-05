@@ -34,9 +34,9 @@ module GrapeOAS
             "type" => @schema.type,
             "format" => @schema.format,
             "description" => @schema.description&.to_s,
-            "properties" => build_properties(@schema.properties),
-            "enum" => normalize_enum(@schema.enum, @schema.type)
+            "properties" => build_properties(@schema.properties)
           }
+          schema_hash["enum"] = normalize_enum(@schema.enum, @schema.type, nullable: nullable?) if @schema.enum
           if @schema.items
             schema_hash["items"] = build_schema_or_ref(@schema.items, include_metadata: false)
             if !schema_hash["description"] && @schema.items.respond_to?(:description) && @schema.items.description
@@ -77,8 +77,12 @@ module GrapeOAS
 
         private
 
+        def schema_nullable?(schema)
+          schema.respond_to?(:nullable) && !!schema.nullable
+        end
+
         def nullable?
-          @schema.respond_to?(:nullable) && @schema.nullable
+          schema_nullable?(@schema)
         end
 
         # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
@@ -116,7 +120,8 @@ module GrapeOAS
           result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
-          result["enum"] = normalize_enum(@schema.enum, @schema.type) if @schema.enum
+          result["enum"] = normalize_enum(@schema.enum, @schema.type, nullable: nullable?) if @schema.enum
+          result.delete("enum") if result.key?("enum") && result["enum"].nil?
           apply_constraints(result)
           apply_extensions(result)
         end
@@ -138,12 +143,11 @@ module GrapeOAS
             return ref_hash unless include_metadata
 
             result = {}
-            if @nullable_strategy == Constants::NullableStrategy::EXTENSION && schema.respond_to?(:nullable) && schema.nullable
-              result["x-nullable"] = true
-            end
+            result["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && schema_nullable?(schema)
             result["description"] = schema.description.to_s if schema.description
             result["default"] = schema.default unless schema.default.nil?
-            result["enum"] = normalize_enum(schema.enum, schema.type) if schema.enum
+            result["enum"] = normalize_enum(schema.enum, schema.type, nullable: schema_nullable?(schema)) if schema.enum
+            result.delete("enum") if result.key?("enum") && result["enum"].nil?
             apply_constraints(result, schema)
             result.merge!(schema.extensions) if schema.extensions
             if result.empty?
@@ -161,18 +165,27 @@ module GrapeOAS
           end
         end
 
-        def normalize_enum(enum_vals, type)
+        def normalize_enum(enum_vals, type, nullable: false)
           return nil unless enum_vals.is_a?(Array)
 
-          # filter_map drops `false` for boolean enums
-          coerced = enum_vals.map do |v| # rubocop:disable Performance/MapCompact
-            case type
-            when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
-            when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
-            else v
-            end
-          end.compact
-          coerced.uniq
+          has_nil = nullable && enum_vals.include?(nil)
+
+          result = enum_vals.each_with_object([]) do |v, acc|
+            next if v.nil?
+
+            coerced_v = case type
+                        when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
+                        when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
+                        else v
+                        end
+            acc << coerced_v unless coerced_v.nil?
+          end
+
+          result.uniq!
+          result.push(nil) if has_nil
+          return nil if result.empty?
+
+          result
         end
       end
     end

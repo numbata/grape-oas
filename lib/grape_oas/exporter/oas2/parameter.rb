@@ -77,22 +77,34 @@ module GrapeOAS
           result["minItems"] = schema.min_items if schema.respond_to?(:min_items) && !schema.min_items.nil?
           result["maxItems"] = schema.max_items if schema.respond_to?(:max_items) && !schema.max_items.nil?
           result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
-          result["enum"] = normalize_enum(schema.enum, result["type"]) if schema.respond_to?(:enum) && schema.enum
+          if schema.respond_to?(:enum) && schema.enum
+            result["enum"] = normalize_enum(schema.enum, result["type"], nullable: schema_nullable?(schema))
+          end
           result["default"] = schema.default if schema.respond_to?(:default) && !schema.default.nil?
         end
 
-        def normalize_enum(enum_vals, type)
+        def schema_nullable?(schema)
+          schema.respond_to?(:nullable) && !!schema.nullable
+        end
+
+        def normalize_enum(enum_vals, type, nullable: false)
           return nil unless enum_vals.is_a?(Array)
 
-          # filter_map drops `false` for boolean enums
-          coerced = enum_vals.map do |v| # rubocop:disable Performance/MapCompact
-            case type
-            when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
-            when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
-            else v
-            end
-          end.compact
-          result = coerced.uniq
+          has_nil = nullable && enum_vals.include?(nil)
+
+          result = enum_vals.each_with_object([]) do |v, acc|
+            next if v.nil?
+
+            coerced_v = case type
+                        when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
+                        when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
+                        else v
+                        end
+            acc << coerced_v unless coerced_v.nil?
+          end
+
+          result.uniq!
+          result.push(nil) if has_nil
           return nil if result.empty?
 
           result

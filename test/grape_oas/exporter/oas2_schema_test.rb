@@ -217,6 +217,35 @@ module GrapeOAS
         refute result.key?("default")
       end
 
+      # === Enum normalization: nil preservation on nullable schemas ===
+
+      def test_nullable_integer_enum_preserves_nil
+        schema = ApiModel::Schema.new(type: "integer", nullable: true)
+        schema.enum = [1, 2, nil]
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal [1, 2, nil], result["enum"]
+      end
+
+      def test_non_nullable_integer_enum_drops_nil
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.enum = [1, 2, nil]
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal [1, 2], result["enum"]
+      end
+
+      def test_nullable_nil_only_enum_not_leaked_when_not_nullable
+        schema = ApiModel::Schema.new(type: "string")
+        schema.enum = [nil]
+
+        result = OAS2::Schema.new(schema).build
+
+        refute result.key?("enum"), "a nil-only enum on a non-nullable schema must not leak `enum: null`"
+      end
+
       # === Composition: enum propagation tests ===
 
       def test_allof_schema_with_enum
@@ -264,6 +293,27 @@ module GrapeOAS
         result = OAS2::Schema.new(schema).build
 
         assert_equal [1, 2, 3], result["enum"]
+      end
+
+      def test_allof_schema_normalizes_integer_enum_preserves_nil
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "integer", nullable: true)
+        schema.enum = [1, 2, nil]
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal [1, 2, nil], result["enum"]
+      end
+
+      def test_allof_schema_drops_enum_key_when_nil_only_and_not_nullable
+        child = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(all_of: [child], type: "string")
+        schema.enum = [nil]
+
+        result = OAS2::Schema.new(schema).build
+
+        assert result.key?("allOf")
+        refute result.key?("enum"), "a nil-only enum on a non-nullable schema must not leak `enum: null`"
       end
 
       # === Inline: zero-value constraints ===
@@ -442,6 +492,38 @@ module GrapeOAS
         assert_equal [{ "$ref" => "#/definitions/MyEntity" }], child["allOf"]
         assert_equal %w[admin user guest], child["enum"]
         refute child.key?("$ref")
+      end
+
+      def test_ref_with_nullable_integer_enum_preserves_nil
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "integer", nullable: true)
+        ref_schema.enum = [1, 2, nil]
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS2::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], child["allOf"]
+        assert_equal [1, 2, nil], child["enum"]
+      end
+
+      def test_ref_with_nil_only_enum_stays_plain_when_not_nullable
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "string")
+        ref_schema.enum = [nil]
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS2::Schema.new(parent_schema, ref_tracker).build
+
+        child = result["properties"]["child"]
+
+        assert_equal(
+          { "$ref" => "#/definitions/MyEntity" }, child,
+          "a nil-only enum on a non-nullable ref schema must not force an allOf wrapper via `enum: null`",
+        )
       end
 
       # === $ref + allOf wrapping: constraints propagation tests ===

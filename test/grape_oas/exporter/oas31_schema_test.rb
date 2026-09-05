@@ -196,6 +196,21 @@ module GrapeOAS
         assert_equal "binary", result["contentEncoding"]
       end
 
+      def test_anyof_with_nullable_file_type_normalizes
+        variant = ApiModel::Schema.new(type: "object")
+        schema = ApiModel::Schema.new(any_of: [variant], type: "file", nullable: true)
+
+        result = OAS31::Schema.new(
+          schema, nil,
+          nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,
+        ).build
+
+        assert result.key?("anyOf")
+        assert_equal %w[string null], result["type"]
+        assert_equal "application/octet-stream", result["contentMediaType"]
+        assert_equal "binary", result["contentEncoding"]
+      end
+
       # === Enum normalization under OAS 3.1 (always TYPE_ARRAY) ===
 
       def test_nullable_integer_enum_normalized_oas31
@@ -247,21 +262,6 @@ module GrapeOAS
 
         assert result.key?("allOf")
         refute result.key?("enum"), "a nil-only enum on a non-nullable schema must not leak `enum: null`"
-      end
-
-      def test_anyof_with_nullable_file_type_normalizes
-        variant = ApiModel::Schema.new(type: "object")
-        schema = ApiModel::Schema.new(any_of: [variant], type: "file", nullable: true)
-
-        result = OAS31::Schema.new(
-          schema, nil,
-          nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,
-        ).build
-
-        assert result.key?("anyOf")
-        assert_equal %w[string null], result["type"]
-        assert_equal "application/octet-stream", result["contentMediaType"]
-        assert_equal "binary", result["contentEncoding"]
       end
 
       private

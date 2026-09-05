@@ -170,7 +170,6 @@ module GrapeOAS
           schema.respond_to?(:nullable) && !!schema.nullable
         end
 
-        # Convenience wrapper so call sites don't need to pass @schema explicitly.
         def nullable?
           schema_nullable?(@schema)
         end
@@ -250,7 +249,7 @@ module GrapeOAS
         end
 
         def apply_nullable_to_ref(result, schema)
-          return unless schema.respond_to?(:nullable) && schema.nullable
+          return unless schema_nullable?(schema)
 
           case @nullable_strategy
           when Constants::NullableStrategy::KEYWORD
@@ -325,6 +324,10 @@ module GrapeOAS
 
         # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs.
         def sanitize_enum_against_type(hash, type: nil)
+          # A literal `"enum" => nil` (from a nil-only enum on a non-nullable schema) must not
+          # survive: composition/$ref callers never `.compact` their result hash, so an unguarded
+          # nil would leak as `enum: null` and, for $ref, would make `result.empty?` false and
+          # force an unwanted `allOf` wrapper.
           return hash.delete("enum") if hash.key?("enum") && hash["enum"].nil?
 
           enum_vals = hash["enum"]

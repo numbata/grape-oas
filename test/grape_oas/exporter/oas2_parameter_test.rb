@@ -189,6 +189,48 @@ module GrapeOAS
         assert_equal %w[small medium large], size_param["enum"]
       end
 
+      def test_nullable_integer_parameter_enum_preserves_nil
+        schema = ApiModel::Schema.new(type: "integer", nullable: true)
+        schema.enum = [1, 2, nil]
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "count",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        count_param = result.find { |p| p["name"] == "count" }
+
+        assert_equal [1, 2, nil], count_param["enum"]
+      end
+
+      def test_non_nullable_integer_parameter_enum_drops_nil
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.enum = [1, 2, nil]
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "count",
+          schema: schema,
+          required: true,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = OAS2::Parameter.new(operation).build
+
+        count_param = result.find { |p| p["name"] == "count" }
+
+        assert_equal [1, 2], count_param["enum"]
+      end
+
       def test_string_parameter_includes_min_max_length
         schema = ApiModel::Schema.new(type: "string")
         schema.min_length = 3
