@@ -82,6 +82,8 @@ module GrapeOAS
 
         private
 
+        # Returns the primary non-null type from a type value.
+        # Assumes at most one non-null type in the array (e.g. ["integer", "null"]).
         def base_type_for(type)
           type.is_a?(Array) ? (type - ["null"]).first : type
         end
@@ -164,8 +166,12 @@ module GrapeOAS
           end
         end
 
+        def schema_nullable?(schema)
+          schema.respond_to?(:nullable) && !!schema.nullable
+        end
+
         def nullable?
-          @schema.respond_to?(:nullable) && !!@schema.nullable
+          schema_nullable?(@schema)
         end
 
         def nullable_type
@@ -218,8 +224,7 @@ module GrapeOAS
             result = {}
             result["description"] = schema.description.to_s if schema.description
             result["default"] = schema.default unless schema.default.nil?
-            nullable_ref = schema.respond_to?(:nullable) && !!schema.nullable
-            result["enum"] = normalize_enum(schema.enum, schema.type, nullable: nullable_ref) if schema.enum
+            result["enum"] = normalize_enum(schema.enum, schema.type, nullable: schema_nullable?(schema)) if schema.enum
             sanitize_enum_against_type(result, type: schema.type)
             apply_all_constraints(result, schema)
             result.merge!(schema.extensions) if schema.extensions
@@ -264,20 +269,21 @@ module GrapeOAS
           nullable ||= type.is_a?(Array) && type.include?("null")
           resolved_type = base_type_for(type)
 
-          # filter_map drops `false` for boolean enums
-          coerced = enum_vals.map do |v| # rubocop:disable Performance/MapCompact
-            next v if v.nil?
+          has_nil = nullable && enum_vals.include?(nil)
 
-            case resolved_type
-            when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
-            when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
-            else v
-            end
-          end.compact
-          coerced.compact!
-          coerced.push(nil) if nullable && enum_vals.include?(nil)
+          result = enum_vals.each_with_object([]) do |v, acc|
+            next if v.nil?
 
-          result = coerced.uniq
+            coerced_v = case resolved_type
+                        when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
+                        when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
+                        else v
+                        end
+            acc << coerced_v unless coerced_v.nil?
+          end
+
+          result.uniq!
+          result.push(nil) if has_nil
           return nil if result.empty?
 
           result

@@ -221,6 +221,15 @@ module GrapeOAS
         assert_equal 42, result["example"]
       end
 
+      def test_nullable_nil_only_enum_preserved_type_array
+        schema = ApiModel::Schema.new(type: "string", nullable: true)
+        schema.enum = [nil]
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        assert_equal [nil], result["enum"]
+      end
+
       # === nullable_strategy tests ===
 
       def test_keyword_strategy_emits_nullable_true
@@ -385,6 +394,21 @@ module GrapeOAS
 
         assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
         assert_equal [1, 2, nil], child["enum"]
+      end
+
+      def test_ref_string_enum_coerced_to_integer_type_array
+        ref_tracker = Set.new
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "integer", nullable: true)
+        ref_schema.enum = %w[1 2 3]
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        result = OAS3::Schema.new(parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
+
+        child = result["properties"]["child"]
+
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal [1, 2, 3], child["enum"]
       end
 
       def test_ref_with_nullable_keyword_only_wraps_in_allof
