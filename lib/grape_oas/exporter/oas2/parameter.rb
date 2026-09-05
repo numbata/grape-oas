@@ -77,20 +77,12 @@ module GrapeOAS
           result["minItems"] = schema.min_items if schema.respond_to?(:min_items) && !schema.min_items.nil?
           result["maxItems"] = schema.max_items if schema.respond_to?(:max_items) && !schema.max_items.nil?
           result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
-          if schema.respond_to?(:enum) && schema.enum
-            result["enum"] = normalize_enum(schema.enum, result["type"], nullable: schema_nullable?(schema))
-          end
+          result["enum"] = normalize_enum(schema.enum, result["type"]) if schema.respond_to?(:enum) && schema.enum
           result["default"] = schema.default if schema.respond_to?(:default) && !schema.default.nil?
         end
 
-        def schema_nullable?(schema)
-          schema.respond_to?(:nullable) && !!schema.nullable
-        end
-
-        def normalize_enum(enum_vals, type, nullable: false)
+        def normalize_enum(enum_vals, type)
           return nil unless enum_vals.is_a?(Array)
-
-          has_nil = nullable && enum_vals.include?(nil)
 
           result = enum_vals.each_with_object([]) do |v, acc|
             next if v.nil?
@@ -104,7 +96,6 @@ module GrapeOAS
           end
 
           result.uniq!
-          result.push(nil) if has_nil
           return nil if result.empty?
 
           result

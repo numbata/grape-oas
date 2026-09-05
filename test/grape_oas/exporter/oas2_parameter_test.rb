@@ -189,7 +189,7 @@ module GrapeOAS
         assert_equal %w[small medium large], size_param["enum"]
       end
 
-      def test_nullable_integer_parameter_enum_preserves_nil
+      def test_nullable_integer_parameter_enum_drops_nil
         schema = ApiModel::Schema.new(type: "integer", nullable: true)
         schema.enum = [1, 2, nil]
         param = ApiModel::Parameter.new(
@@ -207,7 +207,7 @@ module GrapeOAS
 
         count_param = result.find { |p| p["name"] == "count" }
 
-        assert_equal [1, 2, nil], count_param["enum"]
+        assert_equal [1, 2], count_param["enum"]
       end
 
       def test_non_nullable_integer_parameter_enum_drops_nil
