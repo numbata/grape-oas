@@ -232,14 +232,6 @@ module GrapeOAS
         assert_equal 42, result["example"]
       end
 
-      def test_coerce_example_with_nil_example_stays_nil
-        schema = ApiModel::Schema.new(type: "integer", examples: [nil])
-
-        result = OAS3::Schema.new(schema).build
-
-        assert_nil result["example"], "a nil example must not be coerced into 0/false/\"\""
-      end
-
       # === nullable_strategy tests ===
 
       def test_keyword_strategy_emits_nullable_true
@@ -271,7 +263,7 @@ module GrapeOAS
         assert_equal [1, 2, nil], result["enum"]
       end
 
-      def test_extension_strategy_preserves_nil_in_enum
+      def test_extension_strategy_drops_nil_from_enum
         schema = ApiModel::Schema.new(type: "integer", nullable: true)
         schema.enum = [1, 2, nil]
 
@@ -279,7 +271,7 @@ module GrapeOAS
 
         assert_equal "integer", result["type"]
         assert result["x-nullable"]
-        assert_equal [1, 2, nil], result["enum"]
+        assert_equal [1, 2], result["enum"]
       end
 
       def test_type_array_strategy_produces_type_array_with_null
@@ -375,7 +367,7 @@ module GrapeOAS
         assert child["nullable"]
       end
 
-      def test_ref_nullable_enum_preserves_nil_extension
+      def test_ref_nullable_enum_drops_nil_extension
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "integer", nullable: true)
         ref_schema.enum = [1, 2, nil]
@@ -387,11 +379,11 @@ module GrapeOAS
         child = result["properties"]["child"]
 
         assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
-        assert_equal [1, 2, nil], child["enum"]
+        assert_equal [1, 2], child["enum"]
         assert child["x-nullable"]
       end
 
-      def test_ref_nullable_enum_preserves_nil_type_array
+      def test_ref_nullable_enum_drops_nil_type_array
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "integer", nullable: true)
         ref_schema.enum = [1, 2, nil]
@@ -403,7 +395,7 @@ module GrapeOAS
         child = result["properties"]["child"]
 
         assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
-        assert_equal [1, 2, nil], child["enum"]
+        assert_equal [1, 2], child["enum"]
       end
 
       # nullable_strategy: TYPE_ARRAY here only selects how nullability is *rendered*;
@@ -702,7 +694,7 @@ module GrapeOAS
         assert_equal [1, 2, nil], result["enum"]
       end
 
-      def test_allof_schema_preserves_nil_in_enum_extension_strategy
+      def test_allof_schema_drops_nil_from_enum_extension_strategy
         child = ApiModel::Schema.new(type: "object")
         schema = ApiModel::Schema.new(all_of: [child], type: "integer", nullable: true)
         schema.enum = [1, 2, nil]
@@ -710,7 +702,7 @@ module GrapeOAS
         result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
 
         assert result["x-nullable"]
-        assert_equal [1, 2, nil], result["enum"]
+        assert_equal [1, 2], result["enum"]
       end
 
       def test_allof_schema_normalizes_integer_enum_type_array

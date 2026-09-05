@@ -12,6 +12,7 @@ module GrapeOAS
       OBJECT = "object"
       ARRAY = "array"
       FILE = "file"
+      NULL = "null"
 
       ALL = [STRING, INTEGER, NUMBER, BOOLEAN, OBJECT, ARRAY, FILE].freeze
     end

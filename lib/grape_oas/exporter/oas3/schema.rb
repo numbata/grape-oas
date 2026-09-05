@@ -263,13 +263,11 @@ module GrapeOAS
           end
         end
 
-        # `nullable:` is redundant under TYPE_ARRAY (nullability is already encoded in `type`),
-        # but load-bearing for KEYWORD/EXTENSION and for the $ref path, where `type` alone
-        # can't tell whether the referenced schema allows a null enum member.
         def normalize_enum(enum_vals, type, nullable: false)
           return nil unless enum_vals.is_a?(Array)
 
-          nullable ||= type.is_a?(Array) && type.include?("null")
+          nullable = (nullable || (type.is_a?(Array) && type.include?(Constants::SchemaTypes::NULL))) &&
+                     enum_null_supported?(type)
           resolved_type = base_type_for(type)
 
           has_nil = nullable && enum_vals.include?(nil)
@@ -290,6 +288,13 @@ module GrapeOAS
           return nil if result.empty?
 
           result
+        end
+
+        def enum_null_supported?(type)
+          return true if @nullable_strategy == Constants::NullableStrategy::KEYWORD
+
+          @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY &&
+            type.is_a?(Array) && type.include?(Constants::SchemaTypes::NULL)
         end
 
         def apply_numeric_constraints(hash, schema = @schema)
