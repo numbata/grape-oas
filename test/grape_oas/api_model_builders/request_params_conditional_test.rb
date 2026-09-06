@@ -34,6 +34,22 @@ module GrapeOAS
         post("/separate") { {} }
       end
 
+      class ReusableParamsAPI < Grape::API
+        helpers do
+          params :identity do
+            requires :code, type: String
+          end
+        end
+        params { use :identity }
+        post("/identity") { {} }
+      end
+
+      def test_reusable_parameter_scope_is_not_conditional
+        body, = build_params(ReusableParamsAPI, "POST")
+
+        assert_includes body.required, "code"
+      end
+
       def test_nested_given_uses_full_names_and_inherited_dependencies
         body, = build_params(NestedAPI, "POST")
         delivery = body.properties.fetch("delivery")

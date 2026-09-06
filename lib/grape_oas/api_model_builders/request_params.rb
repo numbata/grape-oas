@@ -187,8 +187,8 @@ module GrapeOAS
         conditional = Set.new
         unconditional = Set.new
         validations.each do |validator|
-          scope, attrs, required = validator_details(validator)
-          next unless scope.respond_to?(:full_name) && required
+          scope, attrs = validator_details(validator)
+          next unless scope.respond_to?(:full_name)
 
           target = conditional_scope?(scope) ? conditional : unconditional
           Array(attrs).each { |attr| target << scope.full_name(attr) }
@@ -198,20 +198,19 @@ module GrapeOAS
 
       # Grape < 3.2 stores validators as hashes; >= 3.2 stores instances.
       def validator_details(validator)
+        presence = Grape::Validations::Validators::PresenceValidator
         if validator.is_a?(Hash)
-          [validator[:params_scope], validator[:attributes], validator[:required]]
-        else
-          [
-            validator.instance_variable_get(:@scope),
-            validator.instance_variable_get(:@attrs),
-            validator.instance_variable_get(:@required)
-          ]
+          return unless validator[:validator_class].is_a?(Class) && validator[:validator_class] <= presence
+
+          [validator[:params_scope], validator[:attributes]]
+        elsif validator.is_a?(presence)
+          [validator.instance_variable_get(:@scope), validator.attrs]
         end
       end
 
       def conditional_scope?(scope)
         while scope
-          return true if scope.instance_variable_get(:@dependent_on).present?
+          return true if scope.instance_variable_get(:@dependent_on)&.any?
 
           scope = scope.respond_to?(:parent) ? scope.parent : nil
         end
