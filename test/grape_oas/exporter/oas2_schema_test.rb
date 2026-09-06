@@ -68,6 +68,7 @@ module GrapeOAS
 
       def test_composition_without_type_uses_first_ref
         # When schema has composition but no type, fall back to first ref
+        # and also emit x-anyOf for consumers that support it.
         ref_schema1 = ApiModel::Schema.new(canonical_name: "TypeA")
         ref_schema2 = ApiModel::Schema.new(canonical_name: "TypeB")
 
@@ -77,7 +78,9 @@ module GrapeOAS
 
         result = OAS2::Schema.new(schema).build
 
-        assert_equal "#/definitions/TypeA", result["$ref"]
+        # First alternative kept via allOf (required when x-anyOf present alongside $ref)
+        assert_equal [{ "$ref" => "#/definitions/TypeA" }], result["allOf"]
+        assert_equal [{ "$ref" => "#/definitions/TypeA" }, { "$ref" => "#/definitions/TypeB" }], result["x-anyOf"]
         refute result.key?("type")
       end
 
@@ -437,18 +440,20 @@ module GrapeOAS
 
         result = OAS2::Schema.new(schema, Set.new).build
 
-        assert_equal "#/definitions/MyEntity", result["$ref"]
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], result["allOf"]
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], result["x-oneOf"]
         refute result.key?("default"), "default belongs to the composition, not the fallback branch"
       end
 
-      def test_first_of_schema_ref_without_attributes_stays_plain
+      def test_first_of_schema_ref_with_x_one_of
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
         schema = ApiModel::Schema.new(one_of: [ref_schema])
 
         result = OAS2::Schema.new(schema, Set.new).build
 
-        assert_equal "#/definitions/MyEntity", result["$ref"]
-        refute result.key?("allOf")
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], result["x-oneOf"]
+        assert_equal [{ "$ref" => "#/definitions/MyEntity" }], result["allOf"]
+        refute result.key?("$ref")
       end
 
       # === $ref + allOf wrapping: default propagation tests ===

@@ -86,21 +86,26 @@ module GrapeOAS
           schema_nullable?(@schema)
         end
 
-        # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
-        # Extensions are merged to allow x-anyOf/x-oneOf for consumers that support them
-        #
-        # Only description and extensions are applied from the composition node.
-        # Type-specific attributes (default, enum, format, constraints) are omitted
-        # because they describe the multi-type composition, not the single fallback
-        # branch selected here.
+        # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these).
+        # Auto-generates x-anyOf / x-oneOf from all native alternatives so integrations
+        # do not need to inject OAS2-specific extension metadata manually.
+        # An explicitly supplied extension (via schema.extensions) takes precedence
+        # because apply_extensions merges it last.
         def build_first_of_schema(composition_type)
-          schemas = @schema.send(composition_type)
+          schemas = composition_type == :any_of ? @schema.any_of : @schema.one_of
           first_schema = schemas.first
           return {} unless first_schema
 
           result = build_schema_or_ref(first_schema)
           result["description"] = @schema.description.to_s if @schema.description
-          apply_extensions(result)
+
+          # Auto-generate the compatibility extension from all native alternatives.
+          # x-anyOf / x-oneOf follow the same naming as the composition type.
+          ext_key = composition_type == :any_of ? "x-anyOf" : "x-oneOf"
+          rendered = schemas.map { |s| build_schema_or_ref(s) }
+          result[ext_key] = rendered
+
+          apply_extensions(result) # explicit extension wins if user supplied one
           if result.key?("$ref") && result.size > 1
             ref = { "$ref" => result.delete("$ref") }
             result["allOf"] = [ref]
