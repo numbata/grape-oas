@@ -24,9 +24,17 @@ module GrapeOAS
           @nullable_strategy = nullable_strategy
         end
 
+        FORM_MEDIA_TYPES = %w[application/x-www-form-urlencoded multipart/form-data].freeze
+
         def build
           params = Array(@op.parameters).map { |param| build_parameter(param) }
-          params << build_body_parameter(@op.request_body) if @op.request_body
+          if @op.request_body
+            if form_only_request?
+              params.concat(build_form_parameters(@op.request_body))
+            else
+              params << build_body_parameter(@op.request_body)
+            end
+          end
           params
         end
 
@@ -110,6 +118,29 @@ module GrapeOAS
 
           valid_formats = %w[csv ssv tsv pipes multi brackets]
           result["collectionFormat"] = param.collection_format if valid_formats.include?(param.collection_format)
+        end
+
+        def form_only_request?
+          consumes = Array(@op.consumes)
+          consumes.any? && consumes.all? { |mime| FORM_MEDIA_TYPES.include?(mime) }
+        end
+
+        def build_form_parameters(request_body)
+          schema = Array(request_body.media_types).first&.schema
+          return [build_body_parameter(request_body)] unless schema&.properties&.any?
+
+          required = Array(schema.required).map(&:to_s)
+          schema.properties.map do |name, property_schema|
+            build_parameter(
+              ApiModel::Parameter.new(
+                name: name.to_s,
+                location: "formData",
+                required: required.include?(name.to_s),
+                description: property_schema.description,
+                schema: property_schema,
+              ),
+            )
+          end
         end
 
         def build_body_parameter(request_body)

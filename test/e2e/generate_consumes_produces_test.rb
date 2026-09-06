@@ -22,6 +22,10 @@ module GrapeOAS
 
       assert_equal ["application/x-www-form-urlencoded"], op["consumes"]
       assert_equal ["application/json"], op["produces"]
+      assert_equal(
+        [{ "name" => "message", "in" => "formData", "required" => true, "type" => "string" }],
+        op["parameters"],
+      )
     end
 
     def test_oas3_request_body_uses_form_media_type_response_stays_json
