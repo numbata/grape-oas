@@ -41,8 +41,6 @@ module GrapeOAS
             if @schema.items.respond_to?(:canonical_name) && @schema.items.canonical_name &&
                @schema.items.respond_to?(:nullable) && @schema.items.nullable
               case @nullable_strategy
-              when Constants::NullableStrategy::KEYWORD
-                schema_hash["nullable"] = true
               when Constants::NullableStrategy::EXTENSION
                 schema_hash["x-nullable"] = true
               when Constants::NullableStrategy::TYPE_ARRAY
@@ -187,9 +185,7 @@ module GrapeOAS
           composition_key = %w[allOf oneOf anyOf].find { |k| schema_hash.key?(k) }
           case @nullable_strategy
           when Constants::NullableStrategy::KEYWORD
-            if schema_hash["type"].nil? && composition_key
-              # OAS 3.0: `nullable: true` beside an allOf/oneOf/anyOf wrapper is
-              # ineffective — the composed non-null branch still rejects null.
+            if composition_key
               apply_keyword_null_union(schema_hash, composition_key)
             else
               schema_hash["nullable"] = true
@@ -211,10 +207,10 @@ module GrapeOAS
           end
         end
 
-        # OAS 3.0 null-only alternative for a composition/ref wrapper that has no
-        # own `type`. Non-null branch stays untouched; only null is added.
-        # (OAS 3.1 uses the TYPE_ARRAY path with `type: "null"` instead.)
+        # Nullable must accompany a type, and every composition constraint must
+        # also admit null. The enum keeps the extra branch from allowing objects.
         def apply_keyword_null_union(hash, key)
+          hash["nullable"] = true if hash["type"]
           null_branch = { "type" => Constants::SchemaTypes::OBJECT, "nullable" => true, "enum" => [nil] }
           if key == "anyOf"
             hash["anyOf"] += [null_branch]
@@ -237,7 +233,11 @@ module GrapeOAS
             @ref_tracker << schema.canonical_name if @ref_tracker
             ref_name = GrapeOAS.schema_ref_name.call(schema.canonical_name)
             ref_hash = { "$ref" => "#/components/schemas/#{ref_name}" }
-            return ref_hash unless include_metadata
+            unless include_metadata
+              return ref_hash unless schema_nullable?(schema) && @nullable_strategy == Constants::NullableStrategy::KEYWORD
+
+              return { "allOf" => [ref_hash] }.tap { |hash| apply_keyword_null_union(hash, "allOf") }
+            end
 
             result = {}
             result["description"] = schema.description.to_s if schema.description
@@ -246,11 +246,11 @@ module GrapeOAS
             sanitize_enum_against_type(result, type: schema.type)
             apply_all_constraints(result, schema)
             result.merge!(schema.extensions) if schema.extensions
-            apply_nullable_to_ref(result, schema)
-            if result.empty?
+            if result.empty? && !(schema_nullable?(schema) && @nullable_strategy != Constants::NullableStrategy::TYPE_ARRAY)
               ref_hash
             else
               result["allOf"] = [ref_hash]
+              apply_nullable_to_ref(result, schema)
               result
             end
           else
@@ -271,7 +271,7 @@ module GrapeOAS
 
           case @nullable_strategy
           when Constants::NullableStrategy::KEYWORD
-            result["nullable"] = true
+            apply_keyword_null_union(result, "allOf")
           when Constants::NullableStrategy::EXTENSION
             result["x-nullable"] = true
           when Constants::NullableStrategy::TYPE_ARRAY

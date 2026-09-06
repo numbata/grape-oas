@@ -3,9 +3,6 @@
 require "test_helper"
 
 module GrapeOAS
-  # Regression: OAS 3.0 nullable object refs must use a representation that
-  # actually admits null, not an allOf wrapper with an ineffective
-  # nullable: true (issue #118).
   class GenerateNullableRefTest < Minitest::Test
     class DetailsEntity < Grape::Entity
       expose :code, documentation: { type: String }
@@ -19,7 +16,31 @@ module GrapeOAS
     class ResultAPI < Grape::API
       format :json
       desc "A result with optional details", success: ResultEntity
-      get("/result") { {} }
+      get "/result" do
+        present({ details: nil, strict_details: { code: "ok" } }, with: ResultEntity)
+      end
+    end
+
+    def test_runtime_response_matches_nullable_schema
+      response = Rack::MockRequest.new(ResultAPI).get("/result")
+
+      assert_equal 200, response.status
+      payload = JSON.parse(response.body)
+
+      assert_nil payload.fetch("details")
+
+      %i[oas3 oas31].each do |dialect|
+        spec = GrapeOAS.generate(app: ResultAPI, schema_type: dialect)
+
+        assert OASValidator.validate!(spec)
+        name = spec.dig("components", "schemas").keys.grep(/ResultEntity/).first
+        validator = JSONSchemer.openapi(spec).schema(name)
+
+        assert validator.valid?(payload), "Invalid response for #{dialect}"
+        assert validator.valid?(payload.merge("details" => { "code" => "ok" })), "Invalid response for #{dialect}"
+        refute validator.valid?(payload.merge("details" => {})), "Invalid response for #{dialect}"
+        refute validator.valid?(payload.merge("strict_details" => nil)), "Invalid response for #{dialect}"
+      end
     end
 
     def result_schemas(dialect)

@@ -411,7 +411,7 @@ module GrapeOAS
         refute child.key?("allOf")
       end
 
-      def test_ref_with_description_and_nullable_keyword_wraps_in_allof
+      def test_ref_with_description_and_nullable_keyword_uses_null_union
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", description: "A related entity", nullable: true)
         parent_schema = ApiModel::Schema.new(type: "object")
@@ -421,9 +421,9 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
         assert_equal "A related entity", child["description"]
-        assert child["nullable"]
+        assert_equal({ "type" => "object", "nullable" => true, "enum" => [nil] }, child["anyOf"].last)
         refute child.key?("$ref")
       end
 
@@ -438,9 +438,9 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
         assert_equal [1, 2, nil], child["enum"]
-        assert child["nullable"]
+        assert_equal({ "type" => "object", "nullable" => true, "enum" => [nil] }, child["anyOf"].last)
       end
 
       def test_ref_nullable_enum_drops_nil_extension
@@ -492,7 +492,7 @@ module GrapeOAS
         assert_equal [1, 2, 3], child["enum"]
       end
 
-      def test_ref_with_nullable_keyword_only_wraps_in_allof
+      def test_ref_with_nullable_keyword_only_uses_null_union
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", nullable: true)
         parent_schema = ApiModel::Schema.new(type: "object")
@@ -502,8 +502,8 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
-        assert child["nullable"]
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "type" => "object", "nullable" => true, "enum" => [nil] }, child["anyOf"].last)
         refute child.key?("$ref")
       end
 
@@ -1180,7 +1180,7 @@ module GrapeOAS
         assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
       end
 
-      def test_array_ref_items_nullable_keyword_hoisted_to_outer_array
+      def test_array_ref_items_nullable_keyword_applies_to_items
         ref_tracker = Set.new
         items_schema = ApiModel::Schema.new(canonical_name: "ItemEntity", nullable: true)
         array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
@@ -1188,8 +1188,8 @@ module GrapeOAS
         result = OAS3::Schema.new(array_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
 
         assert_equal "array", result["type"]
-        assert result["nullable"], "nullable should be on the outer array"
-        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
+        refute result.key?("nullable"), "item nullability must not change the array"
+        assert_equal [{ "$ref" => "#/components/schemas/ItemEntity" }], result.dig("items", "anyOf", 0, "allOf")
       end
 
       def test_array_ref_items_nullable_extension_hoisted_to_outer_array
