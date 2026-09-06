@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#121](https://github.com/numbata/grape-oas/pull/121): Make OAS 3.0 nullable references and compositions accept null without weakening child validation - [@numbata](https://github.com/numbata).
+- [#121](https://github.com/numbata/grape-oas/pull/121): Preserve nullable references, array items, and polymorphic discriminators in OAS 3.0/3.1 - [@numbata](https://github.com/numbata).
 - [#120](https://github.com/numbata/grape-oas/pull/120): Honor explicit route `consumes:`/`produces:` independently so form request bodies are documented with the declared media type - [@numbata](https://github.com/numbata).
 - [#119](https://github.com/numbata/grape-oas/pull/119): Stop inferring `format: int32` for generic `Integer`/`"integer"` declarations; explicit int32/int64 widths are still preserved - [@numbata](https://github.com/numbata).
 - [#113](https://github.com/numbata/grape-oas/pull/113): Use OAS 3.1 schema rendering for inline parameters, request bodies, and responses - [@numbata](https://github.com/numbata).

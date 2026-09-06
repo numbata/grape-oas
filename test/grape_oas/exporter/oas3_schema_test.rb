@@ -459,7 +459,7 @@ module GrapeOAS
         assert child["x-nullable"]
       end
 
-      def test_ref_nullable_enum_drops_nil_type_array
+      def test_ref_nullable_enum_preserves_nil_type_array
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "integer", nullable: true)
         ref_schema.enum = [1, 2, nil]
@@ -470,8 +470,8 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
-        assert_equal [1, 2], child["enum"]
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal [1, 2, nil], child["enum"]
       end
 
       # nullable_strategy: TYPE_ARRAY here only selects how nullability is *rendered*;
@@ -488,7 +488,7 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
         assert_equal [1, 2, 3], child["enum"]
       end
 
@@ -538,7 +538,7 @@ module GrapeOAS
         refute child.key?("nullable")
       end
 
-      def test_ref_with_nullable_type_array_stays_plain
+      def test_ref_with_nullable_type_array_uses_null_union
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", nullable: true)
         parent_schema = ApiModel::Schema.new(type: "object")
@@ -548,12 +548,12 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        # TYPE_ARRAY nullability cannot be expressed on $ref — stays as plain ref
-        assert_equal "#/components/schemas/MyEntity", child["$ref"]
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "type" => "null" }, child["anyOf"].last)
         refute child.key?("allOf")
       end
 
-      def test_ref_with_description_and_nullable_type_array_wraps_for_description_only
+      def test_ref_with_description_and_nullable_type_array_uses_null_union
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", description: "A related entity", nullable: true)
         parent_schema = ApiModel::Schema.new(type: "object")
@@ -563,8 +563,8 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        # Wraps for description, but TYPE_ARRAY nullability cannot be expressed on $ref
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child["allOf"]
+        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "type" => "null" }, child["anyOf"].last)
         assert_equal "A related entity", child["description"]
         refute child.key?("$ref")
         refute child.key?("type")
@@ -669,7 +669,7 @@ module GrapeOAS
 
         result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
 
-        assert result.key?("oneOf")
+        assert result.dig("anyOf", 0).key?("oneOf")
         assert_equal %w[string null], result["type"]
       end
 
@@ -1192,7 +1192,7 @@ module GrapeOAS
         assert_equal [{ "$ref" => "#/components/schemas/ItemEntity" }], result.dig("items", "anyOf", 0, "allOf")
       end
 
-      def test_array_ref_items_nullable_extension_hoisted_to_outer_array
+      def test_array_ref_items_nullable_extension_applies_to_items
         ref_tracker = Set.new
         items_schema = ApiModel::Schema.new(canonical_name: "ItemEntity", nullable: true)
         array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
@@ -1200,19 +1200,20 @@ module GrapeOAS
         result = OAS3::Schema.new(array_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::EXTENSION).build
 
         assert_equal "array", result["type"]
-        assert result["x-nullable"], "x-nullable should be on the outer array"
-        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
+        refute result.key?("x-nullable")
+        assert result["items"]["x-nullable"]
+        assert_equal [{ "$ref" => "#/components/schemas/ItemEntity" }], result["items"]["allOf"]
       end
 
-      def test_array_ref_items_nullable_type_array_hoisted_to_outer_array
+      def test_array_ref_items_nullable_type_array_applies_to_items
         ref_tracker = Set.new
         items_schema = ApiModel::Schema.new(canonical_name: "ItemEntity", nullable: true)
         array_schema = ApiModel::Schema.new(type: "array", items: items_schema)
 
         result = OAS3::Schema.new(array_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
 
-        assert_equal %w[array null], result["type"]
-        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"])
+        assert_equal "array", result["type"]
+        assert_equal [{ "$ref" => "#/components/schemas/ItemEntity" }], result.dig("items", "anyOf", 0, "allOf")
       end
 
       def test_array_ref_items_description_does_not_overwrite_outer

@@ -51,11 +51,62 @@ module GrapeOAS
         refute validator.valid?([{}])
       end
 
+      def test_discriminators_stay_with_the_original_composition
+        %i[one_of any_of].product(%i[keyword type_array]).each do |composition, strategy|
+          child = ApiModel::Schema.new(canonical_name: "Details")
+          schema = ApiModel::Schema.new(**{ composition => [child] }, nullable: true, discriminator: "code")
+          rendered = OAS3::Schema.new(schema, nil, nullable_strategy: strategy).build
+          branch = rendered.fetch("anyOf").first
+          key = composition == :one_of ? "oneOf" : "anyOf"
+
+          refute rendered.key?("discriminator")
+          assert_equal({ "propertyName" => "code" }, branch["discriminator"])
+          assert_equal [{ "$ref" => "#/components/schemas/Details" }], branch[key]
+          version = strategy == :keyword ? "3.0.3" : "3.1.0"
+
+          assert document(rendered, version: version).schema("Test").valid?(nil)
+        end
+      end
+
+      def test_oas31_nullable_reference_items_keep_array_non_nullable
+        items = ApiModel::Schema.new(canonical_name: "Details", nullable: true)
+        rendered = OAS31::Schema.new(ApiModel::Schema.new(type: "array", items: items), nil,
+                                     nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,).build
+        validator = document(rendered, version: "3.1.0").schema("Test")
+
+        assert validator.valid?([nil, { "code" => "ok" }])
+        refute validator.valid?(nil)
+        refute validator.valid?([{}])
+      end
+
+      def test_extension_strategy_keeps_nullable_on_reference_items
+        items = ApiModel::Schema.new(canonical_name: "Details", nullable: true)
+        rendered = OAS3::Schema.new(ApiModel::Schema.new(type: "array", items: items), nil,
+                                    nullable_strategy: Constants::NullableStrategy::EXTENSION,).build
+
+        refute rendered.key?("x-nullable")
+        assert rendered.fetch("items")["x-nullable"]
+      end
+
+      def test_invalid_composition_override_has_a_clear_error
+        schema = ApiModel::Schema.new(any_of: [ApiModel::Schema.new(type: "string")], nullable: true,
+                                      extensions: { "anyOf" => "invalid" },)
+
+        error = assert_raises(ArgumentError) { OAS3::Schema.new(schema).build }
+        assert_equal "anyOf must be an Array of schemas", error.message
+      end
+
+      def test_typeless_schema_omits_ineffective_nullable_keyword
+        rendered = OAS3::Schema.new(ApiModel::Schema.new(nullable: true)).build
+
+        refute rendered.key?("nullable")
+      end
+
       private
 
-      def document(schema)
+      def document(schema, version: "3.0.3")
         JSONSchemer.openapi({
-                              "openapi" => "3.0.3", "info" => { "title" => "Test", "version" => "1" }, "paths" => {},
+                              "openapi" => version, "info" => { "title" => "Test", "version" => "1" }, "paths" => {},
                               "components" => { "schemas" => {
                                 "Test" => schema,
                                 "Count" => { "type" => "integer" },
