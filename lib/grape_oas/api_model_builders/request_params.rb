@@ -164,7 +164,56 @@ module GrapeOAS
         specs = params_from_options || params_from_route
         return {} unless specs.is_a?(Hash)
 
-        specs.select { |_name, spec| spec.is_a?(Hash) }
+        flat = specs.select { |_name, spec| spec.is_a?(Hash) }
+        conditional = conditional_param_names
+        return flat if conditional.empty?
+
+        flat.transform_values.with_index do |spec, idx|
+          name = flat.keys[idx]
+          conditional.include?(name.to_s) ? spec.merge(required: false) : spec
+        end
+      end
+
+      # Returns names of params that Grape will only validate conditionally
+      # (declared inside a `given` block). Their validators have a
+      # `params_scope` with `@dependent_on` set.
+      def conditional_param_names
+        validations = grape_route_saved_validations
+        return Set.new unless validations.is_a?(Array)
+
+        conditional = Set.new
+        validations.each do |v|
+          next unless v.is_a?(Hash)
+
+          scope = v[:params_scope]
+          next unless scope
+
+          dep = scope.instance_variable_get(:@dependent_on)
+          next unless dep && !Array(dep).empty?
+
+          Array(v[:attributes]).each { |a| conditional << a.to_s }
+        end
+        conditional
+      end
+
+      # Extract Grape's saved validators for this route.
+      def grape_route_saved_validations
+        return unless route.respond_to?(:app)
+
+        app = route.app
+        return unless app.respond_to?(:inheritable_setting)
+
+        setting = app.inheritable_setting
+        if setting.respond_to?(:route_validations)
+          setting.route_validations
+        elsif setting.respond_to?(:route)
+          route_store = setting.route
+          return unless route_store.is_a?(Hash)
+
+          route_store[:saved_validations] || route_store[:validations]
+        end
+      rescue StandardError
+        nil
       end
 
       def params_from_options
