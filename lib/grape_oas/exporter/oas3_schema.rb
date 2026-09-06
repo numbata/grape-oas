@@ -20,6 +20,7 @@ module GrapeOAS
           "tags" => build_tags,
           "paths" => OAS3::Paths.new(@api, @ref_tracker,
                                      nullable_strategy: nullable_strategy,
+                                     schema_builder: schema_builder,
                                      suppress_default_error_response: @api.suppress_default_error_response,).build,
           "components" => build_components,
           "security" => build_security

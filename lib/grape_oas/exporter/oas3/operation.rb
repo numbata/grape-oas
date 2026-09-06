@@ -12,10 +12,12 @@ module GrapeOAS
         def build_version_specific_fields
           strategy = @options[:nullable_strategy] || Constants::NullableStrategy::KEYWORD
 
+          schema_options = { nullable_strategy: strategy, schema_builder: @options[:schema_builder] || Schema }
+
           {
-            "parameters" => Parameter.new(@op, @ref_tracker, nullable_strategy: strategy).build,
-            "requestBody" => RequestBody.new(@op.request_body, @ref_tracker, nullable_strategy: strategy).build,
-            "responses" => Response.new(@op.responses, @ref_tracker, nullable_strategy: strategy).build
+            "parameters" => Parameter.new(@op, @ref_tracker, **schema_options).build,
+            "requestBody" => RequestBody.new(@op.request_body, @ref_tracker, **schema_options).build,
+            "responses" => Response.new(@op.responses, @ref_tracker, **schema_options).build
           }
         end
       end
