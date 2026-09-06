@@ -166,6 +166,17 @@ module GrapeOAS
 
         assert_equal 1, count_param["minimum"]
         assert_equal 50, count_param["maximum"]
+        refute count_param.key?("format")
+      end
+
+      def test_integer_parameters_preserve_explicit_widths
+        %w[query path].product(%w[int32 int64]).each do |location, format|
+          schema = ApiModel::Schema.new(type: "integer", format: format)
+          param = ApiModel::Parameter.new(location: location, name: "id", schema: schema, required: true)
+          operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+          assert_equal format, OAS2::Parameter.new(operation).build.first.fetch("format")
+        end
       end
 
       def test_string_parameter_includes_enum

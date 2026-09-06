@@ -57,9 +57,9 @@ module GrapeOAS
       assert_equal "array", schema["type"]
       items = schema.fetch("items")
       if version == :oas2
-        assert_equal({ "type" => "integer", "format" => "int32" }, items)
+        assert_equal({ "type" => "integer" }, items)
       else
-        assert_equal [{ "type" => "integer", "format" => "int32" }, { "type" => "string" }], items["oneOf"]
+        assert_equal [{ "type" => "integer" }, { "type" => "string" }], items["oneOf"]
       end
     end
   end
