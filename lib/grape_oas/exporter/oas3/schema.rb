@@ -184,13 +184,19 @@ module GrapeOAS
         def apply_nullable(schema_hash)
           return unless nullable?
 
+          composition_key = %w[allOf oneOf anyOf].find { |k| schema_hash.key?(k) }
           case @nullable_strategy
           when Constants::NullableStrategy::KEYWORD
-            schema_hash["nullable"] = true
+            if schema_hash["type"].nil? && composition_key
+              # OAS 3.0: `nullable: true` beside an allOf/oneOf/anyOf wrapper is
+              # ineffective — the composed non-null branch still rejects null.
+              apply_keyword_null_union(schema_hash, composition_key)
+            else
+              schema_hash["nullable"] = true
+            end
           when Constants::NullableStrategy::EXTENSION
             schema_hash["x-nullable"] = true
           when Constants::NullableStrategy::TYPE_ARRAY
-            composition_key = %w[allOf oneOf anyOf].find { |k| schema_hash.key?(k) }
             if schema_hash["type"].nil? && composition_key
               # Adding type: ["null"] to an allOf/oneOf/anyOf wrapper would be
               # conjunctive and can make the schema unsatisfiable. Wrap instead
@@ -202,6 +208,18 @@ module GrapeOAS
             else
               schema_hash["type"] = (Array(schema_hash["type"]) | ["null"])
             end
+          end
+        end
+
+        # OAS 3.0 null-only alternative for a composition/ref wrapper that has no
+        # own `type`. Non-null branch stays untouched; only null is added.
+        # (OAS 3.1 uses the TYPE_ARRAY path with `type: "null"` instead.)
+        def apply_keyword_null_union(hash, key)
+          null_branch = { "nullable" => true, "enum" => [nil] }
+          if key == "anyOf"
+            hash["anyOf"] += [null_branch]
+          else
+            hash["anyOf"] = [{ key => hash.delete(key) }, null_branch]
           end
         end
 

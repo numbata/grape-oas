@@ -507,6 +507,22 @@ module GrapeOAS
         refute child.key?("$ref")
       end
 
+      def test_nullable_allof_composition_keyword_uses_null_union
+        child = ApiModel::Schema.new(canonical_name: "MyEntity")
+        schema = ApiModel::Schema.new(all_of: [child], nullable: true)
+
+        result = OAS3::Schema.new(schema, Set.new, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        # OAS 3.0: nullable: true beside allOf is ineffective, so the wrapper
+        # becomes an anyOf with a null-only alternative.
+        assert_equal(
+          [{ "allOf" => [{ "$ref" => "#/components/schemas/MyEntity" }] }, { "nullable" => true, "enum" => [nil] }],
+          result["anyOf"],
+        )
+        refute result.key?("nullable")
+        refute result.key?("allOf")
+      end
+
       def test_ref_without_nullable_stays_plain
         ref_tracker = Set.new
         ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity")
@@ -1241,8 +1257,12 @@ module GrapeOAS
 
         assert_equal "array", result["type"]
         refute result["nullable"], "nullable should NOT be on the outer array"
-        assert result["items"]["nullable"], "nullable should be on the composed items schema"
-        assert result["items"]["allOf"], "allOf should be present on items"
+        # OAS 3.0: a typeless allOf wrapper cannot be made nullable with a bare
+        # `nullable: true` (the non-null branch still rejects null), so the items
+        # schema becomes an anyOf null union instead.
+        items = result["items"]
+
+        assert_equal [{ "allOf" => [{ "type" => "object" }] }, { "nullable" => true, "enum" => [nil] }], items["anyOf"]
       end
 
       def test_array_inline_oneof_items_nullable_preserved
