@@ -259,10 +259,122 @@ module GrapeOAS
           assert specs[0][:required]
         end
 
+        def test_success_plain_entity_class_defaults_to_200_for_get
+          entity = Class.new
+          route = mock_route(success: entity)
+          route.request_method = "GET"
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal 200, specs[0][:code]
+          assert_equal entity, specs[0][:entity]
+        end
+
+        def test_success_plain_entity_class_defaults_to_201_for_post
+          entity = Class.new
+          route = mock_route(success: entity)
+          route.request_method = "POST"
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal 201, specs[0][:code]
+        end
+
+        def test_success_hash_without_code_defaults_to_201_for_post
+          entity = Class.new
+          route = mock_route(success: { model: entity })
+          route.request_method = "POST"
+
+          spec = @parser.parse(route).first
+
+          assert_equal "201", spec[:code]
+          assert_equal entity, spec[:entity]
+        end
+
+        def test_default_status_overrides_post_success_inference
+          entity = Class.new
+          [[entity, 202], [{ model: entity }, "202"]].each do |success, expected_code|
+            route = mock_route(success: success, default_status: 202)
+            route.request_method = "POST"
+
+            spec = @parser.parse(route).first
+
+            assert_equal expected_code, spec[:code], "success: #{success.inspect}"
+            assert_equal entity, spec[:entity], "success: #{success.inspect}"
+          end
+        end
+
+        def test_explicit_success_code_overrides_default_status_for_post
+          route = mock_route(success: { code: 200, model: Class.new }, default_status: 202)
+          route.request_method = "POST"
+
+          assert_equal 200, @parser.parse(route).first[:code]
+        end
+
+        def test_entity_hash_without_code_defaults_to_201_for_post
+          entity = Class.new
+          route = mock_route(entity: { model: entity })
+          route.request_method = "POST"
+
+          spec = @parser.parse(route).first
+
+          assert_equal 201, spec[:code]
+          assert_equal entity, spec[:entity]
+        end
+
+        def test_default_status_overrides_appended_post_entity_inference
+          entity = Class.new
+          [entity, { model: entity }].each do |response_entity|
+            route = mock_route(entity: response_entity, default_status: 202)
+            route.request_method = "POST"
+
+            spec = @parser.parse(route).first
+
+            assert_equal 202, spec[:code], "entity: #{response_entity.inspect}"
+            assert_equal entity, spec[:entity], "entity: #{response_entity.inspect}"
+          end
+        end
+
+        def test_post_failure_and_http_codes_hashes_keep_200_default
+          %i[failure http_codes].each do |key|
+            route = mock_route(key => [{ message: "Boom" }])
+            route.request_method = "POST"
+
+            assert_equal "200", @parser.parse(route).first[:code], key.to_s
+          end
+        end
+
+        def test_post_failure_and_http_codes_entities_keep_200_default
+          %i[failure http_codes].each do |key|
+            route = mock_route(key => Class.new)
+            route.request_method = "POST"
+
+            assert_equal 200, @parser.parse(route).first[:code], key.to_s
+          end
+        end
+
+        def test_post_failure_and_http_codes_keep_default_status_override
+          %i[failure http_codes].each do |key|
+            route = mock_route(key => [{ message: "Boom" }], :default_status => 503)
+            route.request_method = "POST"
+
+            assert_equal "503", @parser.parse(route).first[:code], key.to_s
+          end
+        end
+
+        def test_post_success_without_entity_defaults_to_201
+          route = mock_route(success: { message: "Created" })
+          route.request_method = "POST"
+
+          assert_equal "201", @parser.parse(route).first[:code]
+        end
+
         private
 
         def mock_route(options = {})
-          OpenStruct.new(options: options)
+          OpenStruct.new(options: options, request_method: nil)
         end
       end
     end

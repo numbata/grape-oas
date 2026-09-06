@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#72](https://github.com/numbata/grape-oas/pull/72): Infer POST success status only when no success is declared; honor entity `default_status:` for all methods, omitting content for bodyless statuses - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#100](https://github.com/numbata/grape-oas/pull/100): Preserve nil enum members when the selected nullable strategy can express them - [@numbata](https://github.com/numbata).
 - [#104](https://github.com/numbata/grape-oas/pull/104): Preserve array-valued schema examples and Boolean false examples from parameter/entity documentation in OAS 3.0/3.1; omit incompatible scalar examples - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#97](https://github.com/numbata/grape-oas/pull/97): Default OAS 2.0 nullable strategy to EXTENSION so nullable fields emit `x-nullable: true` without explicit opt-in - [@numbata](https://github.com/numbata).
