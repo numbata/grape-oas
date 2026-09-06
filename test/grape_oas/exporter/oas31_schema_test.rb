@@ -32,6 +32,18 @@ module GrapeOAS
         assert_equal %w[string null], param_schema["type"]
       end
 
+      def test_variant_set_preserves_unique_items_and_nullable_members
+        schema = TypeResolvers::ArrayResolver.build_schema("Set[String, NilClass]")
+
+        doc = generate_doc_with_schema(schema)
+        param_schema = doc.dig("paths", "/x", "get", "parameters").first.fetch("schema")
+
+        assert param_schema["uniqueItems"]
+        assert_equal %w[string null], param_schema.dig("items", "type")
+        refute param_schema["items"].key?("nullable")
+        refute param_schema.key?("nullable")
+      end
+
       # === Inline nested object with enum properties ===
 
       def test_inline_nested_object_with_enum_properties

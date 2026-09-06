@@ -119,6 +119,25 @@ module GrapeOAS
         assert_equal "/users/{user_id}/posts/{post_id}", path.template
       end
 
+      def test_reads_public_version_options_with_protected_namespace_storage
+        setting = Class.new do
+          def version_options
+            Struct.new(:using).new(:path)
+          end
+
+          protected
+
+          def namespace_inheritable
+            raise "Internal storage must not be read"
+          end
+        end.new
+        endpoint = Struct.new(:inheritable_setting).new(setting)
+        route = Struct.new(:app, :version).new(endpoint, "v1")
+        builder = Path.new(api: @api, app: nil, routes: [])
+
+        assert_equal "v1", builder.send(:concrete_path_version, route)
+      end
+
       def test_substitutes_concrete_version_into_path
         api_class = Class.new(Grape::API) do
           format :json

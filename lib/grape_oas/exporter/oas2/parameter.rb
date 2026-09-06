@@ -104,6 +104,8 @@ module GrapeOAS
 
         def apply_collection_format(result, param, type)
           return unless type == Constants::SchemaTypes::ARRAY
+
+          result["items"] = build_schema_or_ref(param.schema.items) if param.schema.items
           return unless param.collection_format
 
           valid_formats = %w[csv ssv tsv pipes multi brackets]
