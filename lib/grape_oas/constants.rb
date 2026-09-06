@@ -107,7 +107,7 @@ module GrapeOAS
       "float" => { type: SchemaTypes::NUMBER, format: "float" },
       "bigdecimal" => { type: SchemaTypes::NUMBER, format: "double" },
       "string" => { type: SchemaTypes::STRING },
-      "integer" => { type: SchemaTypes::INTEGER, format: "int32" },
+      "integer" => { type: SchemaTypes::INTEGER },
       "number" => { type: SchemaTypes::NUMBER, format: "double" },
       "boolean" => { type: SchemaTypes::BOOLEAN },
       "grape::api::boolean" => { type: SchemaTypes::BOOLEAN },

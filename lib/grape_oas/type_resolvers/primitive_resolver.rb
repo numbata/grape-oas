@@ -14,7 +14,7 @@ module GrapeOAS
       # Known primitive type mappings
       PRIMITIVES = {
         "String" => { type: Constants::SchemaTypes::STRING },
-        "Integer" => { type: Constants::SchemaTypes::INTEGER, format: "int32" },
+        "Integer" => { type: Constants::SchemaTypes::INTEGER },
         "Float" => { type: Constants::SchemaTypes::NUMBER, format: "float" },
         "BigDecimal" => { type: Constants::SchemaTypes::NUMBER, format: "double" },
         "Numeric" => { type: Constants::SchemaTypes::NUMBER },

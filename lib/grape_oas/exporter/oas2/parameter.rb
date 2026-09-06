@@ -5,7 +5,7 @@ module GrapeOAS
     module OAS2
       class Parameter
         PRIMITIVE_MAPPINGS = {
-          Constants::SchemaTypes::INTEGER => { type: Constants::SchemaTypes::INTEGER, format: "int32" },
+          Constants::SchemaTypes::INTEGER => { type: Constants::SchemaTypes::INTEGER },
           "long" => { type: Constants::SchemaTypes::INTEGER, format: "int64" },
           "float" => { type: Constants::SchemaTypes::NUMBER, format: "float" },
           "double" => { type: Constants::SchemaTypes::NUMBER, format: "double" },
