@@ -18,10 +18,11 @@ module GrapeOAS
           "uuid" => { type: Constants::SchemaTypes::STRING, format: "uuid" }
         }.freeze
 
-        def initialize(operation, ref_tracker = nil, nullable_strategy: nil)
+        def initialize(operation, ref_tracker = nil, nullable_strategy: nil, composition_extensions: false)
           @op = operation
           @ref_tracker = ref_tracker
           @nullable_strategy = nullable_strategy
+          @composition_extensions = composition_extensions
         end
 
         FORM_MEDIA_TYPES = %w[application/x-www-form-urlencoded multipart/form-data].freeze
@@ -200,7 +201,8 @@ module GrapeOAS
             ref_name = GrapeOAS.schema_ref_name.call(schema.canonical_name)
             { "$ref" => "#/definitions/#{ref_name}" }
           else
-            Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            Schema.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy,
+                                             composition_extensions: @composition_extensions,).build
           end
         end
       end

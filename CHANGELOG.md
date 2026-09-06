@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#123](https://github.com/numbata/grape-oas/pull/123): Add opt-in OAS2 composition extensions and include missing referenced alternatives in definitions - [@numbata](https://github.com/numbata).
 - [#96](https://github.com/numbata/grape-oas/pull/96): Pin rubocop versions and add performance/packaging/rake plugins - [@numbata](https://github.com/numbata).
 - [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
 - [#88](https://github.com/numbata/grape-oas/pull/88): Add configurable `GrapeOAS.schema_ref_name` callable that controls how a schema's canonical class name is mangled into its OAS component/definition ref name. Default behavior (`name.gsub("::", "_")`) is byte-identical to prior output; applies uniformly across OAS 2.0 and OAS 3 ref emission paths - [@abeljim8am](https://github.com/abeljim8am).

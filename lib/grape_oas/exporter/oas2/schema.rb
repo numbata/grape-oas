@@ -4,10 +4,11 @@ module GrapeOAS
   module Exporter
     module OAS2
       class Schema
-        def initialize(schema, ref_tracker = nil, nullable_strategy: nil)
+        def initialize(schema, ref_tracker = nil, nullable_strategy: nil, composition_extensions: false)
           @schema = schema
           @ref_tracker = ref_tracker
           @nullable_strategy = nullable_strategy
+          @composition_extensions = composition_extensions
         end
 
         # OAS 2.0 (Swagger) natively supports `type: file`, so no
@@ -25,6 +26,7 @@ module GrapeOAS
 
           schema_hash = build_base_hash
           apply_constraints(schema_hash)
+          apply_compatibility_composition_extension(schema_hash)
           apply_extensions(schema_hash)
           schema_hash.compact
         end
@@ -78,6 +80,17 @@ module GrapeOAS
 
         private
 
+        def apply_compatibility_composition_extension(result)
+          return unless @composition_extensions
+
+          { "x-oneOf" => @schema.one_of, "x-anyOf" => @schema.any_of }.each do |key, alternatives|
+            next unless alternatives && alternatives.size > 1
+            next if @schema.extensions&.key?(key)
+
+            result[key] = alternatives.map { |item| build_schema_or_ref(item) }
+          end
+        end
+
         def schema_nullable?(schema)
           schema.respond_to?(:nullable) && !!schema.nullable
         end
@@ -86,20 +99,16 @@ module GrapeOAS
           schema_nullable?(@schema)
         end
 
-        # Build schema from oneOf/anyOf by using first type (OAS2 doesn't support these)
-        # Extensions are merged to allow x-anyOf/x-oneOf for consumers that support them
-        #
-        # Only description and extensions are applied from the composition node.
-        # Type-specific attributes (default, enum, format, constraints) are omitted
-        # because they describe the multi-type composition, not the single fallback
-        # branch selected here.
+        # OAS2 keeps a first-alternative fallback for tools that ignore extensions.
         def build_first_of_schema(composition_type)
-          schemas = @schema.send(composition_type)
+          schemas = composition_type == :any_of ? @schema.any_of : @schema.one_of
           first_schema = schemas.first
           return {} unless first_schema
 
           result = build_schema_or_ref(first_schema)
           result["description"] = @schema.description.to_s if @schema.description
+
+          apply_compatibility_composition_extension(result)
           apply_extensions(result)
           if result.key?("$ref") && result.size > 1
             ref = { "$ref" => result.delete("$ref") }
@@ -160,7 +169,8 @@ module GrapeOAS
           else
             # self.class preserves any subclass so nested schemas use
             # the version-correct builder.
-            built = self.class.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            built = self.class.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy,
+                                                         composition_extensions: @composition_extensions,).build
             built.delete("description") unless include_metadata
             built
           end
