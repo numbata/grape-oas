@@ -32,6 +32,9 @@ module GrapeOAS
           assert_equal nullable_schema, responses.dig("200", "content", "application/json", "schema")
           assert_equal "Optional payload", nullable_schema["description"]
           assert nullable_schema.key?("anyOf"), "#{version}: root nullable ref must use null union"
+          assert_equal({ "$ref" => "#/components/schemas/Details" }, nullable_schema["anyOf"].first,
+                       "#{version}: non-null alternative should be a bare $ref",)
+          refute nullable_schema["anyOf"].first.key?("allOf")
 
           strict_schema = responses.dig("201", "content", "application/json", "schema")
 

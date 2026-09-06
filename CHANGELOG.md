@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#126](https://github.com/numbata/grape-oas/pull/126): Prefer bare `$ref` in nullable OAS3 null-union alternatives (drop redundant single-element `allOf`) - [@numbata](https://github.com/numbata).
 - [#125](https://github.com/numbata/grape-oas/pull/125): Preserve nullability on root OAS3 request and response `$ref` schemas - [@numbata](https://github.com/numbata).
 - [#122](https://github.com/numbata/grape-oas/pull/122): Treat params declared inside Grape `given` blocks as optional — no longer emitted as unconditionally required - [@numbata](https://github.com/numbata).
 - [#121](https://github.com/numbata/grape-oas/pull/121): Preserve nullable references, array items, and polymorphic discriminators in OAS 3.0/3.1 - [@numbata](https://github.com/numbata).

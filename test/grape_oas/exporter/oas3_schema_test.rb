@@ -421,10 +421,11 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/MyEntity" }, child["anyOf"].first)
         assert_equal "A related entity", child["description"]
         assert_equal({ "type" => "object", "nullable" => true, "enum" => [nil] }, child["anyOf"].last)
         refute child.key?("$ref")
+        refute child.dig("anyOf", 0)&.key?("allOf")
       end
 
       def test_ref_nullable_enum_preserves_nil_keyword
@@ -438,7 +439,7 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/MyEntity" }, child["anyOf"].first)
         assert_equal [1, 2, nil], child["enum"]
         assert_equal({ "type" => "object", "nullable" => true, "enum" => [nil] }, child["anyOf"].last)
       end
@@ -470,7 +471,7 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/MyEntity" }, child["anyOf"].first)
         assert_equal [1, 2, nil], child["enum"]
       end
 
@@ -488,7 +489,7 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/MyEntity" }, child["anyOf"].first)
         assert_equal [1, 2, 3], child["enum"]
       end
 
@@ -502,9 +503,10 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/MyEntity" }, child["anyOf"].first)
         assert_equal({ "type" => "object", "nullable" => true, "enum" => [nil] }, child["anyOf"].last)
         refute child.key?("$ref")
+        refute child.dig("anyOf", 0)&.key?("allOf")
       end
 
       def test_nullable_allof_composition_keyword_uses_null_union
@@ -548,9 +550,10 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/MyEntity" }, child["anyOf"].first)
         assert_equal({ "type" => "null" }, child["anyOf"].last)
         refute child.key?("allOf")
+        refute child.dig("anyOf", 0)&.key?("allOf")
       end
 
       def test_ref_with_description_and_nullable_type_array_uses_null_union
@@ -563,11 +566,12 @@ module GrapeOAS
 
         child = result["properties"]["child"]
 
-        assert_equal [{ "$ref" => "#/components/schemas/MyEntity" }], child.dig("anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/MyEntity" }, child["anyOf"].first)
         assert_equal({ "type" => "null" }, child["anyOf"].last)
         assert_equal "A related entity", child["description"]
         refute child.key?("$ref")
         refute child.key?("type")
+        refute child.dig("anyOf", 0)&.key?("allOf")
       end
 
       # === Composition: default propagation tests ===
@@ -1189,7 +1193,8 @@ module GrapeOAS
 
         assert_equal "array", result["type"]
         refute result.key?("nullable"), "item nullability must not change the array"
-        assert_equal [{ "$ref" => "#/components/schemas/ItemEntity" }], result.dig("items", "anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"]["anyOf"].first)
+        refute result.dig("items", "anyOf", 0)&.key?("allOf")
       end
 
       def test_array_ref_items_nullable_extension_applies_to_items
@@ -1213,7 +1218,8 @@ module GrapeOAS
         result = OAS3::Schema.new(array_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY).build
 
         assert_equal "array", result["type"]
-        assert_equal [{ "$ref" => "#/components/schemas/ItemEntity" }], result.dig("items", "anyOf", 0, "allOf")
+        assert_equal({ "$ref" => "#/components/schemas/ItemEntity" }, result["items"]["anyOf"].first)
+        refute result.dig("items", "anyOf", 0)&.key?("allOf")
       end
 
       def test_array_ref_items_description_does_not_overwrite_outer
