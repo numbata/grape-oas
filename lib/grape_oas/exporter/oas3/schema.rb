@@ -173,9 +173,19 @@ module GrapeOAS
           result["enum"] = normalize_enum(@schema.enum, result["type"], nullable: nullable?) if @schema.enum
           sanitize_enum_against_type(result)
           apply_all_constraints(result)
-          result.merge!(@schema.extensions) if @schema.extensions
+          apply_composition_extensions(result)
           normalize_file_type!(result)
           result
+        end
+
+        def apply_composition_extensions(result)
+          return unless @schema.extensions
+
+          extensions = @schema.extensions.reject do |key, _value|
+            (key == "x-anyOf" && @schema.any_of&.any?) ||
+              (key == "x-oneOf" && @schema.one_of&.any?)
+          end
+          result.merge!(extensions)
         end
 
         # Build OAS3 discriminator object
