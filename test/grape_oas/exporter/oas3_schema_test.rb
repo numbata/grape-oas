@@ -516,7 +516,7 @@ module GrapeOAS
         # OAS 3.0: nullable: true beside allOf is ineffective, so the wrapper
         # becomes an anyOf with a null-only alternative.
         assert_equal(
-          [{ "allOf" => [{ "$ref" => "#/components/schemas/MyEntity" }] }, { "nullable" => true, "enum" => [nil] }],
+          [{ "allOf" => [{ "$ref" => "#/components/schemas/MyEntity" }] }, { "type" => "object", "nullable" => true, "enum" => [nil] }],
           result["anyOf"],
         )
         refute result.key?("nullable")
@@ -1262,7 +1262,7 @@ module GrapeOAS
         # schema becomes an anyOf null union instead.
         items = result["items"]
 
-        assert_equal [{ "allOf" => [{ "type" => "object" }] }, { "nullable" => true, "enum" => [nil] }], items["anyOf"]
+        assert_equal [{ "allOf" => [{ "type" => "object" }] }, { "type" => "object", "nullable" => true, "enum" => [nil] }], items["anyOf"]
       end
 
       def test_array_inline_oneof_items_nullable_preserved

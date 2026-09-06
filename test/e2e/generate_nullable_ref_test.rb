@@ -37,6 +37,7 @@ module GrapeOAS
       null_branch = details_prop["anyOf"].find { |b| b["enum"] == [nil] }
 
       assert null_branch, "a null-only branch (enum: [null]) must be present"
+      assert_equal "object", null_branch["type"], "nullable requires an explicit type on the same OAS 3.0 schema"
       assert null_branch["nullable"], "the null branch must declare nullable: true"
       refute details_prop.key?("nullable"), "the wrapper must not carry an ineffective nullable: true"
 

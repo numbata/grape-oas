@@ -215,7 +215,7 @@ module GrapeOAS
         # own `type`. Non-null branch stays untouched; only null is added.
         # (OAS 3.1 uses the TYPE_ARRAY path with `type: "null"` instead.)
         def apply_keyword_null_union(hash, key)
-          null_branch = { "nullable" => true, "enum" => [nil] }
+          null_branch = { "type" => Constants::SchemaTypes::OBJECT, "nullable" => true, "enum" => [nil] }
           if key == "anyOf"
             hash["anyOf"] += [null_branch]
           else
