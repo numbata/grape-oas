@@ -277,7 +277,7 @@ module GrapeOAS
       end
 
       def path_param_names
-        names = route.path.scan(RequestParams::ROUTE_PARAM_REGEX)
+        names = RequestParams.path_param_names(route.path)
         mapped_names = path_param_name_map ? path_param_name_map.values : []
         (names + mapped_names).map(&:to_s).uniq
       end

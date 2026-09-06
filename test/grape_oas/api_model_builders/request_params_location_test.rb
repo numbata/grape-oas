@@ -359,6 +359,47 @@ module GrapeOAS
                "wildcard *path param should be classified as path location, not query",)
       end
 
+      def test_format_extension_does_not_make_declared_format_a_path_parameter
+        api_class = Class.new(Grape::API) do
+          params do
+            requires :id, type: Integer
+            optional :format, type: String
+          end
+          get "items/:id" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+
+        assert_includes route.path, "(.:format)"
+
+        op = build_operation(route, api_class)
+        format_param = op.parameters.find { |param| param.name == "format" }
+
+        assert_equal "query", format_param.location
+        refute format_param.required
+        assert_equal "path", op.parameters.find { |param| param.name == "id" }.location
+      end
+
+      def test_real_format_path_parameters_are_preserved
+        [":format", "*format"].each do |segment|
+          api_class = Class.new(Grape::API) do
+            format :json
+            params do
+              requires :format, type: String
+            end
+            get "items/#{segment}" do
+              {}
+            end
+          end
+
+          op = build_operation(api_class.routes.first, api_class)
+
+          assert_equal "path", op.parameters.find { |param| param.name == "format" }.location
+        end
+      end
+
       private
 
       def build_operation(route, app)

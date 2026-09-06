@@ -5,6 +5,10 @@ module GrapeOAS
     class RequestParams
       ROUTE_PARAM_REGEX = /(?<=[:*])\w+/
 
+      def self.path_param_names(path)
+        path.sub(/(\(\.[^)]+\))+$/, "").scan(ROUTE_PARAM_REGEX)
+      end
+
       attr_reader :api, :route, :path_param_name_map
 
       def initialize(api:, route:, path_param_name_map: nil)
@@ -14,7 +18,7 @@ module GrapeOAS
       end
 
       def build
-        route_params = route.path.scan(ROUTE_PARAM_REGEX)
+        route_params = self.class.path_param_names(route.path)
         all_params = declared_params
 
         # Check if we have nested params (bracket notation)
