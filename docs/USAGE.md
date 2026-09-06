@@ -275,6 +275,19 @@ params do
 end
 ```
 
+### Conditional parameters
+
+Parameters inside Grape `given` blocks are optional in generated schemas,
+including nested and query parameters. An unconditional `requires` for the same
+full parameter name still takes precedence. Conditional fields alone do not
+make a request body required.
+
+This is a conservative description of presence, not a translation of the
+condition. Grape continues to enforce the predicate at runtime; generated schemas
+do not enforce presence-based or arbitrary Ruby predicate dependencies. Predicate
+code is never executed during generation. If validator scope metadata is
+unavailable, the declared requiredness is retained.
+
 ## OpenAPI Version Features
 
 ### OpenAPI 2.0 (Swagger)

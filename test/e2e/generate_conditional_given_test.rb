@@ -27,6 +27,23 @@ module GrapeOAS
       post("/mixed") { {} }
     end
 
+    def test_given_predicate_keeps_runtime_validation
+      requests = {
+        "" => 201,
+        "{}" => 201,
+        '{"channel":"pickup"}' => 201,
+        '{"channel":"email"}' => 400,
+        '{"channel":"email","address":"example@example.invalid"}' => 201
+      }
+      requests.each do |body, status|
+        response = Rack::MockRequest.new(ConditionalOnlyAPI).post(
+          "/deliveries", "CONTENT_TYPE" => "application/json", input: body,
+        )
+
+        assert_equal status, response.status, body
+      end
+    end
+
     def test_conditional_param_and_body_are_not_unconditionally_required
       %i[oas2 oas3 oas31].each do |dialect|
         doc = GrapeOAS.generate(app: ConditionalOnlyAPI, schema_type: dialect)

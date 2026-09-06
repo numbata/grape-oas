@@ -3,6 +3,8 @@
 module GrapeOAS
   module ApiModelBuilders
     class RequestParams
+      include Concerns::RouteValidations
+
       ROUTE_PARAM_REGEX = /(?<=[:*])\w+/
 
       def self.path_param_names(path)
@@ -168,9 +170,8 @@ module GrapeOAS
         conditional = conditional_param_names
         return flat if conditional.empty?
 
-        flat.transform_values.with_index do |spec, index|
-          name = flat.keys[index]
-          conditional.include?(name.to_s) ? spec.merge(required: false) : spec
+        flat.each_with_object({}) do |(name, spec), params|
+          params[name] = conditional.include?(name.to_s) ? spec.merge(required: false) : spec
         end
       end
 
@@ -178,17 +179,19 @@ module GrapeOAS
       # (declared inside a `given` block). Their validators have a
       # `params_scope` with `@dependent_on` set.
       def conditional_param_names
-        validations = grape_route_saved_validations
+        return Set.new unless route.respond_to?(:app) && route.app.respond_to?(:inheritable_setting)
+
+        validations = grape_route_validations(route.app.inheritable_setting)
         return Set.new unless validations.is_a?(Array)
 
         conditional = Set.new
         unconditional = Set.new
         validations.each do |validator|
           scope, attrs, required = validator_details(validator)
-          next unless scope && required
+          next unless scope.respond_to?(:full_name) && required
 
-          target = scope.instance_variable_get(:@dependent_on).present? ? conditional : unconditional
-          Array(attrs).each { |attr| target << attr.to_s }
+          target = conditional_scope?(scope) ? conditional : unconditional
+          Array(attrs).each { |attr| target << scope.full_name(attr) }
         end
         conditional - unconditional
       end
@@ -206,24 +209,13 @@ module GrapeOAS
         end
       end
 
-      # Extract Grape's saved validators for this route.
-      def grape_route_saved_validations
-        return unless route.respond_to?(:app)
+      def conditional_scope?(scope)
+        while scope
+          return true if scope.instance_variable_get(:@dependent_on).present?
 
-        app = route.app
-        return unless app.respond_to?(:inheritable_setting)
-
-        setting = app.inheritable_setting
-        if setting.respond_to?(:route_validations)
-          setting.route_validations
-        elsif setting.respond_to?(:route)
-          route_store = setting.route
-          return unless route_store.is_a?(Hash)
-
-          route_store[:saved_validations] || route_store[:validations]
+          scope = scope.respond_to?(:parent) ? scope.parent : nil
         end
-      rescue StandardError
-        nil
+        false
       end
 
       def params_from_options
