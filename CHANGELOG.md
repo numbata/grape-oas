@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#113](https://github.com/numbata/grape-oas/pull/113): Use OAS 3.1 schema rendering for inline parameters, request bodies, and responses - [@numbata](https://github.com/numbata).
+
 - [#112](https://github.com/numbata/grape-oas/pull/112): Exclude format extensions from path parameter discovery - [@numbata](https://github.com/numbata).
 
 - [#100](https://github.com/numbata/grape-oas/pull/100): Preserve nil enum members when the selected nullable strategy can express them - [@numbata](https://github.com/numbata).
