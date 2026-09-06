@@ -67,7 +67,7 @@ module GrapeOAS
         schema = PrimitiveResolver.build_schema("Integer")
 
         assert_equal Constants::SchemaTypes::INTEGER, schema.type
-        assert_equal "int32", schema.format
+        assert_nil schema.format
       end
 
       def test_builds_float_schema

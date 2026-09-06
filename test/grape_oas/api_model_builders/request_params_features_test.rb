@@ -122,7 +122,7 @@ module GrapeOAS
 
       # === Automatic format hints for numeric types ===
 
-      def test_integer_gets_int32_format_automatically
+      def test_integer_has_no_inferred_format
         api_class = Class.new(Grape::API) do
           format :json
           params do
@@ -140,7 +140,7 @@ module GrapeOAS
         count_param = params.find { |p| p.name == "count" }
 
         assert_equal "integer", count_param.schema.type
-        assert_equal "int32", count_param.schema.format
+        assert_nil count_param.schema.format
       end
 
       def test_float_gets_float_format_automatically

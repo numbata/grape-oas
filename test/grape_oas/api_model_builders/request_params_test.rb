@@ -304,7 +304,7 @@ module GrapeOAS
 
         assert_equal "array", ids.type
         assert_equal "integer", ids.items.type
-        assert_equal "int32", ids.items.format
+        assert_nil ids.items.format
       end
 
       def test_is_array_falls_back_to_raw_type_when_no_doc_type
@@ -326,7 +326,7 @@ module GrapeOAS
 
         assert_equal "array", ids.type
         assert_equal "integer", ids.items.type
-        assert_equal "int32", ids.items.format
+        assert_nil ids.items.format
       end
 
       # === Additional type scenarios ===
