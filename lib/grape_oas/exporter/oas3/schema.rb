@@ -235,8 +235,7 @@ module GrapeOAS
         # also admit null. The enum keeps the extra branch from allowing objects.
         def apply_keyword_null_union(hash, key)
           hash["nullable"] = true if hash["type"]
-          null_branch = { "type" => Constants::SchemaTypes::OBJECT, "nullable" => true, "enum" => [nil] }
-          apply_null_union(hash, key, null_branch)
+          apply_null_union(hash, key, keyword_null_only_branch)
         end
 
         def apply_null_union(hash, key, null_branch)
@@ -265,12 +264,35 @@ module GrapeOAS
 
           case @nullable_strategy
           when Constants::NullableStrategy::KEYWORD
-            apply_keyword_null_union(result, "allOf")
+            apply_ref_null_union(result, keyword_null_only_branch, typed_nullable: true)
           when Constants::NullableStrategy::EXTENSION
             result["x-nullable"] = true
           when Constants::NullableStrategy::TYPE_ARRAY
-            apply_null_union(result, "allOf", { "type" => "null" })
+            apply_ref_null_union(result, { "type" => "null" }, typed_nullable: false)
           end
+        end
+
+        # Prefer a bare $ref as the non-null alternative when allOf would only
+        # wrap that single ref (OAS 3.0 needs allOf only for $ref siblings).
+        def apply_ref_null_union(result, null_branch, typed_nullable:)
+          allof = result["allOf"]
+          if bare_single_ref_allof?(allof)
+            ref = result.delete("allOf").first
+            result["nullable"] = true if typed_nullable && result["type"]
+            result["anyOf"] = [ref, null_branch]
+          elsif typed_nullable
+            apply_keyword_null_union(result, "allOf")
+          else
+            apply_null_union(result, "allOf", null_branch)
+          end
+        end
+
+        def bare_single_ref_allof?(allof)
+          allof.is_a?(Array) && allof.size == 1 && allof.first.is_a?(Hash) && allof.first.keys == ["$ref"]
+        end
+
+        def keyword_null_only_branch
+          { "type" => Constants::SchemaTypes::OBJECT, "nullable" => true, "enum" => [nil] }
         end
 
         def normalize_enum(enum_vals, type, nullable: false)
