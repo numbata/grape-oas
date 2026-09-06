@@ -8,6 +8,14 @@ module GrapeOAS
       module ContentTypeResolver
         private
 
+        def explicit_media_types(key)
+          declared = route.options[key] || route.options.dig(:documentation, key)
+          mimes = Array(declared).filter_map do |mime|
+            mime.to_s.include?("/") ? mime.to_s : Grape::ContentTypes.content_types_for(nil)[mime.to_s.to_sym]
+          end
+          mimes.empty? ? nil : mimes.uniq
+        end
+
         def resolve_content_types
           default_format = route_default_format_from_route || default_format_from_app_or_api
           content_types = route_content_types_from_route

@@ -127,10 +127,18 @@ module GrapeOAS
 
         def build_form_parameters(request_body)
           schema = Array(request_body.media_types).first&.schema
-          return [build_body_parameter(request_body)] unless schema&.properties&.any?
+          return [] unless schema
+
+          unless [nil, "object"].include?(schema.type) && !composition?(schema)
+            raise ArgumentError, "OAS2 form bodies must have object properties; use OAS3 for this request schema"
+          end
 
           required = Array(schema.required).map(&:to_s)
           schema.properties.map do |name, property_schema|
+            unless form_property?(property_schema)
+              raise ArgumentError, "OAS2 cannot represent form field #{name.inspect}; use OAS3 for complex form fields"
+            end
+
             build_parameter(
               ApiModel::Parameter.new(
                 name: name.to_s,
@@ -141,6 +149,19 @@ module GrapeOAS
               ),
             )
           end
+        end
+
+        def form_property?(schema, array_item: false)
+          return false unless schema && !composition?(schema)
+          return false if array_item && schema.canonical_name
+          return form_property?(schema.items, array_item: true) if schema.type == "array"
+
+          types = array_item ? %w[string integer number boolean] : %w[string integer number boolean file]
+          types.include?(schema.type)
+        end
+
+        def composition?(schema)
+          schema.all_of&.any? || schema.one_of&.any? || schema.any_of&.any?
         end
 
         def build_body_parameter(request_body)
