@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#123](https://github.com/numbata/grape-oas/pull/123): Auto-generate `x-anyOf`/`x-oneOf` in OAS2 from native composition alternatives so integrations need not inject OAS2-specific extension metadata manually - [@numbata](https://github.com/numbata).
 - [#122](https://github.com/numbata/grape-oas/pull/122): Treat params declared inside Grape `given` blocks as optional — no longer emitted as unconditionally required - [@numbata](https://github.com/numbata).
 - [#121](https://github.com/numbata/grape-oas/pull/121): Preserve nullable references, array items, and polymorphic discriminators in OAS 3.0/3.1 - [@numbata](https://github.com/numbata).
 - [#120](https://github.com/numbata/grape-oas/pull/120): Honor explicit route `consumes:`/`produces:` independently so form request bodies are documented with the declared media type - [@numbata](https://github.com/numbata).
