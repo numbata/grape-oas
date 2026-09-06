@@ -124,11 +124,19 @@ module GrapeOAS
       end
 
       def consumes
-        resolve_content_types
+        explicit_media_types(:consumes) || resolve_content_types
       end
 
       def produces
-        resolve_content_types
+        explicit_media_types(:produces) || resolve_content_types
+      end
+
+      # Honor an explicitly declared `consumes:`/`produces:` route option (or its
+      # documentation equivalent) before falling back to content-type inference.
+      def explicit_media_types(key)
+        declared = route.options[key] || route.options.dig(:documentation, key)
+        mimes = Array(declared).filter_map { |m| normalize_mime(m) }
+        mimes.empty? ? nil : mimes.uniq
       end
 
       def operation_extensions

@@ -121,7 +121,7 @@ module GrapeOAS
       def test_form_urlencoded_consumes
         api_class = Class.new(Grape::API) do
           format :json
-          desc "Form submit", consumes: ["application/x-www-form-urlencoded"]
+          desc "Form submit", consumes: ["application/x-www-form-urlencoded"], produces: ["application/json"]
           post "form" do
             {}
           end
@@ -131,7 +131,8 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route, app: api_class)
         operation = builder.build
 
-        refute_nil operation
+        assert_equal ["application/x-www-form-urlencoded"], operation.consumes
+        assert_equal ["application/json"], operation.produces
       end
 
       # === Multipart form consumes ===
@@ -149,7 +150,8 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route, app: api_class)
         operation = builder.build
 
-        refute_nil operation
+        assert_equal ["multipart/form-data"], operation.consumes
+        assert_equal ["application/json"], operation.produces
       end
 
       # === Text plain format ===
