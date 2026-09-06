@@ -3,6 +3,7 @@
 module GrapeOAS
   module ApiModelBuilders
     class Request
+      include Concerns::RouteValidations
       include Concerns::TypeResolver
       include Concerns::OasUtilities
 
@@ -149,21 +150,6 @@ module GrapeOAS
         end
 
         nil
-      end
-
-      # Grape 3.x snapshots validators on `inheritable_setting.route[:saved_validations]`.
-      # Grape 4.0 renamed that to `#route_validations` / `route[:validations]` (grape#2811).
-      def grape_route_validations(setting)
-        if setting.respond_to?(:route_validations)
-          validations = setting.route_validations
-          return validations if validations.is_a?(Array)
-        end
-        return unless setting.respond_to?(:route)
-
-        route_store = setting.route
-        return unless route_store.is_a?(Hash)
-
-        route_store[:saved_validations] || route_store[:validations]
       end
 
       def contract_schema_from(validator)

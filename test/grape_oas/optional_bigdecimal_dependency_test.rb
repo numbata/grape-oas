@@ -28,6 +28,7 @@ module GrapeOAS
           end
         end
 
+        load "lib/grape_oas/api_model_builders/concerns/route_validations.rb"
         load "lib/grape_oas/api_model_builders/request.rb"
 
         puts "ok"

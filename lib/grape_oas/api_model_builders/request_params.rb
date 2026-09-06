@@ -3,6 +3,8 @@
 module GrapeOAS
   module ApiModelBuilders
     class RequestParams
+      include Concerns::RouteValidations
+
       ROUTE_PARAM_REGEX = /(?<=[:*])\w+/
 
       def self.path_param_names(path)
@@ -164,7 +166,55 @@ module GrapeOAS
         specs = params_from_options || params_from_route
         return {} unless specs.is_a?(Hash)
 
-        specs.select { |_name, spec| spec.is_a?(Hash) }
+        flat = specs.select { |_name, spec| spec.is_a?(Hash) }
+        conditional = conditional_param_names
+        return flat if conditional.empty?
+
+        flat.each_with_object({}) do |(name, spec), params|
+          params[name] = conditional.include?(name.to_s) ? spec.merge(required: false) : spec
+        end
+      end
+
+      # Returns names of params that Grape will only validate conditionally
+      # (declared inside a `given` block). Their validators have a
+      # `params_scope` with `@dependent_on` set.
+      def conditional_param_names
+        return Set.new unless route.respond_to?(:app) && route.app.respond_to?(:inheritable_setting)
+
+        validations = grape_route_validations(route.app.inheritable_setting)
+        return Set.new unless validations.is_a?(Array)
+
+        conditional = Set.new
+        unconditional = Set.new
+        validations.each do |validator|
+          scope, attrs = validator_details(validator)
+          next unless scope.respond_to?(:full_name)
+
+          target = conditional_scope?(scope) ? conditional : unconditional
+          Array(attrs).each { |attr| target << scope.full_name(attr) }
+        end
+        conditional - unconditional
+      end
+
+      # Grape < 3.2 stores validators as hashes; >= 3.2 stores instances.
+      def validator_details(validator)
+        presence = Grape::Validations::Validators::PresenceValidator
+        if validator.is_a?(Hash)
+          return unless validator[:validator_class].is_a?(Class) && validator[:validator_class] <= presence
+
+          [validator[:params_scope], validator[:attributes]]
+        elsif validator.is_a?(presence)
+          [validator.instance_variable_get(:@scope), validator.attrs]
+        end
+      end
+
+      def conditional_scope?(scope)
+        while scope
+          return true if scope.instance_variable_get(:@dependent_on)&.any?
+
+          scope = scope.respond_to?(:parent) ? scope.parent : nil
+        end
+        false
       end
 
       def params_from_options
