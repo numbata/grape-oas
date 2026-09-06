@@ -183,17 +183,24 @@ module GrapeOAS
 
         conditional = Set.new
         validations.each do |v|
-          next unless v.is_a?(Hash)
-
-          scope = v[:params_scope]
+          scope, attrs = validator_scope_and_attrs(v)
           next unless scope
 
           dep = scope.instance_variable_get(:@dependent_on)
           next unless dep && !Array(dep).empty?
 
-          Array(v[:attributes]).each { |a| conditional << a.to_s }
+          Array(attrs).each { |a| conditional << a.to_s }
         end
         conditional
+      end
+
+      # Grape < 3.2 stores validators as hashes; >= 3.2 stores instances.
+      def validator_scope_and_attrs(validator)
+        if validator.is_a?(Hash)
+          [validator[:params_scope], validator[:attributes]]
+        else
+          [validator.instance_variable_get(:@scope), validator.instance_variable_get(:@attrs)]
+        end
       end
 
       # Extract Grape's saved validators for this route.
