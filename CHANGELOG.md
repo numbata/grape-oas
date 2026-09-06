@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#123](https://github.com/numbata/grape-oas/pull/123): Add opt-in OAS2 composition extensions and include missing referenced alternatives in definitions - [@numbata](https://github.com/numbata).
 - [#96](https://github.com/numbata/grape-oas/pull/96): Pin rubocop versions and add performance/packaging/rake plugins - [@numbata](https://github.com/numbata).
 - [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
 - [#88](https://github.com/numbata/grape-oas/pull/88): Add configurable `GrapeOAS.schema_ref_name` callable that controls how a schema's canonical class name is mangled into its OAS component/definition ref name. Default behavior (`name.gsub("::", "_")`) is byte-identical to prior output; applies uniformly across OAS 2.0 and OAS 3 ref emission paths - [@abeljim8am](https://github.com/abeljim8am).
@@ -16,7 +17,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#123](https://github.com/numbata/grape-oas/pull/123): Auto-generate `x-anyOf`/`x-oneOf` in OAS2 from native composition alternatives so integrations need not inject OAS2-specific extension metadata manually - [@numbata](https://github.com/numbata).
 - [#122](https://github.com/numbata/grape-oas/pull/122): Treat params declared inside Grape `given` blocks as optional — no longer emitted as unconditionally required - [@numbata](https://github.com/numbata).
 - [#121](https://github.com/numbata/grape-oas/pull/121): Preserve nullable references, array items, and polymorphic discriminators in OAS 3.0/3.1 - [@numbata](https://github.com/numbata).
 - [#120](https://github.com/numbata/grape-oas/pull/120): Honor explicit route `consumes:`/`produces:` independently so form request bodies are documented with the declared media type - [@numbata](https://github.com/numbata).

@@ -8,6 +8,7 @@ This document covers all configuration options for Grape::OAS.
 - [Schema Ref Names](#schema-ref-names)
 - [Info Object](#info-object)
 - [Nullable Strategy](#nullable-strategy)
+- [OAS2 Composition Extensions](#oas2-composition-extensions)
 - [Security Definitions](#security-definitions)
 - [Tags](#tags)
 - [Namespace Filtering](#namespace-filtering)
@@ -215,3 +216,26 @@ This is useful for:
 - Generating separate documentation for different API sections
 - Creating focused documentation for specific consumers
 - Reducing documentation size for large APIs
+
+## OAS2 Composition Extensions
+
+Set `oas2_composition_extensions: true` to generate `x-anyOf` and `x-oneOf`
+from native schema alternatives in OAS2. The default is `false`.
+
+```ruby
+add_oas_documentation(oas2_composition_extensions: true)
+# Or for direct generation:
+GrapeOAS.generate(app: API, schema_type: :oas2, oas2_composition_extensions: true)
+```
+
+The exporter generates extensions for two or more alternatives, including typed
+compositions. Single alternatives retain the existing fallback without a generated
+extension. `all_of` retains its existing precedence and does not synthesize sibling
+union extensions. Explicitly supplied extensions override generated ones.
+
+OAS2 still uses the first alternative for consumers that ignore extensions. These
+extensions are vendor metadata, not standard union validation. References use the
+configured schema naming function, and all referenced alternatives are included
+in definitions. Alternative metadata is preserved: a reference with attributes
+uses an `allOf` wrapper, so extension consumers must support schemas as well as
+bare references. OAS3 uses native composition and ignores this option.

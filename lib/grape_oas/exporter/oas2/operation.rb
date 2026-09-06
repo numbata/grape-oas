@@ -15,8 +15,10 @@ module GrapeOAS
           {
             "consumes" => consumes,
             "produces" => produces,
-            "parameters" => Parameter.new(@op, @ref_tracker, nullable_strategy: strategy).build,
-            "responses" => Response.new(@op.responses, @ref_tracker, nullable_strategy: strategy).build
+            "parameters" => Parameter.new(@op, @ref_tracker, nullable_strategy: strategy,
+                                                             composition_extensions: @options[:composition_extensions],).build,
+            "responses" => Response.new(@op.responses, @ref_tracker, nullable_strategy: strategy,
+                                                                     composition_extensions: @options[:composition_extensions],).build
           }
         end
 

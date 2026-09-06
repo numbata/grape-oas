@@ -3,80 +3,81 @@
 require "test_helper"
 
 module GrapeOAS
-  # Regression: native any_of must produce x-anyOf in OAS2 so integrations
-  # don't need to inject OAS2-specific extension metadata manually (issue #114).
   class GenerateOas2AnyofExtensionTest < Minitest::Test
+    class ErrorEntity < Grape::Entity
+      expose :error, documentation: { type: String }
+    end
+
     class ContactAPI < Grape::API
       format :json
-      desc "Contact"
-      get "/contact" do
-        {}
+      desc "Contact", success: { code: 201, one_of: [{ model: ComplexApi::UserEntity }, { model: ErrorEntity }] }
+      params { requires :identifier, types: [String, Integer] }
+      post("/contact") { {} }
+      add_oas_documentation oas_doc_version: :oas2, oas_mount_path: "/spec", oas2_composition_extensions: true
+    end
+
+    def test_opt_in_reaches_response_and_request_schema_and_resolves_refs
+      previous = GrapeOAS.schema_ref_name
+      GrapeOAS.schema_ref_name = ->(name) { "Custom_#{name.split("::").last}" }
+      spec = GrapeOAS.generate(app: ContactAPI, schema_type: :oas2, oas2_composition_extensions: true)
+      response = spec.dig("paths", "/contact", "post", "responses", "201", "schema")
+
+      assert_equal 2, response.fetch("x-oneOf").size
+      assert spec.fetch("definitions").key?("Custom_UserEntity")
+      assert spec.fetch("definitions").key?("Custom_ErrorEntity")
+      request = spec.dig("definitions", "Custom_post_contact_Request", "properties", "identifier")
+
+      assert_equal 2, request.fetch("x-oneOf").size
+      assert OASValidator.validate!(spec)
+      assert_refs_resolve(spec, spec)
+    ensure
+      GrapeOAS.schema_ref_name = previous
+    end
+
+    def test_documentation_option_enables_compatibility_extensions
+      response = Rack::MockRequest.new(ContactAPI).get("/spec")
+
+      assert_equal 200, response.status
+      spec = JSON.parse(response.body)
+
+      assert_equal 2, spec.dig("paths", "/contact", "post", "responses", "201", "schema", "x-oneOf").size
+    end
+
+    def test_default_does_not_generate_extensions
+      spec = GrapeOAS.generate(app: ContactAPI, schema_type: :oas2)
+      response = spec.dig("paths", "/contact", "post", "responses", "201", "schema")
+
+      refute response.key?("x-oneOf")
+      assert response.key?("$ref")
+    end
+
+    def test_oas3_uses_native_composition_without_generated_extensions
+      %i[oas3 oas31].each do |dialect|
+        spec = GrapeOAS.generate(app: ContactAPI, schema_type: dialect, oas2_composition_extensions: true)
+        response = spec.dig("paths", "/contact", "post", "responses", "201", "content", "application/json", "schema")
+
+        assert_equal 2, response.fetch("oneOf").size
+        refute response.key?("x-oneOf")
+        assert_refs_resolve(spec, spec)
       end
     end
 
-    def contact_schema
-      email = GrapeOAS::ApiModel::Schema.new(
-        canonical_name: "Example::EmailContact",
-        type: "object",
-        properties: { "email" => GrapeOAS::ApiModel::Schema.new(type: "string") },
-      )
-      sms = GrapeOAS::ApiModel::Schema.new(
-        canonical_name: "Example::SmsContact",
-        type: "object",
-        properties: { "phone" => GrapeOAS::ApiModel::Schema.new(type: "string") },
-      )
-      GrapeOAS::ApiModel::Schema.new(any_of: [email, sms])
-    end
+    private
 
-    def test_oas2_any_of_generates_x_any_of_with_definitions_refs
-      result = GrapeOAS::Exporter::OAS2::Schema.new(contact_schema).build
+    def assert_refs_resolve(node, document)
+      case node
+      when Hash
+        if node["$ref"]&.start_with?("#/")
+          keys = node["$ref"].delete_prefix("#/").split("/")
 
-      assert result.key?("x-anyOf"), "x-anyOf must be auto-generated from native any_of"
-      assert_equal 2, result["x-anyOf"].length
-      result["x-anyOf"].each do |entry|
-        assert entry["$ref"]&.start_with?("#/definitions/"),
-               "x-anyOf refs must use OAS2 #/definitions/ format, got: #{entry.inspect}"
+          refute_nil document.dig(*keys), "Dangling reference: #{node["$ref"]}"
+        end
+
+        node.each_value { |child| assert_refs_resolve(child, document) }
+      when Array
+
+        node.each { |child| assert_refs_resolve(child, document) }
       end
-    end
-
-    def test_oas2_any_of_keeps_first_alternative_fallback
-      result = GrapeOAS::Exporter::OAS2::Schema.new(contact_schema).build
-
-      assert result.key?("allOf"), "first-alternative allOf fallback must be present"
-      assert_equal 1, result["allOf"].length
-      assert result["allOf"].first["$ref"]&.start_with?("#/definitions/")
-    end
-
-    def test_oas2_any_of_with_explicit_type_still_generates_extension
-      schema = contact_schema
-      schema.type = "object"
-
-      result = GrapeOAS::Exporter::OAS2::Schema.new(schema).build
-
-      assert_equal "object", result["type"]
-      assert_equal 2, result["x-anyOf"].length
-      assert(result["x-anyOf"].all? { |entry| entry["$ref"]&.start_with?("#/definitions/") })
-    end
-
-    def test_oas3_any_of_uses_native_anyof_no_extension
-      result = GrapeOAS::Exporter::OAS3::Schema.new(contact_schema).build
-
-      assert result.key?("anyOf"), "OAS3 must use native anyOf"
-      refute result.key?("x-anyOf"), "OAS3 must not emit x-anyOf from native any_of"
-      result["anyOf"].each do |entry|
-        assert entry["$ref"]&.start_with?("#/components/schemas/"),
-               "anyOf refs must use OAS3 #/components/schemas/ format"
-      end
-    end
-
-    def test_explicit_x_any_of_wins_over_auto_generated
-      schema = contact_schema
-      schema.extensions = { "x-anyOf" => [{ "$ref" => "#/definitions/Manual" }] }
-
-      result = GrapeOAS::Exporter::OAS2::Schema.new(schema).build
-
-      assert_equal [{ "$ref" => "#/definitions/Manual" }], result["x-anyOf"],
-                   "explicitly supplied x-anyOf must override auto-generated"
     end
   end
 end

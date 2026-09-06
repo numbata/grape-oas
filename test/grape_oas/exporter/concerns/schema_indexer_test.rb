@@ -80,6 +80,20 @@ module GrapeOAS
           assert_same schema, index["Recursive::Entity"]
         end
 
+        def test_index_schema_follows_nested_compositions_and_properties_without_looping
+          child = ApiModel::Schema.new(canonical_name: "Nested", type: "object")
+          %i[all_of one_of any_of].each do |composition|
+            wrapper = ApiModel::Schema.new(**{ composition => [child] })
+            root = ApiModel::Schema.new(type: "object", properties: { "nested" => wrapper })
+            child.properties["back"] = root
+            index = {}
+
+            @host.index_schema(root, index)
+
+            assert_same child, index["Nested"]
+          end
+        end
+
         def test_index_schema_noop_on_nil
           index = {}
 

@@ -56,6 +56,12 @@ module GrapeOAS
           seen << schema_id
           index[schema.canonical_name] ||= schema if schema.respond_to?(:canonical_name) && schema.canonical_name
           index_schema(schema.items, index, seen) if schema.respond_to?(:items) && schema.items
+          schema.properties.each_value { |child| index_schema(child, index, seen) } if schema.respond_to?(:properties) && schema.properties
+          %i[all_of one_of any_of].each do |composition|
+            next unless schema.respond_to?(composition)
+
+            Array(schema.public_send(composition)).each { |child| index_schema(child, index, seen) }
+          end
         end
 
         def collect_refs(schema, pending, seen = Set.new)
