@@ -73,13 +73,8 @@ module GrapeOAS
         end
 
         def build_schema_or_ref(schema)
-          if schema.respond_to?(:canonical_name) && schema.canonical_name
-            @ref_tracker << schema.canonical_name if @ref_tracker
-            ref_name = GrapeOAS.schema_ref_name.call(schema.canonical_name)
-            { "$ref" => "#/components/schemas/#{ref_name}" }
-          else
-            @schema_builder.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
-          end
+          @schema_builder.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy)
+                         .build_schema_or_ref(schema)
         end
       end
     end

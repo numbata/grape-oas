@@ -70,6 +70,44 @@ module GrapeOAS
           apply_array_constraints(schema_hash, schema)
         end
 
+        def build_schema_or_ref(schema, include_metadata: true)
+          if schema.respond_to?(:canonical_name) && schema.canonical_name
+            @ref_tracker << schema.canonical_name if @ref_tracker
+            ref_name = GrapeOAS.schema_ref_name.call(schema.canonical_name)
+            ref_hash = { "$ref" => "#/components/schemas/#{ref_name}" }
+            unless include_metadata
+              return ref_hash unless schema_nullable?(schema)
+
+              return { "allOf" => [ref_hash] }.tap { |hash| apply_nullable_to_ref(hash, schema) }
+            end
+
+            result = {}
+            result["description"] = schema.description.to_s if schema.description
+            result["default"] = schema.default unless schema.default.nil?
+            enum_type = schema.type
+            if schema_nullable?(schema) && @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY
+              enum_type = Array(enum_type) | ["null"]
+            end
+            result["enum"] = normalize_enum(schema.enum, enum_type, nullable: schema_nullable?(schema)) if schema.enum
+            sanitize_enum_against_type(result, type: schema.type)
+            apply_all_constraints(result, schema)
+            result.merge!(schema.extensions) if schema.extensions
+            if result.empty? && !schema_nullable?(schema)
+              ref_hash
+            else
+              result["allOf"] = [ref_hash]
+              apply_nullable_to_ref(result, schema)
+              result
+            end
+          else
+            # self.class preserves the OAS version subclass (e.g. OAS31::Schema)
+            # so nested schemas get version-correct normalization.
+            built = self.class.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
+            strip_items_metadata(built) unless include_metadata
+            built
+          end
+        end
+
         private
 
         # Returns the primary non-null type from a type value.
@@ -215,44 +253,6 @@ module GrapeOAS
 
           properties.transform_values do |prop_schema|
             build_schema_or_ref(prop_schema)
-          end
-        end
-
-        def build_schema_or_ref(schema, include_metadata: true)
-          if schema.respond_to?(:canonical_name) && schema.canonical_name
-            @ref_tracker << schema.canonical_name if @ref_tracker
-            ref_name = GrapeOAS.schema_ref_name.call(schema.canonical_name)
-            ref_hash = { "$ref" => "#/components/schemas/#{ref_name}" }
-            unless include_metadata
-              return ref_hash unless schema_nullable?(schema)
-
-              return { "allOf" => [ref_hash] }.tap { |hash| apply_nullable_to_ref(hash, schema) }
-            end
-
-            result = {}
-            result["description"] = schema.description.to_s if schema.description
-            result["default"] = schema.default unless schema.default.nil?
-            enum_type = schema.type
-            if schema_nullable?(schema) && @nullable_strategy == Constants::NullableStrategy::TYPE_ARRAY
-              enum_type = Array(enum_type) | ["null"]
-            end
-            result["enum"] = normalize_enum(schema.enum, enum_type, nullable: schema_nullable?(schema)) if schema.enum
-            sanitize_enum_against_type(result, type: schema.type)
-            apply_all_constraints(result, schema)
-            result.merge!(schema.extensions) if schema.extensions
-            if result.empty? && !schema_nullable?(schema)
-              ref_hash
-            else
-              result["allOf"] = [ref_hash]
-              apply_nullable_to_ref(result, schema)
-              result
-            end
-          else
-            # self.class preserves the OAS version subclass (e.g. OAS31::Schema)
-            # so nested schemas get version-correct normalization.
-            built = self.class.new(schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
-            strip_items_metadata(built) unless include_metadata
-            built
           end
         end
 
