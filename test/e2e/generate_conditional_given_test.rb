@@ -3,48 +3,63 @@
 require "test_helper"
 
 module GrapeOAS
-  # Regression: params inside Grape `given` blocks must not be emitted as
-  # unconditionally required (issue #116).
   class GenerateConditionalGivenTest < Minitest::Test
-    class DeliveryAPI < Grape::API
+    class ConditionalOnlyAPI < Grape::API
       format :json
       params do
         optional :channel, type: String, values: %w[email pickup]
         given channel: ->(value) { value == "email" } do
           requires :address, type: String, allow_blank: false
         end
-        requires :reference, type: String
       end
       post("/deliveries") { {} }
     end
 
-    def body_schema(dialect)
-      doc = GrapeOAS.generate(app: DeliveryAPI, schema_type: dialect)
-      defs = doc["definitions"] || doc.dig("components", "schemas")
-      key = defs.keys.find { |k| k.include?("deliveries") }
-      defs.fetch(key)
+    class MixedRequirementAPI < Grape::API
+      format :json
+      params do
+        requires :address, type: String
+        optional :channel, type: String
+        given channel: ->(value) { value == "email" } do
+          requires :address, type: String
+        end
+      end
+      post("/mixed") { {} }
     end
 
-    def test_conditional_param_not_required_and_body_accepts_empty
+    def test_conditional_param_and_body_are_not_unconditionally_required
       %i[oas2 oas3 oas31].each do |dialect|
-        schema = body_schema(dialect)
+        doc = GrapeOAS.generate(app: ConditionalOnlyAPI, schema_type: dialect)
+        schema = request_schema(doc, dialect, "post_deliveries_Request")
 
         assert schema.fetch("properties").key?("address"), "#{dialect}: address must appear in properties"
-        assert_includes schema.fetch("required", []), "reference", "#{dialect}: unconditional requires must remain required"
-        refute_includes schema.fetch("required", []), "address", "#{dialect}: given-scoped requires must NOT be required"
+        refute_includes schema.fetch("required", []), "address", "#{dialect}: given-scoped requires must not be required"
+
+        operation = doc.dig("paths", "/deliveries", "post")
+        required = if dialect == :oas2
+                     operation.fetch("parameters").find { |param| param["in"] == "body" }.fetch("required")
+                   else
+                     operation.dig("requestBody", "required")
+                   end
+
+        refute required, "#{dialect}: conditional fields alone must not require the request body"
       end
     end
 
-    def test_request_body_is_not_forced_required_by_conditional_params
-      %i[oas3 oas31].each do |dialect|
-        doc = GrapeOAS.generate(app: DeliveryAPI, schema_type: dialect)
-        rb_required = doc.dig("paths", "/deliveries", "post", "requestBody", "required")
+    def test_unconditional_requirement_wins_for_same_field
+      %i[oas2 oas3 oas31].each do |dialect|
+        doc = GrapeOAS.generate(app: MixedRequirementAPI, schema_type: dialect)
+        schema = request_schema(doc, dialect, "post_mixed_Request")
 
-        # Request body should not be forced required solely because of conditional params.
-        # It may be required due to the unconditional `reference` param — that's acceptable.
-        # The key check is that address alone does not make it required.
-        assert_includes [true, false], rb_required, "#{dialect}: requestBody.required must be a boolean"
+        assert_includes schema.fetch("required", []), "address", "#{dialect}: unconditional requires must win"
       end
+    end
+
+    private
+
+    def request_schema(document, dialect, name)
+      schemas = dialect == :oas2 ? document.fetch("definitions") : document.dig("components", "schemas")
+      schemas.fetch(name)
     end
   end
 end

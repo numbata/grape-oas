@@ -168,8 +168,8 @@ module GrapeOAS
         conditional = conditional_param_names
         return flat if conditional.empty?
 
-        flat.transform_values.with_index do |spec, idx|
-          name = flat.keys[idx]
+        flat.transform_values.with_index do |spec, index|
+          name = flat.keys[index]
           conditional.include?(name.to_s) ? spec.merge(required: false) : spec
         end
       end
@@ -182,24 +182,27 @@ module GrapeOAS
         return Set.new unless validations.is_a?(Array)
 
         conditional = Set.new
-        validations.each do |v|
-          scope, attrs = validator_scope_and_attrs(v)
-          next unless scope
+        unconditional = Set.new
+        validations.each do |validator|
+          scope, attrs, required = validator_details(validator)
+          next unless scope && required
 
-          dep = scope.instance_variable_get(:@dependent_on)
-          next unless dep && !Array(dep).empty?
-
-          Array(attrs).each { |a| conditional << a.to_s }
+          target = scope.instance_variable_get(:@dependent_on).present? ? conditional : unconditional
+          Array(attrs).each { |attr| target << attr.to_s }
         end
-        conditional
+        conditional - unconditional
       end
 
       # Grape < 3.2 stores validators as hashes; >= 3.2 stores instances.
-      def validator_scope_and_attrs(validator)
+      def validator_details(validator)
         if validator.is_a?(Hash)
-          [validator[:params_scope], validator[:attributes]]
+          [validator[:params_scope], validator[:attributes], validator[:required]]
         else
-          [validator.instance_variable_get(:@scope), validator.instance_variable_get(:@attrs)]
+          [
+            validator.instance_variable_get(:@scope),
+            validator.instance_variable_get(:@attrs),
+            validator.instance_variable_get(:@required)
+          ]
         end
       end
 
