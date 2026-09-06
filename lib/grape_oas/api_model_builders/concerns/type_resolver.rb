@@ -14,6 +14,7 @@ module GrapeOAS
       module TypeResolver
         TYPED_ARRAY_PATTERN = Constants::TypePatterns::TYPED_ARRAY
         MULTI_TYPE_PATTERN = Constants::TypePatterns::MULTI_TYPE
+        VARIANT_COLLECTION_PATTERN = Constants::TypePatterns::VARIANT_COLLECTION
 
         # Resolves a Ruby class or type name to its OpenAPI schema type string.
         # Handles both Ruby classes (Integer, Float) and string type names ("integer", "float").
@@ -39,8 +40,9 @@ module GrapeOAS
 
           type_str = type.to_s
 
-          # Handle Grape's typed array notation like "[String]"
-          return Constants::SchemaTypes::ARRAY if type_str.match?(TYPED_ARRAY_PATTERN)
+          # Handle Grape's typed array notation like "[String]" / "Array[String]"
+          # and Grape 3.3+ variant collections like "Array[Integer, String]".
+          return Constants::SchemaTypes::ARRAY if type_str.match?(TYPED_ARRAY_PATTERN) || type_str.match?(VARIANT_COLLECTION_PATTERN)
 
           # Handle string/symbol type names
           Constants.primitive_type(type_str) || Constants::SchemaTypes::STRING

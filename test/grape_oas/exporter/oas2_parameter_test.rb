@@ -353,6 +353,7 @@ module GrapeOAS
           type: "array",
           items: ApiModel::Schema.new(type: "string"),
         )
+        schema.unique_items = true
         schema.min_items = 1
         schema.max_items = 10
         param = ApiModel::Parameter.new(
@@ -370,6 +371,8 @@ module GrapeOAS
 
         tags_param = result.find { |p| p["name"] == "tags" }
 
+        assert_equal({ "type" => "string" }, tags_param["items"])
+        assert tags_param["uniqueItems"]
         assert_equal 1, tags_param["minItems"]
         assert_equal 10, tags_param["maxItems"]
       end
@@ -399,6 +402,7 @@ module GrapeOAS
         refute simple_param.key?("enum")
         refute simple_param.key?("minItems")
         refute simple_param.key?("maxItems")
+        refute simple_param.key?("uniqueItems")
         refute simple_param.key?("exclusiveMinimum")
         refute simple_param.key?("exclusiveMaximum")
       end

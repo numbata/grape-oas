@@ -43,6 +43,18 @@ module GrapeOAS
         assert_equal 10, result["maxItems"]
       end
 
+      def test_array_schema_with_unique_items
+        schema = ApiModel::Schema.new(
+          type: "array",
+          items: ApiModel::Schema.new(type: "string"),
+          unique_items: true,
+        )
+
+        result = OAS3::Schema.new(schema).build
+
+        assert result["uniqueItems"]
+      end
+
       def test_schema_with_string_default_emits_default
         schema = ApiModel::Schema.new(type: "string")
         schema.default = "pending"
@@ -93,6 +105,7 @@ module GrapeOAS
         refute result.key?("enum")
         refute result.key?("minItems")
         refute result.key?("maxItems")
+        refute result.key?("uniqueItems")
         refute result.key?("exclusiveMinimum")
         refute result.key?("exclusiveMaximum")
       end

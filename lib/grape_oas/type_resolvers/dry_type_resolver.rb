@@ -26,7 +26,7 @@ module GrapeOAS
 
           # Handle strings that resolve to Dry::Types
           return false unless type.is_a?(String)
-          return false if type.match?(/\A\[.+\]\z/) # Skip arrays, handled by ArrayResolver
+          return false if type.match?(/\A(?:Array|Set)?\[.+\]\z/) # Skip arrays, handled by ArrayResolver
 
           resolved = resolve_class(type)
           dry_type?(resolved)

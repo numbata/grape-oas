@@ -2,13 +2,17 @@
 
 module GrapeOAS
   module TypeResolvers
-    # Resolves array types like "[String]", "[Integer]", "[MyApp::Types::UUID]".
+    # Resolves array types like "[String]", "Array[Integer]", "Set[String, Integer]".
     #
     # Grape converts `type: [SomeClass]` to the string "[SomeClass]" for documentation.
+    # Grape 3.3+ VariantCollectionCoercer#to_s emits "Array[Type, ...]" / "Set[Type, ...]"
+    # for `type: Array[Integer, String]` so documentation tools can tell a collection
+    # of variant members from `types: [Integer, String]` (a scalar oneOf, grape#2758).
+    #
     # This resolver:
     # 1. Detects the array pattern via regex
-    # 2. Extracts the inner type name
-    # 3. Attempts to resolve it back to the actual class via Object.const_get
+    # 2. Extracts the inner type name(s)
+    # 3. Attempts to resolve each name back to the actual class via Object.const_get
     # 4. If resolved, extracts rich metadata (Dry::Types format, primitive, etc.)
     # 5. Falls back to string-based inference if class not available
     #
@@ -21,38 +25,68 @@ module GrapeOAS
       extend Base
 
       TYPED_ARRAY_PATTERN = Constants::TypePatterns::TYPED_ARRAY
+      VARIANT_COLLECTION_PATTERN = Constants::TypePatterns::VARIANT_COLLECTION
 
       class << self
         def handles?(type)
           return false unless type.is_a?(String)
 
-          type.match?(TYPED_ARRAY_PATTERN)
+          type.match?(TYPED_ARRAY_PATTERN) || type.match?(VARIANT_COLLECTION_PATTERN)
         end
 
         def build_schema(type)
-          inner_type_name = extract_inner_type(type)
-          return nil unless inner_type_name
+          container, type_names = extract_collection(type)
+          return nil unless type_names
 
-          # Try to resolve the string to an actual class
-          resolved_class = resolve_class(inner_type_name)
-
-          items_schema = if resolved_class
-                           build_schema_from_class(resolved_class)
-                         else
-                           build_schema_from_string(inner_type_name)
-                         end
-
-          ApiModel::Schema.new(
+          items_schema = build_items_schema(type_names)
+          schema = ApiModel::Schema.new(
             type: Constants::SchemaTypes::ARRAY,
             items: items_schema,
           )
+          schema.unique_items = true if container == "Set"
+          schema
         end
 
         private
 
-        def extract_inner_type(type)
-          match = type.match(TYPED_ARRAY_PATTERN)
-          match[:inner] if match
+        def extract_collection(type)
+          if (match = type.match(VARIANT_COLLECTION_PATTERN))
+            [match[:container], match[:inner].split(/,\s*/)]
+          elsif (match = type.match(TYPED_ARRAY_PATTERN))
+            [match[:container], [match[:inner]]]
+          end
+        end
+
+        def build_items_schema(type_names)
+          if nullable_type_pair?(type_names)
+            schema = build_items_for_name(type_names.find { |name| !nil_type_name?(name) })
+            schema.nullable = true
+            return schema
+          end
+
+          return build_items_for_name(type_names.first) if type_names.size == 1
+
+          has_nil_type = type_names.any? { |name| nil_type_name?(name) }
+          variants = type_names.reject { |name| nil_type_name?(name) }.map { |name| build_items_for_name(name) }
+          ApiModel::Schema.new(one_of: variants, nullable: has_nil_type ? true : nil)
+        end
+
+        def build_items_for_name(type_name)
+          resolved_class = resolve_class(type_name)
+          if resolved_class
+            build_schema_from_class(resolved_class)
+          else
+            build_schema_from_string(type_name)
+          end
+        end
+
+        def nullable_type_pair?(type_names)
+          type_names.size == 2 && type_names.one? { |name| nil_type_name?(name) }
+        end
+
+        def nil_type_name?(type_name)
+          normalized = type_name.to_s
+          normalized == "NilClass" || normalized == "Nil" || normalized.end_with?("::Nil")
         end
 
         def build_schema_from_class(klass)

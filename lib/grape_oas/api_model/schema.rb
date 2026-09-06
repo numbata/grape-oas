@@ -14,7 +14,7 @@ module GrapeOAS
         examples default extensions
         min_length max_length pattern
         minimum maximum exclusive_minimum exclusive_maximum
-        min_items max_items
+        min_items max_items unique_items
         discriminator all_of one_of any_of
       ].freeze
 

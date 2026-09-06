@@ -96,7 +96,9 @@ module GrapeOAS
 
       # Find contract from Grape's contract storage locations.
       # Contracts can be defined in several ways:
-      # 1. Via `contract MyContract` DSL - stores in inheritable_setting.route[:saved_validations]
+      # 1. Via `contract MyContract` DSL - stored on the endpoint's inheritable
+      #    settings (`route_validations` on Grape 4.0, `route[:saved_validations]`
+      #    on Grape 3.x)
       # 2. Via `desc "...", contract: MyContract` - stores in route.options[:contract]
       # 3. Via `desc "...", schema: MySchema` - stores in route.options[:schema]
       # 4. Via route.settings[:contract] - used by mounted APIs or legacy configuration
@@ -116,22 +118,15 @@ module GrapeOAS
       end
 
       # Extract contract from Grape's native contract() DSL storage location.
-      # When using `contract MyContract` in Grape DSL, the contract is stored in
-      # route.app.inheritable_setting.route[:saved_validations] as validator options.
-      # This is a point-in-time copy specific to this endpoint, ensuring each route
+      # When using `contract MyContract` in Grape DSL, the contract is stored as
+      # a point-in-time copy specific to this endpoint, ensuring each route
       # gets only its own contract even when multiple routes define different contracts.
       #
       # @return [Object, nil] The contract instance or nil if not found
       def extract_contract_from_grape_validations
         return unless route.respond_to?(:app) && route.app.respond_to?(:inheritable_setting)
 
-        setting = route.app.inheritable_setting
-        return unless setting.respond_to?(:route)
-
-        # Use route[:saved_validations] which contains only the validations
-        # for this specific endpoint (point-in-time copy), not the shared
-        # namespace_stackable[:validations] which contains all validators for the API class
-        validations = setting.route[:saved_validations]
+        validations = grape_route_validations(route.app.inheritable_setting)
         return unless validations.is_a?(Array)
 
         # Find ContractScopeValidator which holds the Dry contract/schema.
@@ -147,16 +142,33 @@ module GrapeOAS
 
             return v.dig(:opts, :schema)
           when Grape::Validations::Validators::ContractScopeValidator
-            # Grape 3.2 removed attr_reader :schema and freezes the validator,
-            # so instance_variable_get is the only way to access the schema.
-            # TODO: use v.schema once ruby-grape/grape#2657 restores the accessor.
-            schema = v.instance_variable_get(:@schema)
+            schema = contract_schema_from(v)
             GrapeOAS.logger&.warn("ContractScopeValidator found but @schema is nil") if schema.nil?
             return schema
           end
         end
 
         nil
+      end
+
+      # Grape 3.x snapshots validators on `inheritable_setting.route[:saved_validations]`.
+      # Grape 4.0 renamed that to `#route_validations` / `route[:validations]` (grape#2811).
+      def grape_route_validations(setting)
+        if setting.respond_to?(:route_validations)
+          validations = setting.route_validations
+          return validations if validations.is_a?(Array)
+        end
+        return unless setting.respond_to?(:route)
+
+        route_store = setting.route
+        return unless route_store.is_a?(Hash)
+
+        route_store[:saved_validations] || route_store[:validations]
+      end
+
+      def contract_schema_from(validator)
+        schema = validator.schema if validator.respond_to?(:schema)
+        schema || validator.instance_variable_get(:@schema)
       end
 
       def build_contract_schema

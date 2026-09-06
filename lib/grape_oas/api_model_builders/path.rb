@@ -113,7 +113,13 @@ module GrapeOAS
       end
 
       def concrete_path_version(route)
-        return nil unless route.app.inheritable_setting.namespace_inheritable[:version_options]&.dig(:using) == :path
+        setting = route.app.inheritable_setting
+        version_options = if setting.respond_to?(:version_options)
+                            setting.version_options
+                          else
+                            setting.namespace_inheritable[:version_options]
+                          end
+        return nil unless version_options&.to_h&.dig(:using) == :path
 
         values = Array(route.version)
         return nil unless values.length == 1

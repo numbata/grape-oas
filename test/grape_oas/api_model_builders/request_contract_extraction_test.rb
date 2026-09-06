@@ -47,21 +47,47 @@ module GrapeOAS
         assert_match(/ContractScopeValidator found but @schema is nil/, log_output)
       end
 
-      private
+      def test_extracts_contract_from_grape_4_route_validations
+        contract = Dry::Schema.Params { required(:title).filled(:string) }
+        validator = Grape::Validations::Validators::ContractScopeValidator.allocate
+        validator.instance_variable_set(:@schema, contract)
 
-      def build_with_validations(validations)
-        build_request_with_validations(validations).request_body.media_types.first.schema
+        schema = build_with_validations([validator], grape4: true)
+
+        assert schema.properties.key?("title"), "Should extract contract from Grape 4 route_validations"
       end
 
-      def build_request_with_validations(validations)
-        route_hash = { saved_validations: validations }
-        setting = Struct.new(:route).new(route_hash)
+      private
+
+      def build_with_validations(validations, grape4: false)
+        build_request_with_validations(validations, grape4: grape4).request_body.media_types.first.schema
+      end
+
+      def build_request_with_validations(validations, grape4: false)
+        setting = grape4 ? grape4_setting(validations) : Struct.new(:route).new({ saved_validations: validations })
         app = Struct.new(:inheritable_setting).new(setting)
         route = Struct.new(:app, :path, :options).new(app, "/test(.json)", { params: {} })
 
         operation = GrapeOAS::ApiModel::Operation.new(http_method: :post)
         Request.new(api: api, route: route, operation: operation).build
         operation
+      end
+
+      def grape4_setting(validations)
+        setting_class = Class.new do
+          def initialize(validations)
+            @validations = validations
+          end
+
+          def route_validations
+            @validations
+          end
+
+          def route
+            { validations: @validations }
+          end
+        end
+        setting_class.new(validations)
       end
     end
   end

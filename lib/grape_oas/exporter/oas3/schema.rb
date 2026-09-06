@@ -325,6 +325,7 @@ module GrapeOAS
         def apply_array_constraints(hash, schema = @schema)
           hash["minItems"] = schema.min_items unless schema.min_items.nil?
           hash["maxItems"] = schema.max_items unless schema.max_items.nil?
+          hash["uniqueItems"] = true if schema.unique_items
         end
 
         # Ensure enum values match the declared type; drop enum if incompatible to avoid invalid specs.

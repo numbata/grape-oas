@@ -31,6 +31,38 @@ module GrapeOAS
           assert_equal %w[visible hidden], schema.enum
         end
 
+        def test_grape_33_variant_collection_is_array_not_scalar_one_of
+          schema = ParamSchemaBuilder.build(
+            type: "Array[Integer, String]", documentation: {},
+          )
+
+          assert_equal Constants::SchemaTypes::ARRAY, schema.type
+          assert_nil schema.one_of
+          assert_equal 2, schema.items.one_of.size
+          assert_equal Constants::SchemaTypes::INTEGER, schema.items.one_of[0].type
+          assert_equal Constants::SchemaTypes::STRING, schema.items.one_of[1].type
+        end
+
+        def test_variant_collection_with_is_array_does_not_double_wrap
+          schema = ParamSchemaBuilder.build(
+            type: "Set[Integer, String]", documentation: { is_array: true },
+          )
+
+          assert_equal "array", schema.type
+          assert schema.unique_items
+          assert_nil schema.items.type
+          assert_equal %w[integer string], schema.items.one_of.map(&:type)
+        end
+
+        def test_scalar_multi_type_stays_one_of
+          schema = ParamSchemaBuilder.build(
+            type: "[Integer, String]", documentation: {},
+          )
+
+          assert_nil schema.type
+          assert_equal 2, schema.one_of.size
+        end
+
         def test_three_types_uses_one_of
           schema = ParamSchemaBuilder.build(
             type: "[String, Integer, NilClass]", values: %w[a b c], documentation: {},

@@ -54,6 +54,22 @@ module GrapeOAS
         refute ArrayResolver.handles?("[String, Integer]")
       end
 
+      def test_handles_grape_33_array_prefix
+        assert ArrayResolver.handles?("Array[String]")
+      end
+
+      def test_handles_grape_33_set_prefix
+        assert ArrayResolver.handles?("Set[Integer]")
+      end
+
+      def test_handles_grape_33_variant_collection
+        assert ArrayResolver.handles?("Array[Integer, String]")
+      end
+
+      def test_handles_grape_33_set_variant_collection
+        assert ArrayResolver.handles?("Set[Integer, String]")
+      end
+
       # === build_schema tests for basic types ===
 
       def test_builds_array_of_strings
@@ -61,6 +77,50 @@ module GrapeOAS
 
         assert_equal Constants::SchemaTypes::ARRAY, schema.type
         assert_equal Constants::SchemaTypes::STRING, schema.items.type
+      end
+
+      def test_builds_grape_33_array_prefix_of_strings
+        schema = ArrayResolver.build_schema("Array[String]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::STRING, schema.items.type
+        refute schema.unique_items
+      end
+
+      def test_builds_grape_33_set_prefix_with_unique_items
+        schema = ArrayResolver.build_schema("Set[Integer]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::INTEGER, schema.items.type
+        assert schema.unique_items
+      end
+
+      def test_builds_grape_33_variant_collection_as_array_of_one_of
+        schema = ArrayResolver.build_schema("Array[Integer, String]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_nil schema.items.type
+        assert_equal 2, schema.items.one_of.size
+        assert_equal Constants::SchemaTypes::INTEGER, schema.items.one_of[0].type
+        assert_equal Constants::SchemaTypes::STRING, schema.items.one_of[1].type
+        refute schema.unique_items
+      end
+
+      def test_builds_grape_33_set_variant_collection_with_unique_items
+        schema = ArrayResolver.build_schema("Set[Integer, String]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal 2, schema.items.one_of.size
+        assert schema.unique_items
+      end
+
+      def test_builds_grape_33_variant_collection_nullable_pair
+        schema = ArrayResolver.build_schema("Array[String, NilClass]")
+
+        assert_equal Constants::SchemaTypes::ARRAY, schema.type
+        assert_equal Constants::SchemaTypes::STRING, schema.items.type
+        assert schema.items.nullable
+        assert_nil schema.items.one_of
       end
 
       def test_builds_array_of_integers
