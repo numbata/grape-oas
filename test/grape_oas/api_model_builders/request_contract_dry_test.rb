@@ -9,6 +9,28 @@ module GrapeOAS
         @api ||= ApiModel::API.new(title: "t", version: "v")
       end
 
+      def test_format_contract_parameter_is_not_filtered_as_a_path_parameter
+        api_class = Class.new(Grape::API) do
+          contract Dry::Schema.Params do
+            required(:id).filled(:integer)
+            optional(:format).filled(:string)
+          end
+          get "items/:id" do
+            {}
+          end
+        end
+        route = api_class.routes.first
+        operation = ApiModel::Operation.new(http_method: :get)
+
+        assert_includes route.path, "(.:format)"
+
+        Request.new(api: api, route: route, operation: operation).build
+
+        assert_equal ["format"], operation.parameters.map(&:name)
+        assert_equal "query", operation.parameters.first.location
+        refute operation.parameters.first.required
+      end
+
       # === Basic contract schema building ===
 
       def test_optional_enum_and_array_constraints

@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- [#112](https://github.com/numbata/grape-oas/pull/112): Exclude format extensions from path parameter discovery - [@numbata](https://github.com/numbata).
+
 - [#100](https://github.com/numbata/grape-oas/pull/100): Preserve nil enum members when the selected nullable strategy can express them - [@numbata](https://github.com/numbata).
 - [#104](https://github.com/numbata/grape-oas/pull/104): Preserve array-valued schema examples and Boolean false examples from parameter/entity documentation in OAS 3.0/3.1; omit incompatible scalar examples - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#109](https://github.com/numbata/grape-oas/pull/109): Fix Grape 3.3 variant collections, Grape 4.0 route metadata, and OAS 2.0 query array items - [@numbata](https://github.com/numbata).
