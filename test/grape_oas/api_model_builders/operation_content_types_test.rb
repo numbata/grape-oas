@@ -24,8 +24,8 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route, app: api_class)
         operation = builder.build
 
-        refute_nil operation
-        # Should have JSON content type
+        assert_equal ["application/json"], operation.consumes
+        assert_equal ["application/json"], operation.produces
       end
 
       # === XML format ===
@@ -121,7 +121,7 @@ module GrapeOAS
       def test_form_urlencoded_consumes
         api_class = Class.new(Grape::API) do
           format :json
-          desc "Form submit", consumes: ["application/x-www-form-urlencoded"]
+          desc "Form submit", consumes: ["application/x-www-form-urlencoded"], produces: ["application/json"]
           post "form" do
             {}
           end
@@ -131,7 +131,8 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route, app: api_class)
         operation = builder.build
 
-        refute_nil operation
+        assert_equal ["application/x-www-form-urlencoded"], operation.consumes
+        assert_equal ["application/json"], operation.produces
       end
 
       # === Multipart form consumes ===
@@ -149,7 +150,8 @@ module GrapeOAS
         builder = Operation.new(api: @api, route: route, app: api_class)
         operation = builder.build
 
-        refute_nil operation
+        assert_equal ["multipart/form-data"], operation.consumes
+        assert_equal ["application/json"], operation.produces
       end
 
       # === Text plain format ===
@@ -167,6 +169,35 @@ module GrapeOAS
         operation = builder.build
 
         refute_nil operation
+      end
+
+      def test_documented_media_types_apply_to_request_and_response
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Documented media", documentation: { consumes: %i[json json], produces: [:xml] }
+          params { requires :message, type: String }
+          post("documented") { {} }
+        end
+        operation = Operation.new(api: @api, route: api_class.routes.first, app: api_class).build
+
+        assert_equal ["application/json"], operation.consumes
+        assert_equal ["application/xml"], operation.produces
+        assert_equal ["application/json"], operation.request_body.media_types.map(&:mime_type)
+        assert_equal ["application/xml"], operation.responses.first.media_types.map(&:mime_type)
+      end
+
+      def test_route_media_types_take_precedence_over_documentation
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Multiple encodings", consumes: ["application/json", "multipart/form-data"], produces: "text/plain",
+                                     documentation: { consumes: ["application/xml"], produces: ["application/xml"] }
+          params { requires :message, type: String }
+          post("multiple") { "ok" }
+        end
+        operation = Operation.new(api: @api, route: api_class.routes.first, app: api_class).build
+
+        assert_equal ["application/json", "multipart/form-data"], operation.request_body.media_types.map(&:mime_type)
+        assert_equal ["text/plain"], operation.responses.first.media_types.map(&:mime_type)
       end
 
       # === Symbol format in produces ===

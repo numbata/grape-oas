@@ -315,7 +315,7 @@ module GrapeOAS
       end
 
       def response_content_types
-        resolve_content_types
+        explicit_media_types(:produces) || resolve_content_types
       end
     end
   end

@@ -24,9 +24,17 @@ module GrapeOAS
           @nullable_strategy = nullable_strategy
         end
 
+        FORM_MEDIA_TYPES = %w[application/x-www-form-urlencoded multipart/form-data].freeze
+
         def build
           params = Array(@op.parameters).map { |param| build_parameter(param) }
-          params << build_body_parameter(@op.request_body) if @op.request_body
+          if @op.request_body
+            if form_only_request?
+              params.concat(build_form_parameters(@op.request_body))
+            else
+              params << build_body_parameter(@op.request_body)
+            end
+          end
           params
         end
 
@@ -110,6 +118,50 @@ module GrapeOAS
 
           valid_formats = %w[csv ssv tsv pipes multi brackets]
           result["collectionFormat"] = param.collection_format if valid_formats.include?(param.collection_format)
+        end
+
+        def form_only_request?
+          consumes = Array(@op.consumes)
+          consumes.any? && consumes.all? { |mime| FORM_MEDIA_TYPES.include?(mime) }
+        end
+
+        def build_form_parameters(request_body)
+          schema = Array(request_body.media_types).first&.schema
+          return [] unless schema
+
+          unless [nil, "object"].include?(schema.type) && !composition?(schema)
+            raise ArgumentError, "OAS2 form bodies must have object properties; use OAS3 for this request schema"
+          end
+
+          required = Array(schema.required).map(&:to_s)
+          schema.properties.map do |name, property_schema|
+            unless form_property?(property_schema)
+              raise ArgumentError, "OAS2 cannot represent form field #{name.inspect}; use OAS3 for complex form fields"
+            end
+
+            build_parameter(
+              ApiModel::Parameter.new(
+                name: name.to_s,
+                location: "formData",
+                required: required.include?(name.to_s),
+                description: property_schema.description,
+                schema: property_schema,
+              ),
+            )
+          end
+        end
+
+        def form_property?(schema, array_item: false)
+          return false unless schema && !composition?(schema)
+          return false if array_item && schema.canonical_name
+          return form_property?(schema.items, array_item: true) if schema.type == "array"
+
+          types = array_item ? %w[string integer number boolean] : %w[string integer number boolean file]
+          types.include?(schema.type)
+        end
+
+        def composition?(schema)
+          schema.all_of&.any? || schema.one_of&.any? || schema.any_of&.any?
         end
 
         def build_body_parameter(request_body)

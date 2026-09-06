@@ -289,6 +289,20 @@ add_oas_documentation(
 )
 ```
 
+Route `consumes:` and `produces:` declarations override inferred media types
+independently. Top-level route options take precedence over the same keys inside
+`documentation:`. Empty declarations fall back to inference.
+
+For form-only OAS2 requests (`application/x-www-form-urlencoded` or
+`multipart/form-data`), object properties become `formData` parameters. Primitive
+fields, file uploads, and arrays of primitives are supported. Complex form fields
+(objects, compositions, or referenced array items) raise `ArgumentError`; use OAS3
+for those schemas. Empty form objects produce no body parameter.
+
+OAS2 operations declaring both form and non-form media types retain a single
+`body` parameter, because OAS2 cannot describe both encodings with separate
+parameter sets. Use OAS3 to describe multiple request encodings fully.
+
 ### OpenAPI 3.0
 
 ```ruby

@@ -124,11 +124,11 @@ module GrapeOAS
       end
 
       def consumes
-        resolve_content_types
+        explicit_media_types(:consumes) || resolve_content_types
       end
 
       def produces
-        resolve_content_types
+        explicit_media_types(:produces) || resolve_content_types
       end
 
       def operation_extensions
