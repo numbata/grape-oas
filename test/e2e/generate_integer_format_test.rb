@@ -3,7 +3,6 @@
 require "test_helper"
 
 module GrapeOAS
-  # Regression: a generic Integer must not acquire format: int32 (issue #115).
   class GenerateIntegerFormatTest < Minitest::Test
     class EventEntity < Grape::Entity
       expose :timestamp_ms, documentation: { type: "integer" }
