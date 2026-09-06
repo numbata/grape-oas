@@ -72,11 +72,20 @@ module GrapeOAS
         end
 
         def apply_extensions(schema_hash)
+          apply_compatibility_composition_extension(schema_hash)
           schema_hash["x-nullable"] = true if @nullable_strategy == Constants::NullableStrategy::EXTENSION && nullable?
           schema_hash.merge!(@schema.extensions) if @schema.extensions
         end
 
         private
+
+        def apply_compatibility_composition_extension(result)
+          if @schema.one_of&.any?
+            result["x-oneOf"] = @schema.one_of.map { |item| build_schema_or_ref(item) }
+          elsif @schema.any_of&.any?
+            result["x-anyOf"] = @schema.any_of.map { |item| build_schema_or_ref(item) }
+          end
+        end
 
         def schema_nullable?(schema)
           schema.respond_to?(:nullable) && !!schema.nullable
@@ -98,12 +107,6 @@ module GrapeOAS
 
           result = build_schema_or_ref(first_schema)
           result["description"] = @schema.description.to_s if @schema.description
-
-          # Auto-generate the compatibility extension from all native alternatives.
-          # x-anyOf / x-oneOf follow the same naming as the composition type.
-          ext_key = composition_type == :any_of ? "x-anyOf" : "x-oneOf"
-          rendered = schemas.map { |s| build_schema_or_ref(s) }
-          result[ext_key] = rendered
 
           apply_extensions(result) # explicit extension wins if user supplied one
           if result.key?("$ref") && result.size > 1

@@ -47,6 +47,17 @@ module GrapeOAS
       assert result["allOf"].first["$ref"]&.start_with?("#/definitions/")
     end
 
+    def test_oas2_any_of_with_explicit_type_still_generates_extension
+      schema = contact_schema
+      schema.type = "object"
+
+      result = GrapeOAS::Exporter::OAS2::Schema.new(schema).build
+
+      assert_equal "object", result["type"]
+      assert_equal 2, result["x-anyOf"].length
+      assert(result["x-anyOf"].all? { |entry| entry["$ref"]&.start_with?("#/definitions/") })
+    end
+
     def test_oas3_any_of_uses_native_anyof_no_extension
       result = GrapeOAS::Exporter::OAS3::Schema.new(contact_schema).build
 
