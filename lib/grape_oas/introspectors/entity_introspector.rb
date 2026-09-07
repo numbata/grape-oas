@@ -119,7 +119,8 @@ module GrapeOAS
       end
 
       def entity_doc
-        @entity_class.respond_to?(:documentation) ? (@entity_class.documentation || {}) : {}
+        doc = @entity_class.respond_to?(:documentation) ? (@entity_class.documentation || {}) : {}
+        DocKeyNormalizer.normalize(doc)
       rescue NoMethodError
         {}
       end
