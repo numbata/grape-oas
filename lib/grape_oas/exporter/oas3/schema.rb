@@ -182,8 +182,8 @@ module GrapeOAS
           return unless @schema.extensions
 
           extensions = @schema.extensions.reject do |key, _value|
-            (key == "x-anyOf" && @schema.any_of&.any?) ||
-              (key == "x-oneOf" && @schema.one_of&.any?)
+            (key == "x-anyOf" && result.key?("anyOf")) ||
+              (key == "x-oneOf" && result.key?("oneOf"))
           end
           result.merge!(extensions)
         end
