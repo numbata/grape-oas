@@ -36,15 +36,17 @@ Grape::OAS is built around a **DTO (Data Transfer Object) architecture** that se
 ## Features
 
 - **Multi-version support**: Generate OAS 2.0, 3.0, or 3.1 from the same API
-- **Entity integration**: Works with [grape-entity](https://github.com/ruby-grape/grape-entity) and [dry-struct](https://dry-rb.org/gems/dry-struct/)
+- **Entity and contract integration**: Works with [grape-entity](https://github.com/ruby-grape/grape-entity), [dry-validation](https://dry-rb.org/gems/dry-validation/), and [dry-schema](https://dry-rb.org/gems/dry-schema/)
 - **Automatic type inference**: Derives OpenAPI types from Grape parameter definitions
 - **Flexible output**: Mount as an endpoint or generate programmatically
 
 ## Compatibility
 
-| grape-oas | grape | grape-entity | dry-struct | Ruby |
-|-----------|-------|--------------|------------|------|
-| 0.1.x | >= 3.0 | >= 0.7 | >= 1.0 | >= 3.2 |
+| grape-oas | grape | Ruby |
+|-----------|-------|------|
+| 1.5.x | >= 3.0 | >= 3.2 |
+
+Entity and contract integrations are optional; install the gems your API uses.
 
 ## Installation
 
@@ -52,11 +54,12 @@ Grape::OAS is built around a **DTO (Data Transfer Object) architecture** that se
 gem 'grape-oas'
 ```
 
-For entity support:
+For entity or contract support, add the relevant gems:
 
 ```ruby
-gem 'grape-entity'  # For grape-entity support
-gem 'dry-struct'    # For dry-struct contract support
+gem 'grape-entity'    # Grape::Entity response schemas
+gem 'dry-validation'  # Dry::Validation::Contract request schemas
+gem 'dry-schema'      # Standalone Dry::Schema request schemas
 ```
 
 ## Quick Start
@@ -82,9 +85,14 @@ end
 ```
 
 Documentation available at:
+
 - `/swagger_doc` - OpenAPI 3.0 (default)
 - `/swagger_doc?oas=2` - OpenAPI 2.0
 - `/swagger_doc?oas=3.1` - OpenAPI 3.1
+
+Documentation routes are accessible over HTTP but excluded from the generated
+specification by default. Set `hide_documentation_path: false` to include them.
+To disable the endpoints, omit or conditionally call `add_oas_documentation`.
 
 ### Manual Generation
 
@@ -96,16 +104,25 @@ puts JSON.pretty_generate(spec)
 
 ### Rake Tasks
 
+Load your API before registering the tasks:
+
 ```ruby
 # In Rakefile
-require 'grape_oas/tasks'
+require 'grape_oas'
+require 'grape_oas/rake/oas_tasks'
+require_relative 'app/api' # Defines MyAPI; adjust to your application's path
+
+GrapeOAS::Rake::OasTasks.new(MyAPI)
 ```
 
 ```bash
-rake grape_oas:generate[MyAPI,oas31,spec/openapi.json]
+mkdir -p spec
+bundle exec rake oas:generate version=oas31 output=spec/openapi.json
 ```
 
 ## Documentation
+
+Upgrading an existing application? Read [UPGRADING.md](UPGRADING.md).
 
 | Document | Description |
 |----------|-------------|
@@ -202,7 +219,7 @@ schema = GrapeOAS.generate(app: API, schema_type: :custom)
 git clone https://github.com/numbata/grape-oas.git
 cd grape-oas
 bin/setup
-bundle exec rake test
+bundle exec rake
 ```
 
 ## Contributing

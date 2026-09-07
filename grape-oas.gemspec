@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   }
 
   spec.files = Dir["lib/**/*"].reject { |path| File.directory?(path) } +
-               %w[README.md CHANGELOG.md LICENSE.txt grape-oas.gemspec]
+               %w[README.md CHANGELOG.md UPGRADING.md LICENSE.txt grape-oas.gemspec]
 
   spec.add_dependency "grape", ">= 3.0"
   spec.add_dependency "zeitwerk"

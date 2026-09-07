@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.0] - 2026-09-07
 
 ### Added
 
@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#96](https://github.com/numbata/grape-oas/pull/96): Pin rubocop versions and add performance/packaging/rake plugins - [@numbata](https://github.com/numbata).
 - [#92](https://github.com/numbata/grape-oas/pull/92): Add cross-tool AI-agent contributor guidance and tighten gem file packaging - [@numbata](https://github.com/numbata).
 - [#88](https://github.com/numbata/grape-oas/pull/88): Add configurable `GrapeOAS.schema_ref_name` callable that controls how a schema's canonical class name is mangled into its OAS component/definition ref name. Default behavior (`name.gsub("::", "_")`) is byte-identical to prior output; applies uniformly across OAS 2.0 and OAS 3 ref emission paths - [@abeljim8am](https://github.com/abeljim8am).
-- Your contribution here
 
 ### Fixed
 
@@ -26,9 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#120](https://github.com/numbata/grape-oas/pull/120): Honor explicit route `consumes:`/`produces:` independently so form request bodies are documented with the declared media type - [@numbata](https://github.com/numbata).
 - [#119](https://github.com/numbata/grape-oas/pull/119): Stop inferring `format: int32` for generic `Integer`/`"integer"` declarations; explicit int32/int64 widths are still preserved - [@numbata](https://github.com/numbata).
 - [#113](https://github.com/numbata/grape-oas/pull/113): Use OAS 3.1 schema rendering for inline parameters, request bodies, and responses - [@numbata](https://github.com/numbata).
-
 - [#112](https://github.com/numbata/grape-oas/pull/112): Exclude format extensions from path parameter discovery - [@numbata](https://github.com/numbata).
-
 - [#100](https://github.com/numbata/grape-oas/pull/100): Preserve nil enum members when the selected nullable strategy can express them - [@numbata](https://github.com/numbata).
 - [#104](https://github.com/numbata/grape-oas/pull/104): Preserve array-valued schema examples and Boolean false examples from parameter/entity documentation in OAS 3.0/3.1; omit incompatible scalar examples - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#109](https://github.com/numbata/grape-oas/pull/109): Fix Grape 3.3 variant collections, Grape 4.0 route metadata, and OAS 2.0 query array items - [@numbata](https://github.com/numbata).
@@ -46,12 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#105](https://github.com/numbata/grape-oas/pull/105): Place array-valued `example` on the array schema instead of `items` for entity `is_array:` exposures without mutating shared entity schemas - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#86](https://github.com/numbata/grape-oas/pull/86): Omit response content for bodyless HTTP statuses (`1xx`, `204`, `205`, `304`), including declared entities and examples, so generated OpenAPI responses remain valid - [@abeljim8am](https://github.com/abeljim8am).
 - [#84](https://github.com/numbata/grape-oas/pull/84): Substitute the concrete path version into route templates, including prefixed and mounted routes, for `version "...", using: :path` while preserving user-defined version parameters with other versioning strategies - [@abeljim8am](https://github.com/abeljim8am).
-* Your contribution here
 
 ### Changed
 
 - [#95](https://github.com/numbata/grape-oas/pull/95): Entity exposures now consult `GrapeOAS.type_resolvers` - [@numbata](https://github.com/numbata).
-- Your contribution here
 
 ## [1.4.0] - 2026-04-23
 
