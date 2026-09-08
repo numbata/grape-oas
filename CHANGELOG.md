@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- [#137](https://github.com/numbata/grape-oas/pull/137): Test against Grape 4.0 in CI - [@numbata](https://github.com/numbata).
 * Your contribution here
 
 ## [1.5.0] - 2026-09-07
