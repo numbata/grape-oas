@@ -332,6 +332,26 @@ module GrapeOAS
         assert_equal "query", dry_run_param.location, "Explicit param_type: 'query' should override POST body default"
       end
 
+      # === Body property descriptions from top-level desc: (issue #135) ===
+
+      def test_post_body_property_preserves_top_level_desc
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            requires :message, type: String, desc: "Message to publish"
+          end
+          post "messages" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, = builder.build
+
+        assert_equal "Message to publish", body_schema.properties["message"].description
+      end
+
       # === Mixed params with nested structures ===
 
       def test_mixed_query_and_body_with_nested

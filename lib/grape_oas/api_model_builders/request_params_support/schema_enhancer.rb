@@ -13,7 +13,7 @@ module GrapeOAS
         def self.apply(schema, spec, doc)
           nullable = extract_nullable(doc)
 
-          schema.description ||= doc[:desc]
+          schema.description ||= doc[:desc] || spec[:desc]
           # Preserve existing nullable: true (e.g., from [Type, Nil] optimization)
           schema.nullable = (schema.nullable || nullable) if schema.respond_to?(:nullable=)
 
