@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-* Your contribution here
+- [#134](https://github.com/numbata/grape-oas/pull/134): Emit `enum` for small bounded integer `included_in?` ranges so code generators preserve literal unions; larger/unbounded integer ranges and float/number ranges keep `minimum`/`maximum` - [@numbata](https://github.com/numbata).
 
 ### Changed
 
