@@ -38,6 +38,7 @@ jobs:
         grape:
           - '~> 3.1.0'
           - '~> 3.2.0'
+          - '~> 4.0.0'
         include:
           - ruby: 'ruby-head'
             grape: '~> 3.2.0'
