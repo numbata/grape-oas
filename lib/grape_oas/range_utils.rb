@@ -23,6 +23,17 @@ module GrapeOAS
         array
       end
 
+      # Expands a bounded integer Range to an enum array.
+      # Returns nil for non-integer, unbounded, empty, or oversized ranges.
+      def bounded_integer_enum(range)
+        return nil unless range.begin.is_a?(Integer) && range.end.is_a?(Integer)
+
+        array = range.first(Constants::MAX_ENUM_RANGE_SIZE + 1)
+        return nil if array.empty? || array.size > Constants::MAX_ENUM_RANGE_SIZE
+
+        array
+      end
+
       # Writes numeric range constraints directly to any object with
       # minimum=/maximum=/exclusive_maximum= setters (Schema, ConstraintSet, etc).
       # Skips descending and infinite bounds.

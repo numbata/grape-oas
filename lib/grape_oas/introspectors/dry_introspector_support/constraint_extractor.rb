@@ -11,7 +11,8 @@ module GrapeOAS
           attr_accessor :enum, :nullable, :min_size, :max_size,
                         :minimum, :maximum, :exclusive_minimum, :exclusive_maximum,
                         :pattern, :excluded_values, :unhandled_predicates,
-                        :required, :type_predicate, :parity, :format, :extensions
+                        :required, :type_predicate, :parity, :format, :extensions,
+                        :included_range
 
           def initialize(**attrs)
             attrs.each { |k, v| public_send(:"#{k}=", v) }

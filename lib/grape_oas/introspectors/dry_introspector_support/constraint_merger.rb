@@ -33,6 +33,7 @@ module GrapeOAS
           target.maximum ||= source.maximum if source.maximum
           target.exclusive_minimum ||= source.exclusive_minimum
           target.exclusive_maximum ||= source.exclusive_maximum
+          target.included_range ||= source.included_range if source.included_range
         end
         private_class_method :merge_bound_constraints
 

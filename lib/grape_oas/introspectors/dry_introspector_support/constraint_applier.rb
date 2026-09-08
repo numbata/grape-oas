@@ -89,12 +89,28 @@ module GrapeOAS
         end
 
         def apply_numeric_constraints
+          apply_included_range
           numeric_min = constraints.minimum || constraints.min_size
           numeric_max = constraints.maximum || constraints.max_size
           schema.minimum ||= numeric_min if numeric_min
           schema.maximum ||= numeric_max if numeric_max
           schema.exclusive_minimum ||= constraints.exclusive_minimum
           schema.exclusive_maximum ||= constraints.exclusive_maximum
+        end
+
+        # A bounded integer included_in? range is a finite set, so emit an enum to
+        # preserve intent for code generators. Larger/unbounded integer ranges and
+        # all number/float ranges fall back to min/max bounds.
+        def apply_included_range
+          range = constraints.included_range
+          return unless range
+
+          if schema.type == Constants::SchemaTypes::INTEGER &&
+             (enum = RangeUtils.bounded_integer_enum(range))
+            schema.enum ||= enum
+          else
+            RangeUtils.apply_numeric_range(schema, range)
+          end
         end
 
         def apply_common_constraints

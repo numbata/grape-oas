@@ -997,18 +997,46 @@ module GrapeOAS
       end
 
       # Tests for numeric Range handling in included_in? predicate
-      def test_included_in_numeric_range_produces_min_max
+      def test_included_in_bounded_integer_range_produces_enum
         contract = Dry::Schema.Params do
-          required(:score).filled(:integer, included_in?: (-10..10))
+          required(:text_size_offset).filled(:integer, included_in?: (-2..2))
+        end
+
+        schema = processor.build(contract)
+        offset_schema = schema.properties["text_size_offset"]
+
+        assert_equal "integer", offset_schema.type
+        assert_equal [-2, -1, 0, 1, 2], offset_schema.enum
+        assert_nil offset_schema.minimum
+        assert_nil offset_schema.maximum
+      end
+
+      def test_included_in_large_integer_range_produces_min_max
+        contract = Dry::Schema.Params do
+          required(:score).filled(:integer, included_in?: (0..200))
         end
 
         schema = processor.build(contract)
         score_schema = schema.properties["score"]
 
         assert_equal "integer", score_schema.type
-        assert_equal(-10, score_schema.minimum)
-        assert_equal 10, score_schema.maximum
+        assert_equal 0, score_schema.minimum
+        assert_equal 200, score_schema.maximum
         assert_nil score_schema.enum
+      end
+
+      def test_included_in_float_range_produces_min_max
+        contract = Dry::Schema.Params do
+          required(:ratio).filled(:float, included_in?: (0.0..1.0))
+        end
+
+        schema = processor.build(contract)
+        ratio_schema = schema.properties["ratio"]
+
+        assert_equal "number", ratio_schema.type
+        assert_in_delta(0.0, ratio_schema.minimum)
+        assert_in_delta(1.0, ratio_schema.maximum)
+        assert_nil ratio_schema.enum
       end
 
       def test_included_in_endless_range_produces_only_minimum
@@ -1039,7 +1067,7 @@ module GrapeOAS
         assert_nil discount_schema.enum
       end
 
-      def test_included_in_exclusive_range_sets_exclusive_maximum
+      def test_included_in_exclusive_integer_range_excludes_endpoint
         contract = Dry::Schema.Params do
           required(:index).filled(:integer, included_in?: (0...10))
         end
@@ -1048,9 +1076,8 @@ module GrapeOAS
         index_schema = schema.properties["index"]
 
         assert_equal "integer", index_schema.type
-        assert_equal 0, index_schema.minimum
-        assert_equal 10, index_schema.maximum
-        assert index_schema.exclusive_maximum
+        assert_equal [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], index_schema.enum
+        assert_nil index_schema.maximum
       end
 
       def test_included_in_string_range_produces_enum
