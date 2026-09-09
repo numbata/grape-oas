@@ -513,7 +513,7 @@ end
 | Option | grape-swagger | grape-oas | Notes |
 |--------|---------------|-----------|-------|
 | `type` | ✅ | ✅ | Data type; an array denotes a collection |
-| `types` | ❌ | Partial | `[Type, NilClass]` declares a nullable scalar |
+| `types` | ❌ | Partial | `[Type, NilClass]` or `[Type, nil]` declares a nullable scalar |
 | `desc` | ✅ | ✅ | Description |
 | `required` | ✅ | ✅ | Required field |
 | `is_array` | ✅ | ✅ | Array of items |
@@ -524,7 +524,7 @@ end
 | `x` | ✅ | ✅ | Extensions |
 | `nullable` | ❌ | ✅ | Nullable value |
 
-Use `type: [String]` for a collection and `types: [String, NilClass]` for a nullable scalar. Other entity scalar unions remain tracked in [#15](https://github.com/numbata/grape-oas/issues/15).
+Use `type: [String]` for a collection and `types: [String, NilClass]` for a nullable scalar. Only this two-member nullable form is supported; other entity `types:` arrays are ignored and remain tracked in [#15](https://github.com/numbata/grape-oas/issues/15).
 
 ### entity_name
 

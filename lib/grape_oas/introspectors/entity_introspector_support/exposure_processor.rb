@@ -44,10 +44,12 @@ module GrapeOAS
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
           opts = exposure_options(exposure)
-          schema = if !opts[:using] && type_resolver.nullable_type_pair?(doc[:types])
+          schema = if opts[:using]
+                     type_resolver.build_exposure_base_schema(opts[:using])
+                   elsif type_resolver.nullable_type_pair?(doc[:types])
                      type_resolver.build_nullable_type_schema(doc[:types])
                    else
-                     type_resolver.build_exposure_base_schema(opts[:using] || doc[:type])
+                     type_resolver.build_exposure_base_schema(doc[:type])
                    end
           schema = apply_exposure_properties(schema, doc)
           SchemaConstraints.apply(schema, doc)
@@ -209,7 +211,13 @@ module GrapeOAS
         end
 
         def apply_exposure_properties(schema, doc)
-          nullable = schema.nullable || PropertyExtractor.extract_nullable(doc)
+          nullable = if doc.key?(:nullable)
+                       doc[:nullable]
+                     elsif doc[:x].is_a?(Hash) && doc[:x].key?(:nullable)
+                       doc[:x][:nullable]
+                     else
+                       schema.nullable
+                     end
           if nullable && schema.canonical_name
             # Don't mutate the shared cached entity schema. Create a wrapper with
             # all_of so the exporter emits { nullable: true, allOf: [{ $ref }] }.

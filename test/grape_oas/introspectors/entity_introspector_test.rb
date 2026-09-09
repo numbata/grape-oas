@@ -196,15 +196,21 @@ module GrapeOAS
       end
 
       def test_nullable_entity_multi_type_does_not_mutate_shared_schema
+        profile = Class.new(Grape::Entity) do
+          expose :name, documentation: { type: String }
+        end
         entity_class = Class.new(Grape::Entity) do
-          expose :optional_profile, documentation: { types: [ProfileEntity, NilClass] }
-          expose :profile, using: ProfileEntity
+          expose :optional_profile, documentation: { types: [profile, NilClass] }
+          expose :profile, using: profile
         end
 
         schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+        optional_profile = schema.properties["optional_profile"]
+        profile = schema.properties["profile"]
 
-        assert schema.properties["optional_profile"].nullable
-        refute schema.properties["profile"].nullable
+        assert optional_profile.nullable
+        refute profile.nullable
+        refute_same optional_profile, profile
       end
 
       def test_merge_flattens_properties

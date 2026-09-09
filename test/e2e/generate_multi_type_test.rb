@@ -139,8 +139,19 @@ module GrapeOAS
       assert_equal({ "oneOf" => expected_one_of }, flag_param["schema"])
     end
 
+    class NestedEntity < Grape::Entity
+      expose :name, documentation: { type: String }
+    end
+
     class EntityMultiType < Grape::Entity
       expose :display_name, documentation: { types: [String, NilClass], desc: "Public display name" }
+      expose :native_nil, documentation: { types: [String, nil] }
+      expose :array_class, documentation: { types: [Array, NilClass] }
+      expose :array_literal, documentation: { types: [[String], NilClass] }
+      expose :object, documentation: { types: [Hash, NilClass] }
+      expose :strict, documentation: { types: [String, NilClass], nullable: false }
+      expose :optional_nested, documentation: { types: [NestedEntity, NilClass] }
+      expose :required_nested, using: NestedEntity
       expose :legacy_collection, documentation: { type: [String, NilClass], nullable: true }
     end
 
@@ -160,6 +171,18 @@ module GrapeOAS
       }
 
       assert_equal expected, properties.fetch("display_name")
+      assert properties.dig("native_nil", "x-nullable")
+      assert_equal "array", properties.dig("array_class", "type")
+      assert_equal "string", properties.dig("array_class", "items", "type")
+      assert properties.dig("array_class", "x-nullable")
+      assert_equal "array", properties.dig("array_literal", "type")
+      assert_equal "string", properties.dig("array_literal", "items", "type")
+      assert_equal "object", properties.dig("object", "type")
+      assert properties.dig("object", "x-nullable")
+      refute properties.fetch("strict").key?("x-nullable")
+      assert_equal nested_ref(:oas2), properties.dig("optional_nested", "allOf", 0, "$ref")
+      assert properties.dig("optional_nested", "x-nullable")
+      assert_equal({ "$ref" => nested_ref(:oas2) }, properties.fetch("required_nested"))
       assert_equal "array", properties.dig("legacy_collection", "type")
       assert_equal "string", properties.dig("legacy_collection", "items", "type")
       assert properties.dig("legacy_collection", "x-nullable")
@@ -175,6 +198,18 @@ module GrapeOAS
       }
 
       assert_equal expected, properties.fetch("display_name")
+      assert properties.dig("native_nil", "nullable")
+      assert_equal "array", properties.dig("array_class", "type")
+      assert_equal "string", properties.dig("array_class", "items", "type")
+      assert properties.dig("array_class", "nullable")
+      assert_equal "array", properties.dig("array_literal", "type")
+      assert_equal "string", properties.dig("array_literal", "items", "type")
+      assert_equal "object", properties.dig("object", "type")
+      assert properties.dig("object", "nullable")
+      refute properties.fetch("strict").key?("nullable")
+      assert_equal nested_ref(:oas3), properties.dig("optional_nested", "anyOf", 0, "allOf", 0, "$ref")
+      assert properties.dig("optional_nested", "anyOf", 1, "nullable")
+      assert_equal({ "$ref" => nested_ref(:oas3) }, properties.fetch("required_nested"))
       assert_equal "array", properties.dig("legacy_collection", "type")
       assert_equal "string", properties.dig("legacy_collection", "items", "type")
       assert properties.dig("legacy_collection", "nullable")
@@ -188,11 +223,27 @@ module GrapeOAS
       assert_equal "Public display name", display_name["description"]
       refute display_name.key?("items")
       refute display_name.key?("nullable")
+      assert_equal %w[string null], properties.dig("native_nil", "type")
+      assert_equal %w[array null], properties.dig("array_class", "type")
+      assert_equal "string", properties.dig("array_class", "items", "type")
+      assert_equal %w[array null], properties.dig("array_literal", "type")
+      assert_equal "string", properties.dig("array_literal", "items", "type")
+      assert_equal %w[object null], properties.dig("object", "type")
+      assert_equal "string", properties.dig("strict", "type")
+      refute properties.fetch("strict").key?("nullable")
+      assert_equal nested_ref(:oas31), properties.dig("optional_nested", "anyOf", 0, "allOf", 0, "$ref")
+      assert_equal "null", properties.dig("optional_nested", "anyOf", 1, "type")
+      assert_equal({ "$ref" => nested_ref(:oas31) }, properties.fetch("required_nested"))
       assert_equal %w[array null], properties.dig("legacy_collection", "type")
       assert_equal "string", properties.dig("legacy_collection", "items", "type")
     end
 
     private
+
+    def nested_ref(schema_type)
+      prefix = schema_type == :oas2 ? "#/definitions" : "#/components/schemas"
+      "#{prefix}/#{NestedEntity.name.gsub("::", "_")}"
+    end
 
     def entity_properties(schema_type)
       schema = GrapeOAS.generate(app: EntityMultiTypeAPI, schema_type: schema_type)

@@ -38,15 +38,12 @@ module GrapeOAS
           end
         end
 
-        def nullable_type_pair?(types)
-          types.is_a?(Array) && types.size == 2 && types.one? { |type| nil_type_name?(type) }
-        end
-
         def build_nullable_type_schema(types)
           type = types.find { |member| !nil_type_name?(member) }
-          schema = schema_for_type(type)
+          schema = build_exposure_base_schema(type)
           return ApiModel::Schema.new(nullable: true, all_of: [schema]) if schema.canonical_name
 
+          schema = schema.dup
           schema.nullable = true
           schema
         end

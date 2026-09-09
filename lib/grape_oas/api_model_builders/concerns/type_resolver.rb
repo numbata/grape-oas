@@ -92,8 +92,14 @@ module GrapeOAS
         end
 
         def nil_type_name?(type)
+          return true if type.nil?
+
           name = type.to_s
           name == "NilClass" || name == "Nil" || name.end_with?("::Nil")
+        end
+
+        def nullable_type_pair?(types)
+          types.is_a?(Array) && types.size == 2 && types.one? { |type| nil_type_name?(type) }
         end
 
         # Builds a basic Schema object for the given Ruby primitive type.

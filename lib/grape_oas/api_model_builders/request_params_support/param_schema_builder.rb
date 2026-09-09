@@ -142,13 +142,6 @@ module GrapeOAS
           ApiModel::Schema.new(one_of: schemas, nullable: has_nil_type ? true : nil)
         end
 
-        # Checks if type_names is a pair of [SomeType, NilType]
-        def nullable_type_pair?(type_names)
-          return false unless type_names.size == 2
-
-          type_names.one? { |t| nil_type_name?(t) }
-        end
-
         def build_primitive_schema(raw_type, doc)
           schema_type = sanitize_type(raw_type)
           ApiModel::Schema.new(
