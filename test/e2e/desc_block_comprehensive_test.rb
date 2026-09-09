@@ -191,6 +191,26 @@ class DescBlockComprehensiveTest < Minitest::Test
     assert(one_of.any? { |ref| ref.include?("ErrorEntity") })
   end
 
+  def test_default_response_from_desc_block
+    spec = build_spec do
+      desc "Test" do
+        success TestEntity
+        default code: "default", message: "unexpected error", model: ErrorEntity
+      end
+      delete { nil }
+    end
+    responses = responses_for(spec, verb: "delete")
+
+    assert responses["200"]
+    assert_includes schema_ref(responses["200"]), "TestEntity"
+
+    default_response = responses["default"]
+
+    assert default_response
+    assert_equal "unexpected error", default_response["description"]
+    assert_includes schema_ref(default_response), "ErrorEntity"
+  end
+
   private
 
   def build_spec(&block)

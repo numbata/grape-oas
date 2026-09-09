@@ -162,6 +162,44 @@ module GrapeOAS
         assert_equal "X-Trace", hdrs_default.first[:name]
         assert_equal 10, resp_201.extensions[:"x-rate-limit"]
       end
+
+      def test_combines_documentation_responses_with_default_response
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Create widget",
+               default_response: { message: "Unexpected error" },
+               documentation: { responses: { 201 => { message: "Created" } } }
+          post "widgets" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        responses = Response.new(api: @api, route: route).build
+
+        assert_equal %w[201 default], responses.map(&:http_status)
+        assert_equal "Unexpected error", responses.last.description
+      end
+
+      def test_builds_oas_default_response_from_desc_default
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Delete widget" do
+            default code: "default", message: "unexpected error"
+          end
+          delete "widgets" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = Response.new(api: @api, route: route)
+        responses = builder.build
+        default_resp = responses.find { |r| r.http_status == "default" }
+
+        assert default_resp
+        assert_equal "unexpected error", default_resp.description
+      end
     end
   end
 end
