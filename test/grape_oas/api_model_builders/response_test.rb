@@ -166,14 +166,16 @@ module GrapeOAS
       def test_normalizes_symbolic_documentation_response_status
         api_class = Class.new(Grape::API) do
           format :json
-          desc "Create widget", documentation: { responses: { ok: { message: "Success" } } }
+          desc "Create widget", documentation: {
+            responses: { ok: { message: "Success" }, default: { message: "Failure" } }
+          }
           post("widgets") { {} }
         end
 
         route = api_class.routes.first
         responses = Response.new(api: @api, route: route).build
 
-        assert_equal ["200"], responses.map(&:http_status)
+        assert_equal %w[200 default], responses.map(&:http_status)
       end
 
       def test_combines_documentation_responses_with_default_response
