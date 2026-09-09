@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#105](https://github.com/numbata/grape-oas/pull/105): Place array-valued `example` on the array schema instead of `items` for entity `is_array:` exposures without mutating shared entity schemas - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#86](https://github.com/numbata/grape-oas/pull/86): Omit response content for bodyless HTTP statuses (`1xx`, `204`, `205`, `304`), including declared entities and examples, so generated OpenAPI responses remain valid - [@abeljim8am](https://github.com/abeljim8am).
 - [#84](https://github.com/numbata/grape-oas/pull/84): Substitute the concrete path version into route templates, including prefixed and mounted routes, for `version "...", using: :path` while preserving user-defined version parameters with other versioning strategies - [@abeljim8am](https://github.com/abeljim8am).
+- [#110](https://github.com/numbata/grape-oas/pull/110): Honor Grape `desc` `default` / `default_response` as OAS `responses.default` - [@numbata](https://github.com/numbata).
 
 ### Changed
 

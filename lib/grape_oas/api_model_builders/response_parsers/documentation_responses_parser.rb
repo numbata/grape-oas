@@ -17,7 +17,7 @@ module GrapeOAS
           doc_resps = route.options.dig(:documentation, :responses)
           return [] unless doc_resps.is_a?(Hash)
 
-          doc_resps.map do |code, doc|
+          specs = doc_resps.map do |code, doc|
             doc = normalize_hash_keys(doc)
             {
               code: code,
@@ -28,6 +28,9 @@ module GrapeOAS
               examples: doc[:examples]
             }
           end
+          return specs if specs.any? { |spec| spec[:code].to_s == HttpCodesParser::DEFAULT_RESPONSE_CODE }
+
+          specs + HttpCodesParser.new.default_response_specs(route)
         end
       end
     end

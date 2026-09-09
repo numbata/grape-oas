@@ -259,6 +259,152 @@ module GrapeOAS
           assert specs[0][:required]
         end
 
+        def test_applicable_when_default_present
+          route = mock_route(default: { code: "default", message: "boom" })
+
+          assert @parser.applicable?(route)
+        end
+
+        def test_applicable_when_default_response_present
+          route = mock_route(default_response: { message: "boom" })
+
+          assert @parser.applicable?(route)
+        end
+
+        def test_parses_default_option_as_oas_default
+          route = mock_route(
+            default: { code: "default", message: "unexpected error", model: "ErrorEntity" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal "default", specs[0][:code]
+          assert_equal "unexpected error", specs[0][:message]
+          assert_equal "ErrorEntity", specs[0][:entity]
+        end
+
+        def test_parses_default_response_option_as_oas_default
+          route = mock_route(
+            default_response: { message: "unexpected error", model: "ErrorEntity" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal "default", specs[0][:code]
+          assert_equal "unexpected error", specs[0][:message]
+          assert_equal "ErrorEntity", specs[0][:entity]
+        end
+
+        def test_prefers_default_response_over_default
+          route = mock_route(
+            default: { message: "old" },
+            default_response: { message: "new" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal "new", specs[0][:message]
+        end
+
+        def test_normalizes_string_keys_in_default_response
+          route = mock_route(
+            default_response: { "message" => "boom", "model" => "ErrorEntity" },
+          )
+
+          spec = @parser.parse(route).first
+
+          assert_equal "boom", spec[:message]
+          assert_equal "ErrorEntity", spec[:entity]
+        end
+
+        def test_normalizes_string_keys_in_default_response_one_of
+          route = mock_route(
+            default_response: { "one_of" => [{ "model" => "ErrorEntity" }] },
+          )
+
+          one_of = @parser.parse(route).first[:one_of]
+
+          assert_equal "ErrorEntity", one_of.first[:model]
+        end
+
+        def test_default_response_overrides_http_codes_default
+          route = mock_route(
+            http_codes: [{ code: "default", message: "Legacy" }],
+            default_response: { message: "Canonical" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal "Canonical", specs.first[:message]
+        end
+
+        def test_default_response_can_override_route_array_setting
+          route = mock_route(
+            default_response: { model: "ErrorEntity", is_array: false },
+            is_array: true,
+          )
+
+          spec = @parser.parse(route).first
+
+          refute spec[:is_array]
+        end
+
+        def test_default_response_ignores_numeric_code
+          route = mock_route(default: { code: 400, message: "boom" })
+
+          specs = @parser.parse(route)
+
+          assert_equal "default", specs[0][:code]
+          assert_equal "boom", specs[0][:message]
+        end
+
+        def test_default_response_without_message_uses_fallback
+          route = mock_route(default: { model: "ErrorEntity" })
+
+          specs = @parser.parse(route)
+
+          assert_equal "Default Response", specs[0][:message]
+        end
+
+        def test_default_response_does_not_inherit_route_entity
+          route = mock_route(
+            default: { message: "boom" },
+            entity: "SuccessEntity",
+          )
+
+          specs = @parser.parse(route)
+          default_spec = specs.find { |s| s[:code] == "default" }
+
+          assert default_spec
+          assert_nil default_spec[:entity]
+        end
+
+        def test_parses_default_as_entity_class
+          error_entity = Class.new
+          route = mock_route(default: error_entity)
+
+          specs = @parser.parse(route)
+
+          assert_equal "default", specs[0][:code]
+          assert_equal error_entity, specs[0][:entity]
+        end
+
+        def test_combines_default_with_success_and_failure
+          route = mock_route(
+            success: { code: 200, message: "OK" },
+            failure: [[404, "Not Found"]],
+            default: { message: "unexpected error" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal([404, 200, "default"], specs.map { |s| s[:code] })
+        end
+
         private
 
         def mock_route(options = {})

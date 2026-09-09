@@ -379,6 +379,36 @@ desc 'Get user' do
 end
 ```
 
+### Default Response
+
+Grape's `desc` DSL documents the OAS catch-all `responses.default` key. Grape 3.x writes that as `default`; Grape 4.0 ([ruby-grape/grape#2861](https://github.com/ruby-grape/grape/pull/2861)) renamed the DSL method and stored key to `default_response`, keeping `default` as a deprecated alias. grape-oas reads both.
+
+```ruby
+# Grape 3.x — still accepted (with a deprecation warning) on Grape 4.0
+desc 'Delete a widget' do
+  default code: 'default', message: 'Unexpected error', model: Entities::Error
+end
+delete ':id' do; end
+
+# Grape 4.0
+desc 'Delete a widget' do
+  default_response code: 'default', message: 'Unexpected error', model: Entities::Error
+end
+delete ':id' do; end
+```
+
+Both emit:
+
+```yaml
+responses:
+  default:
+    description: Unexpected error
+    content:
+      application/json:
+        schema:
+          $ref: '#/components/schemas/Error'
+```
+
 ### Response Options
 
 | Option | grape-swagger | grape-oas | Notes |
@@ -386,7 +416,7 @@ end
 | `success` (entity) | ✅ | ✅ | Success response model |
 | `success` (array) | ✅ | ✅ | Multiple success responses |
 | `failure` | ✅ | ✅ | Failure responses |
-| `default` | ✅ | ✅ | Default response |
+| `default` / `default_response` | ✅ | ✅ | OAS `responses.default`. Grape 3.x stores `default`; Grape 4.0 stores `default_response`. |
 | `is_array` | ✅ | ✅ | Response is array |
 | `headers` | ✅ | ✅ | Response headers |
 | `examples` | ✅ | ✅ | Response examples |

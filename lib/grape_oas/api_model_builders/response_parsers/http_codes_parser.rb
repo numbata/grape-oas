@@ -3,10 +3,13 @@
 module GrapeOAS
   module ApiModelBuilders
     module ResponseParsers
-      # Parser for responses defined via :http_codes, :failure, or :success options
-      # These are legacy grape-swagger formats that we support for compatibility
+      # Parser for responses defined via :http_codes, :failure, :success, or
+      # :default / :default_response (the OAS "default" catch-all).
       class HttpCodesParser
         include Base
+
+        DEFAULT_RESPONSE_MESSAGE = "Default Response"
+        DEFAULT_RESPONSE_CODE = "default"
 
         def applicable?(route)
           options_applicable?(route) || desc_block?(route)
@@ -14,9 +17,17 @@ module GrapeOAS
 
         def parse(route)
           specs = parse_from_options(route)
-          return specs unless specs.empty?
+          specs = parse_from_desc(route) if specs.empty?
+          return specs if specs.any? { |spec| spec[:code].to_s == DEFAULT_RESPONSE_CODE }
 
-          parse_from_desc(route)
+          specs + default_response_specs(route)
+        end
+
+        def default_response_specs(route)
+          data = route.options
+          value = default_response_value(data)
+          value ||= default_response_value(desc_data(route))
+          value ? parse_default_response(value, route) : []
         end
 
         private
@@ -46,9 +57,59 @@ module GrapeOAS
         def parse_values(data, route)
           return [] unless data.is_a?(Hash)
 
-          %i[http_codes failure success].flat_map do |key|
+          specs = %i[http_codes failure success].flat_map do |key|
             parse_value(data[key], route)
           end
+          default_value = data[:default_response] || data[:default]
+          return specs unless default_value
+
+          specs.reject { |spec| spec[:code].to_s == DEFAULT_RESPONSE_CODE } +
+            parse_default_response(default_value, route)
+        end
+
+        # Grape 3.x stores `desc { default ... }` as :default. Grape 4.0
+        # (ruby-grape/grape#2861) renamed that key to :default_response and
+        # remaps the deprecated `default` alias at write time. Always emit the
+        # OAS "default" status — grape-swagger ignores a numeric `code:` here.
+        def parse_default_response(value, route)
+          entries_for(value).map { |entry| normalize_default_response_entry(entry, route) }
+        end
+
+        def normalize_default_response_entry(entry, route)
+          if entry.is_a?(Hash)
+            entry = normalize_hash_keys(entry)
+            {
+              code: DEFAULT_RESPONSE_CODE,
+              message: extract_description(entry) || DEFAULT_RESPONSE_MESSAGE,
+              entity: extract_entity(entry, nil),
+              headers: entry[:headers],
+              examples: entry[:examples],
+              as: entry[:as],
+              one_of: normalize_one_of(entry[:one_of]),
+              is_array: entry.key?(:is_array) ? entry[:is_array] : route.options[:is_array],
+              required: entry[:required]
+            }
+          else
+            {
+              code: DEFAULT_RESPONSE_CODE,
+              message: DEFAULT_RESPONSE_MESSAGE,
+              entity: entry,
+              headers: nil,
+              is_array: route.options[:is_array]
+            }
+          end
+        end
+
+        def default_response_value(data)
+          return unless data.is_a?(Hash)
+
+          data[:default_response] || data[:default]
+        end
+
+        def normalize_one_of(one_of)
+          return one_of unless one_of.is_a?(Array)
+
+          one_of.map { |entry| normalize_hash_keys(entry) }
         end
 
         def parse_value(value, route)
@@ -73,12 +134,14 @@ module GrapeOAS
         def options_applicable?(route)
           entity_hash = route.options[:entity].is_a?(Hash) ? route.options[:entity] : nil
           route.options[:http_codes] || route.options[:failure] || route.options[:success] ||
+            route.options[:default] || route.options[:default_response] ||
             (entity_hash && (entity_hash[:code] || entity_hash[:model] || entity_hash[:entity] || entity_hash[:one_of]))
         end
 
         def desc_block?(route)
           data = desc_data(route)
-          data && (data[:success] || data[:failure] || data[:http_codes] || data[:entity])
+          data && (data[:success] || data[:failure] || data[:http_codes] || data[:entity] ||
+            data[:default] || data[:default_response])
         end
 
         def desc_block_has_explicit_success?(route)

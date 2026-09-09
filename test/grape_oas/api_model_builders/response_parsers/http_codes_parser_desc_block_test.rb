@@ -28,6 +28,18 @@ module GrapeOAS
           assert @parser.applicable?(route)
         end
 
+        def test_applicable_with_desc_block_default
+          route = mock_route_with_desc_block(default: { message: "boom" })
+
+          assert @parser.applicable?(route)
+        end
+
+        def test_applicable_with_desc_block_default_response
+          route = mock_route_with_desc_block(default_response: { message: "boom" })
+
+          assert @parser.applicable?(route)
+        end
+
         def test_not_applicable_without_desc_block_or_options
           route = mock_route
 
@@ -104,6 +116,36 @@ module GrapeOAS
           assert_equal 201, specs.first[:code]
           assert_equal "DescEntity", specs.first[:entity]
           assert_equal "Created", specs.first[:message]
+        end
+
+        def test_parse_desc_block_default
+          route = mock_route_with_desc_block(
+            default: { code: "default", message: "unexpected error", model: "ErrorEntity" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          spec = specs.first
+
+          assert_equal "default", spec[:code]
+          assert_equal "unexpected error", spec[:message]
+          assert_equal "ErrorEntity", spec[:entity]
+        end
+
+        def test_parse_desc_block_default_alongside_success
+          route = mock_route_with_desc_block(
+            success: { code: 200, model: "UserEntity" },
+            default: { message: "unexpected error", model: "ErrorEntity" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 2, specs.size
+          assert_equal 200, specs[0][:code]
+          assert_equal "UserEntity", specs[0][:entity]
+          assert_equal "default", specs[1][:code]
+          assert_equal "ErrorEntity", specs[1][:entity]
         end
 
         private

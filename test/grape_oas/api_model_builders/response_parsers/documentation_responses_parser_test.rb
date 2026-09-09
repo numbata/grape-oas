@@ -47,6 +47,31 @@ module GrapeOAS
           assert_equal "UserEntity", specs[0][:entity]
         end
 
+        def test_combines_documentation_responses_with_default_response
+          route = mock_route(
+            documentation: { responses: { 201 => { description: "Created" } } },
+            default_response: { message: "Unexpected error", model: "ErrorEntity" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal([201, "default"], specs.map { |spec| spec[:code] })
+          assert_equal "Unexpected error", specs.last[:message]
+          assert_equal "ErrorEntity", specs.last[:entity]
+        end
+
+        def test_documented_default_response_takes_precedence
+          route = mock_route(
+            documentation: { responses: { "default" => { description: "Documented" } } },
+            default_response: { message: "Desc default" },
+          )
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal "Documented", specs.first[:message]
+        end
+
         def test_parses_multiple_responses
           route = mock_route(
             documentation: {
