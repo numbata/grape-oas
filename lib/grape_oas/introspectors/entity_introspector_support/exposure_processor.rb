@@ -44,6 +44,8 @@ module GrapeOAS
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
           opts = exposure_options(exposure)
+          GrapeOAS.logger.warn("Ignoring types: because using: takes precedence") if opts[:using] && doc.key?(:types)
+
           schema = if opts[:using]
                      type_resolver.build_exposure_base_schema(opts[:using])
                    elsif type_resolver.nullable_type_pair?(doc[:types])
@@ -216,7 +218,9 @@ module GrapeOAS
         end
 
         def apply_exposure_properties(schema, doc)
-          nullable = if schema.nullable && doc[:nullable] == false
+          nullable_false = doc[:nullable] == false ||
+                           (doc[:x].is_a?(Hash) && doc[:x][:nullable] == false)
+          nullable = if schema.nullable && nullable_false
                        false
                      else
                        schema.nullable || PropertyExtractor.extract_nullable(doc)

@@ -195,6 +195,19 @@ module GrapeOAS
         assert note_schema.nullable, "Expected x: { nullable: true } to set schema.nullable on entity exposure"
       end
 
+      def test_using_with_types_emits_warning
+        nested = Class.new(Grape::Entity)
+        entity_class = Class.new(Grape::Entity) do
+          expose :value, using: nested, documentation: { types: [String, NilClass] }
+        end
+
+        output = capture_grape_oas_log do
+          Introspectors::EntityIntrospector.new(entity_class).build_schema
+        end
+
+        assert_includes output, "using: takes precedence"
+      end
+
       def test_unsupported_entity_types_emit_warning
         entity_class = Class.new(Grape::Entity) do
           expose :value, documentation: { types: [String, Integer, NilClass] }

@@ -150,6 +150,7 @@ module GrapeOAS
       expose :array_literal, documentation: { types: [[String], NilClass] }
       expose :object, documentation: { types: [Hash, NilClass] }
       expose :strict, documentation: { types: [String, NilClass], nullable: false }
+      expose :strict_extension, documentation: { types: [String, NilClass], x: { nullable: false } }
       expose :optional_nested, documentation: { types: [NestedEntity, NilClass] }
       expose :required_nested, using: NestedEntity
       expose :legacy_collection, documentation: { type: [String, NilClass], nullable: true }
@@ -180,6 +181,7 @@ module GrapeOAS
       assert_equal "object", properties.dig("object", "type")
       assert properties.dig("object", "x-nullable")
       refute properties.fetch("strict").key?("x-nullable")
+      refute properties.fetch("strict_extension").key?("x-nullable")
       assert_equal nested_ref(:oas2), properties.dig("optional_nested", "allOf", 0, "$ref")
       assert properties.dig("optional_nested", "x-nullable")
       assert_equal({ "$ref" => nested_ref(:oas2) }, properties.fetch("required_nested"))
@@ -207,6 +209,7 @@ module GrapeOAS
       assert_equal "object", properties.dig("object", "type")
       assert properties.dig("object", "nullable")
       refute properties.fetch("strict").key?("nullable")
+      refute properties.fetch("strict_extension").key?("nullable")
       assert_equal nested_ref(:oas3), properties.dig("optional_nested", "anyOf", 0, "allOf", 0, "$ref")
       assert properties.dig("optional_nested", "anyOf", 1, "nullable")
       assert_equal({ "$ref" => nested_ref(:oas3) }, properties.fetch("required_nested"))
@@ -230,7 +233,9 @@ module GrapeOAS
       assert_equal "string", properties.dig("array_literal", "items", "type")
       assert_equal %w[object null], properties.dig("object", "type")
       assert_equal "string", properties.dig("strict", "type")
+      assert_equal "string", properties.dig("strict_extension", "type")
       refute properties.fetch("strict").key?("nullable")
+      refute properties.fetch("strict_extension").key?("nullable")
       assert_equal nested_ref(:oas31), properties.dig("optional_nested", "anyOf", 0, "allOf", 0, "$ref")
       assert_equal "null", properties.dig("optional_nested", "anyOf", 1, "type")
       assert_equal({ "$ref" => nested_ref(:oas31) }, properties.fetch("required_nested"))
