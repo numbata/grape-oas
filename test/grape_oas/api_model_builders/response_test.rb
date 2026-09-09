@@ -178,6 +178,20 @@ module GrapeOAS
         assert_equal %w[200 default], responses.map(&:http_status)
       end
 
+      def test_normalizes_symbolic_success_status
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Create widget", success: { code: :created, message: "Created" }
+          post("widgets") { {} }
+        end
+
+        route = api_class.routes.first
+        responses = Response.new(api: @api, route: route).build
+
+        assert_equal ["201"], responses.map(&:http_status)
+        assert_equal "Created", responses.first.description
+      end
+
       def test_combines_documentation_responses_with_default_response
         api_class = Class.new(Grape::API) do
           format :json

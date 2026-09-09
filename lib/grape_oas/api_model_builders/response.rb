@@ -51,20 +51,12 @@ module GrapeOAS
         return [] unless parser
 
         parser.parse(route).each do |spec|
-          spec[:code] = normalize_status_code(spec[:code])
+          spec[:code] = ResponseParsers::Base.normalize_status_code(spec[:code])
         end
       end
 
       def parsers
         @parsers ||= self.class.parsers.map(&:new)
-      end
-
-      def normalize_status_code(status)
-        return status unless status.is_a?(Symbol) && status != :default
-
-        Rack::Utils.status_code(status)
-      rescue ArgumentError
-        status
       end
 
       # Groups specs by status code to support multiple present responses

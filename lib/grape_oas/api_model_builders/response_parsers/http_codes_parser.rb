@@ -185,17 +185,19 @@ module GrapeOAS
         end
 
         def normalize_entry(entry, route)
-          case entry
-          when Hash
-            normalize_hash_entry(entry, route)
-          when Array
-            normalize_array_entry(entry, route)
-          when Class, Module
-            # Plain entity class (e.g., success TestEntity)
-            normalize_entity_entry(entry, route)
-          else
-            normalize_plain_entry(entry, route)
-          end
+          spec = case entry
+                 when Hash
+                   normalize_hash_entry(entry, route)
+                 when Array
+                   normalize_array_entry(entry, route)
+                 when Class, Module
+                   # Plain entity class (e.g., success TestEntity)
+                   normalize_entity_entry(entry, route)
+                 else
+                   normalize_plain_entry(entry, route)
+                 end
+          spec[:code] = normalize_status_code(spec[:code])
+          spec
         end
 
         def normalize_hash_entry(entry, route)

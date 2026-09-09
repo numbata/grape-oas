@@ -29,6 +29,17 @@ module GrapeOAS
 
         private
 
+        def normalize_status_code(status)
+          return status unless status.is_a?(Symbol)
+
+          status_name = status.to_s
+          return status_name if status_name == "default" || status_name.match?(/\A[1-5](?:\d{2}|XX)\z/)
+
+          Rack::Utils.status_code(status)
+        end
+
+        module_function :normalize_status_code
+
         # Extract status code from hash, supporting multiple key names
         def extract_status_code(hash, default_code)
           hash[:code] || hash[:status] || hash[:http_status] || default_code
