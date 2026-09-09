@@ -5,23 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-### Added
-
-* Your contribution here
+## [1.5.1] - 2026-09-09
 
 ### Fixed
 
-* [#136](https://github.com/numbata/grape-oas/pull/136): Preserve top-level Grape `desc:` metadata on request-body properties - [@numbata](https://github.com/numbata).
-* [#140](https://github.com/numbata/grape-oas/pull/140): Preserve nullable entity scalars documented with `types:` - [@numbata](https://github.com/numbata).
-* [#142](https://github.com/numbata/grape-oas/pull/142): Normalize symbolic response status keys to numeric HTTP codes - [@numbata](https://github.com/numbata).
-* Your contribution here
+- [#110](https://github.com/numbata/grape-oas/pull/110): Honor Grape `desc` `default` / `default_response` as OAS `responses.default` - [@numbata](https://github.com/numbata).
+- [#136](https://github.com/numbata/grape-oas/pull/136): Preserve top-level Grape `desc:` metadata on request-body properties - [@numbata](https://github.com/numbata).
+- [#140](https://github.com/numbata/grape-oas/pull/140): Preserve nullable entity scalars documented with `types:` - [@numbata](https://github.com/numbata).
+- [#142](https://github.com/numbata/grape-oas/pull/142): Normalize symbolic response status keys to numeric HTTP codes - [@numbata](https://github.com/numbata).
 
 ### Changed
 
+- [#108](https://github.com/numbata/grape-oas/pull/108): Bump actions/checkout from 6 to 7 - [@dependabot[bot]](https://github.com/dependabot[bot]).
 - [#137](https://github.com/numbata/grape-oas/pull/137): Test against Grape 4.0 in CI - [@numbata](https://github.com/numbata).
-* Your contribution here
 
 ## [1.5.0] - 2026-09-07
 
@@ -61,7 +57,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#105](https://github.com/numbata/grape-oas/pull/105): Place array-valued `example` on the array schema instead of `items` for entity `is_array:` exposures without mutating shared entity schemas - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#86](https://github.com/numbata/grape-oas/pull/86): Omit response content for bodyless HTTP statuses (`1xx`, `204`, `205`, `304`), including declared entities and examples, so generated OpenAPI responses remain valid - [@abeljim8am](https://github.com/abeljim8am).
 - [#84](https://github.com/numbata/grape-oas/pull/84): Substitute the concrete path version into route templates, including prefixed and mounted routes, for `version "...", using: :path` while preserving user-defined version parameters with other versioning strategies - [@abeljim8am](https://github.com/abeljim8am).
-- [#110](https://github.com/numbata/grape-oas/pull/110): Honor Grape `desc` `default` / `default_response` as OAS `responses.default` - [@numbata](https://github.com/numbata).
 
 ### Changed
 
