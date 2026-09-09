@@ -33,6 +33,16 @@ module GrapeOAS
         end
       end
 
+      def explicit_body_params?(all_params = declared_params)
+        all_params.any? do |name, spec|
+          next false if name.include?("[")
+
+          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
+          in_location = spec.dig(:documentation, :in)&.to_s&.downcase
+          param_type == "body" || in_location == "body"
+        end
+      end
+
       private
 
       # Builds params when nested structures are detected.
@@ -125,16 +135,7 @@ module GrapeOAS
         # If request_body is explicitly enabled at route level, use body schema
         return false if route.options.dig(:documentation, :request_body) || route.options[:request_body]
 
-        # If any parameter is explicitly marked as body, use body schema
-        has_explicit_body_param = all_params.any? do |name, spec|
-          next false if name.include?("[") # Skip bracket params, check parent Hash params only
-
-          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
-          in_location = spec.dig(:documentation, :in)&.to_s&.downcase
-          param_type == "body" || in_location == "body"
-        end
-
-        !has_explicit_body_param
+        !explicit_body_params?(all_params)
       end
 
       def build_parameter(name, location, required, schema, spec)

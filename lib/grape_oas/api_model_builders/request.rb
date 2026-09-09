@@ -17,9 +17,8 @@ module GrapeOAS
       end
 
       def build
-        body_schema, route_params = GrapeOAS::ApiModelBuilders::RequestParams
-                                    .new(api: api, route: route, path_param_name_map: path_param_name_map)
-                                    .build
+        request_params = RequestParams.new(api: api, route: route, path_param_name_map: path_param_name_map)
+        body_schema, route_params = request_params.build
 
         contract_schema = build_contract_schema
 
@@ -33,18 +32,17 @@ module GrapeOAS
         end
 
         operation.add_parameters(*route_params)
-        append_request_body(body_schema) unless body_schema.empty?
+        append_request_body(body_schema, request_params: request_params) unless body_schema.empty?
       end
 
       private
 
-      def append_request_body(body_schema)
-        # OAS spec says GET/HEAD/DELETE "MAY ignore" request bodies
-        # Skip by default unless explicitly allowed via documentation option
+      def append_request_body(body_schema, request_params:)
         http_method = operation.http_method.to_s.downcase
         if Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
           allow_body = route.options.dig(:documentation, :request_body) ||
-                       route.options[:request_body]
+                       route.options[:request_body] ||
+                       (http_method == "delete" && request_params.explicit_body_params?)
           return unless allow_body
         end
 
