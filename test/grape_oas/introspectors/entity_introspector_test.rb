@@ -195,6 +195,49 @@ module GrapeOAS
         assert note_schema.nullable, "Expected x: { nullable: true } to set schema.nullable on entity exposure"
       end
 
+      def test_using_with_types_emits_warning
+        nested = Class.new(Grape::Entity)
+        entity_class = Class.new(Grape::Entity) do
+          expose :value, using: nested, documentation: { types: [String, NilClass] }
+        end
+
+        output = capture_grape_oas_log do
+          Introspectors::EntityIntrospector.new(entity_class).build_schema
+        end
+
+        assert_includes output, "using: takes precedence"
+      end
+
+      def test_unsupported_entity_types_emit_warning
+        entity_class = Class.new(Grape::Entity) do
+          expose :value, documentation: { types: [String, Integer, NilClass] }
+        end
+
+        output = capture_grape_oas_log do
+          Introspectors::EntityIntrospector.new(entity_class).build_schema
+        end
+
+        assert_includes output, "Ignoring unsupported entity documentation types"
+      end
+
+      def test_nullable_entity_multi_type_does_not_mutate_shared_schema
+        profile = Class.new(Grape::Entity) do
+          expose :name, documentation: { type: String }
+        end
+        entity_class = Class.new(Grape::Entity) do
+          expose :optional_profile, documentation: { types: [profile, NilClass] }
+          expose :profile, using: profile
+        end
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+        optional_profile = schema.properties["optional_profile"]
+        profile = schema.properties["profile"]
+
+        assert optional_profile.nullable
+        refute profile.nullable
+        refute_same optional_profile, profile
+      end
+
       def test_merge_flattens_properties
         schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
 

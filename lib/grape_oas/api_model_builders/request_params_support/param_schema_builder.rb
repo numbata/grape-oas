@@ -119,19 +119,17 @@ module GrapeOAS
           type_names = extract_multi_types(type)
 
           # OPTIMIZE: [Type, Nil] becomes nullable Type instead of oneOf
-          if nullable_type_pair?(type_names)
-            non_nil_type = type_names.find { |t| !nil_type_name?(t) }
+          if (nullable_type = Constants.nullable_type(type_names))
             return ApiModel::Schema.new(
-              type: resolve_schema_type(non_nil_type),
-              format: Constants.format_for_type(non_nil_type),
+              type: resolve_schema_type(nullable_type),
+              format: Constants.format_for_type(nullable_type),
               nullable: true,
             )
           end
 
           # General case: build oneOf schema
           # Filter out nil types - OpenAPI 3.0 uses nullable property instead
-          has_nil_type = type_names.any? { |t| nil_type_name?(t) }
-          non_nil_types = type_names.reject { |t| nil_type_name?(t) }
+          nil_types, non_nil_types = type_names.partition { |type_name| Constants.nil_type?(type_name) }
 
           schemas = non_nil_types.map do |type_name|
             ApiModel::Schema.new(
@@ -139,26 +137,9 @@ module GrapeOAS
               format: Constants.format_for_type(type_name),
             )
           end
-          ApiModel::Schema.new(one_of: schemas, nullable: has_nil_type ? true : nil)
-        end
-
-        # Checks if type_names is a pair of [SomeType, NilType]
-        def nullable_type_pair?(type_names)
-          return false unless type_names.size == 2
-
-          type_names.one? { |t| nil_type_name?(t) }
-        end
-
-        # Checks if the type name represents a nil/null type
-        def nil_type_name?(type_name)
-          normalized = type_name.to_s
-          # Match common nil type patterns:
-          # - "NilClass" (Ruby's nil type)
-          # - "Nil" (shorthand)
-          # - "Foo::Nil", "Types::Nil" (namespaced nil types)
-          normalized == "NilClass" ||
-            normalized == "Nil" ||
-            normalized.end_with?("::Nil")
+          schema = ApiModel::Schema.new(one_of: schemas)
+          schema.nullable = true if nil_types.any?
+          schema
         end
 
         def build_primitive_schema(raw_type, doc)

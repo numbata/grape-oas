@@ -72,6 +72,20 @@ module GrapeOAS
       VARIANT_COLLECTION = /\A(?<container>Array|Set)\[(?<inner>#{CONST_NAME}(?:,\s*#{CONST_NAME})+)\]\z/
     end
 
+    def self.nil_type?(type)
+      return true if type.nil?
+
+      name = type.to_s
+      name == "NilClass" || name == "Nil" || name.end_with?("::Nil")
+    end
+
+    def self.nullable_type(types)
+      return unless types.is_a?(Array) && types.size == 2
+
+      nil_types, other_types = types.partition { |type| nil_type?(type) }
+      other_types.first if nil_types.size == 1
+    end
+
     # Default values for OpenAPI spec when not provided by user
     module Defaults
       LICENSE_NAME = "Proprietary"

@@ -44,10 +44,18 @@ module GrapeOAS
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
           opts = exposure_options(exposure)
-          type = opts[:using] || doc[:type]
+          nullable_type = Constants.nullable_type(doc[:types])
+          if opts[:using] && doc.key?(:types)
+            GrapeOAS.logger.warn("Ignoring types: because using: takes precedence")
+          elsif doc.key?(:types) && !nullable_type
+            GrapeOAS.logger.warn("Ignoring unsupported entity documentation types: #{doc[:types].inspect}")
+          end
 
+          type = opts[:using] || nullable_type || doc[:type]
           schema = type_resolver.build_exposure_base_schema(type)
-          schema = apply_exposure_properties(schema, doc)
+          schema = apply_exposure_properties(
+            schema, doc, inferred_nullable: !nullable_type.nil? && !opts[:using],
+          )
           SchemaConstraints.apply(schema, doc)
           schema
         end
@@ -206,8 +214,15 @@ module GrapeOAS
           schema
         end
 
-        def apply_exposure_properties(schema, doc)
-          nullable = PropertyExtractor.extract_nullable(doc)
+        def apply_exposure_properties(schema, doc, inferred_nullable: false)
+          schema = schema.dup if inferred_nullable && !schema.canonical_name
+          nullable_false = doc[:nullable] == false ||
+                           (doc[:x].is_a?(Hash) && doc[:x][:nullable] == false)
+          nullable = if (schema.nullable || inferred_nullable) && nullable_false
+                       false
+                     else
+                       schema.nullable || inferred_nullable || PropertyExtractor.extract_nullable(doc)
+                     end
           if nullable && schema.canonical_name
             # Don't mutate the shared cached entity schema. Create a wrapper with
             # all_of so the exporter emits { nullable: true, allOf: [{ $ref }] }.
