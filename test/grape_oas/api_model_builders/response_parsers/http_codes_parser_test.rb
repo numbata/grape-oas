@@ -51,6 +51,37 @@ module GrapeOAS
           assert_equal "Entity", specs[0][:entity]
         end
 
+        def test_normalizes_symbolic_statuses
+          route = mock_route(
+            success: [
+              { code: :ok, message: "OK" },
+              { code: :"2XX", message: "Success" }
+            ],
+          )
+
+          specs = @parser.parse(route)
+          codes = specs.map { |spec| spec[:code] }
+
+          assert_equal [200, "2XX"], codes
+        end
+
+        def test_deduplicates_symbolic_status_before_appending_desc_entity
+          data = { http_codes: [{ code: :ok, message: "OK" }], entity: "Entity" }
+          route = OpenStruct.new(options: data, settings: { description: data })
+
+          specs = @parser.parse(route)
+
+          assert_equal 1, specs.size
+          assert_equal 200, specs.first[:code]
+          assert_equal "Entity", specs.first[:entity]
+        end
+
+        def test_rejects_unknown_symbolic_status
+          route = mock_route(success: { code: :unknown_status })
+
+          assert_raises(ArgumentError) { @parser.parse(route) }
+        end
+
         def test_parses_http_codes_with_status_key
           route = mock_route(
             http_codes: [

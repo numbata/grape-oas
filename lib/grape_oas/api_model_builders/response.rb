@@ -48,7 +48,11 @@ module GrapeOAS
       # Parsers are tried in order of priority
       def response_specs
         parser = parsers.find { |p| p.applicable?(route) }
-        parser ? parser.parse(route) : []
+        return [] unless parser
+
+        parser.parse(route).each do |spec|
+          spec[:code] = ResponseParsers::Base.normalize_status_code(spec[:code])
+        end
       end
 
       def parsers

@@ -20,7 +20,7 @@ module GrapeOAS
           specs = doc_resps.map do |code, doc|
             doc = normalize_hash_keys(doc)
             {
-              code: code,
+              code: normalize_status_code(code),
               message: extract_description(doc),
               headers: doc[:headers],
               entity: extract_entity(doc, route.options[:entity]),
