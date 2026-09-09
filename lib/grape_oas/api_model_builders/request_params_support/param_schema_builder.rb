@@ -119,8 +119,8 @@ module GrapeOAS
           type_names = extract_multi_types(type)
 
           # OPTIMIZE: [Type, Nil] becomes nullable Type instead of oneOf
-          if nullable_type_pair?(type_names)
-            non_nil_type = type_names.find { |t| !nil_type_name?(t) }
+          if Constants.nullable_type_pair?(type_names)
+            non_nil_type = type_names.find { |t| !Constants.nil_type?(t) }
             return ApiModel::Schema.new(
               type: resolve_schema_type(non_nil_type),
               format: Constants.format_for_type(non_nil_type),
@@ -130,8 +130,8 @@ module GrapeOAS
 
           # General case: build oneOf schema
           # Filter out nil types - OpenAPI 3.0 uses nullable property instead
-          has_nil_type = type_names.any? { |t| nil_type_name?(t) }
-          non_nil_types = type_names.reject { |t| nil_type_name?(t) }
+          has_nil_type = type_names.any? { |t| Constants.nil_type?(t) }
+          non_nil_types = type_names.reject { |t| Constants.nil_type?(t) }
 
           schemas = non_nil_types.map do |type_name|
             ApiModel::Schema.new(

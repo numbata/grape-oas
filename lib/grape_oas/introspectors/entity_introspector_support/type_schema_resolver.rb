@@ -39,7 +39,7 @@ module GrapeOAS
         end
 
         def build_nullable_type_schema(types)
-          type = types.find { |member| !nil_type_name?(member) }
+          type = types.find { |member| !Constants.nil_type?(member) }
           schema = build_exposure_base_schema(type)
           return ApiModel::Schema.new(nullable: true, all_of: [schema]) if schema.canonical_name
 

@@ -44,18 +44,17 @@ module GrapeOAS
         # @return [ApiModel::Schema] the built schema
         def schema_for_exposure(exposure, doc)
           opts = exposure_options(exposure)
+          nullable_type_pair = Constants.nullable_type_pair?(doc[:types])
           GrapeOAS.logger.warn("Ignoring types: because using: takes precedence") if opts[:using] && doc.key?(:types)
+          if !opts[:using] && doc.key?(:types) && !nullable_type_pair
+            GrapeOAS.logger.warn("Ignoring unsupported entity documentation types: #{doc[:types].inspect}")
+          end
 
           schema = if opts[:using]
                      type_resolver.build_exposure_base_schema(opts[:using])
-                   elsif type_resolver.nullable_type_pair?(doc[:types])
+                   elsif nullable_type_pair
                      type_resolver.build_nullable_type_schema(doc[:types])
                    else
-                     if doc.key?(:types)
-                       GrapeOAS.logger.warn(
-                         "Ignoring unsupported entity documentation types: #{doc[:types].inspect}",
-                       )
-                     end
                      type_resolver.build_exposure_base_schema(doc[:type])
                    end
           schema = apply_exposure_properties(schema, doc)

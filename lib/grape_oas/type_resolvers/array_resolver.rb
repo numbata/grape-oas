@@ -58,16 +58,16 @@ module GrapeOAS
         end
 
         def build_items_schema(type_names)
-          if nullable_type_pair?(type_names)
-            schema = build_items_for_name(type_names.find { |name| !nil_type_name?(name) })
+          if Constants.nullable_type_pair?(type_names)
+            schema = build_items_for_name(type_names.find { |name| !Constants.nil_type?(name) })
             schema.nullable = true
             return schema
           end
 
           return build_items_for_name(type_names.first) if type_names.size == 1
 
-          has_nil_type = type_names.any? { |name| nil_type_name?(name) }
-          variants = type_names.reject { |name| nil_type_name?(name) }.map { |name| build_items_for_name(name) }
+          has_nil_type = type_names.any? { |name| Constants.nil_type?(name) }
+          variants = type_names.reject { |name| Constants.nil_type?(name) }.map { |name| build_items_for_name(name) }
           ApiModel::Schema.new(one_of: variants, nullable: has_nil_type ? true : nil)
         end
 
@@ -78,15 +78,6 @@ module GrapeOAS
           else
             build_schema_from_string(type_name)
           end
-        end
-
-        def nullable_type_pair?(type_names)
-          type_names.size == 2 && type_names.one? { |name| nil_type_name?(name) }
-        end
-
-        def nil_type_name?(type_name)
-          normalized = type_name.to_s
-          normalized == "NilClass" || normalized == "Nil" || normalized.end_with?("::Nil")
         end
 
         def build_schema_from_class(klass)
