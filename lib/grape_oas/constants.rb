@@ -79,8 +79,11 @@ module GrapeOAS
       name == "NilClass" || name == "Nil" || name.end_with?("::Nil")
     end
 
-    def self.nullable_type_pair?(types)
-      types.is_a?(Array) && types.size == 2 && types.one? { |type| nil_type?(type) }
+    def self.nullable_type(types)
+      return unless types.is_a?(Array) && types.size == 2
+
+      nil_types, other_types = types.partition { |type| nil_type?(type) }
+      other_types.first if nil_types.size == 1
     end
 
     # Default values for OpenAPI spec when not provided by user

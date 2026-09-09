@@ -119,11 +119,10 @@ module GrapeOAS
           type_names = extract_multi_types(type)
 
           # OPTIMIZE: [Type, Nil] becomes nullable Type instead of oneOf
-          if Constants.nullable_type_pair?(type_names)
-            non_nil_type = type_names.find { |t| !Constants.nil_type?(t) }
+          if (nullable_type = Constants.nullable_type(type_names))
             return ApiModel::Schema.new(
-              type: resolve_schema_type(non_nil_type),
-              format: Constants.format_for_type(non_nil_type),
+              type: resolve_schema_type(nullable_type),
+              format: Constants.format_for_type(nullable_type),
               nullable: true,
             )
           end

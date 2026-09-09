@@ -58,17 +58,17 @@ module GrapeOAS
         end
 
         def build_items_schema(type_names)
-          if Constants.nullable_type_pair?(type_names)
-            schema = build_items_for_name(type_names.find { |name| !Constants.nil_type?(name) })
+          if (nullable_type = Constants.nullable_type(type_names))
+            schema = build_items_for_name(nullable_type)
             schema.nullable = true
             return schema
           end
 
           return build_items_for_name(type_names.first) if type_names.size == 1
 
-          has_nil_type = type_names.any? { |name| Constants.nil_type?(name) }
-          variants = type_names.reject { |name| Constants.nil_type?(name) }.map { |name| build_items_for_name(name) }
-          ApiModel::Schema.new(one_of: variants, nullable: has_nil_type ? true : nil)
+          nil_types, other_types = type_names.partition { |type| Constants.nil_type?(type) }
+          variants = other_types.map { |type| build_items_for_name(type) }
+          ApiModel::Schema.new(one_of: variants, nullable: nil_types.any? || nil)
         end
 
         def build_items_for_name(type_name)
