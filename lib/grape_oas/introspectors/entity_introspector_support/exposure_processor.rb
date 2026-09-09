@@ -49,6 +49,11 @@ module GrapeOAS
                    elsif type_resolver.nullable_type_pair?(doc[:types])
                      type_resolver.build_nullable_type_schema(doc[:types])
                    else
+                     if doc.key?(:types)
+                       GrapeOAS.logger.warn(
+                         "Ignoring unsupported entity documentation types: #{doc[:types].inspect}",
+                       )
+                     end
                      type_resolver.build_exposure_base_schema(doc[:type])
                    end
           schema = apply_exposure_properties(schema, doc)
@@ -211,12 +216,10 @@ module GrapeOAS
         end
 
         def apply_exposure_properties(schema, doc)
-          nullable = if doc.key?(:nullable)
-                       doc[:nullable]
-                     elsif doc[:x].is_a?(Hash) && doc[:x].key?(:nullable)
-                       doc[:x][:nullable]
+          nullable = if schema.nullable && doc[:nullable] == false
+                       false
                      else
-                       schema.nullable
+                       schema.nullable || PropertyExtractor.extract_nullable(doc)
                      end
           if nullable && schema.canonical_name
             # Don't mutate the shared cached entity schema. Create a wrapper with

@@ -195,6 +195,18 @@ module GrapeOAS
         assert note_schema.nullable, "Expected x: { nullable: true } to set schema.nullable on entity exposure"
       end
 
+      def test_unsupported_entity_types_emit_warning
+        entity_class = Class.new(Grape::Entity) do
+          expose :value, documentation: { types: [String, Integer, NilClass] }
+        end
+
+        output = capture_grape_oas_log do
+          Introspectors::EntityIntrospector.new(entity_class).build_schema
+        end
+
+        assert_includes output, "Ignoring unsupported entity documentation types"
+      end
+
       def test_nullable_entity_multi_type_does_not_mutate_shared_schema
         profile = Class.new(Grape::Entity) do
           expose :name, documentation: { type: String }
