@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- [#138](https://github.com/numbata/grape-oas/pull/138): Add a manual OAS generation-time benchmark - [@numbata](https://github.com/numbata).
 * Your contribution here
 
 ### Fixed
