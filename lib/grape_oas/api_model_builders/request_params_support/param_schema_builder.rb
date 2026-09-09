@@ -137,7 +137,9 @@ module GrapeOAS
               format: Constants.format_for_type(type_name),
             )
           end
-          ApiModel::Schema.new(one_of: schemas, nullable: nil_types.any? || nil)
+          schema = ApiModel::Schema.new(one_of: schemas)
+          schema.nullable = true if nil_types.any?
+          schema
         end
 
         def build_primitive_schema(raw_type, doc)

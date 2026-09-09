@@ -68,7 +68,9 @@ module GrapeOAS
 
           nil_types, other_types = type_names.partition { |type| Constants.nil_type?(type) }
           variants = other_types.map { |type| build_items_for_name(type) }
-          ApiModel::Schema.new(one_of: variants, nullable: nil_types.any? || nil)
+          schema = ApiModel::Schema.new(one_of: variants)
+          schema.nullable = true if nil_types.any?
+          schema
         end
 
         def build_items_for_name(type_name)
