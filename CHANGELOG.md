@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 * [#136](https://github.com/numbata/grape-oas/pull/136): Preserve top-level Grape `desc:` metadata on request-body properties - [@numbata](https://github.com/numbata).
 * [#140](https://github.com/numbata/grape-oas/pull/140): Preserve nullable entity scalars documented with `types:` - [@numbata](https://github.com/numbata).
+* [#142](https://github.com/numbata/grape-oas/pull/142): Normalize symbolic response status keys to numeric HTTP codes - [@numbata](https://github.com/numbata).
 * Your contribution here
 
 ### Changed
