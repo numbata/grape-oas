@@ -48,7 +48,11 @@ module GrapeOAS
       # Parsers are tried in order of priority
       def response_specs
         parser = parsers.find { |p| p.applicable?(route) }
-        parser ? parser.parse(route) : []
+        return [] unless parser
+
+        parser.parse(route).each do |spec|
+          spec[:code] = Rack::Utils::SYMBOL_TO_STATUS_CODE.fetch(spec[:code], spec[:code])
+        end
       end
 
       def parsers

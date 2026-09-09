@@ -163,6 +163,19 @@ module GrapeOAS
         assert_equal 10, resp_201.extensions[:"x-rate-limit"]
       end
 
+      def test_normalizes_symbolic_documentation_response_status
+        api_class = Class.new(Grape::API) do
+          format :json
+          desc "Create widget", documentation: { responses: { ok: { message: "Success" } } }
+          post("widgets") { {} }
+        end
+
+        route = api_class.routes.first
+        responses = Response.new(api: @api, route: route).build
+
+        assert_equal ["200"], responses.map(&:http_status)
+      end
+
       def test_combines_documentation_responses_with_default_response
         api_class = Class.new(Grape::API) do
           format :json
