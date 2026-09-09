@@ -138,5 +138,66 @@ module GrapeOAS
 
       assert_equal({ "oneOf" => expected_one_of }, flag_param["schema"])
     end
+
+    class EntityMultiType < Grape::Entity
+      expose :display_name, documentation: { types: [String, NilClass], desc: "Public display name" }
+      expose :legacy_collection, documentation: { type: [String, NilClass], nullable: true }
+    end
+
+    class EntityMultiTypeAPI < Grape::API
+      format :json
+      desc "Get entity", success: EntityMultiType
+      get("entity") { {} }
+    end
+
+    def test_oas2_entity_multi_types
+      properties = entity_properties(:oas2)
+
+      expected = {
+        "type" => "string",
+        "description" => "Public display name",
+        "x-nullable" => true
+      }
+
+      assert_equal expected, properties.fetch("display_name")
+      assert_equal "array", properties.dig("legacy_collection", "type")
+      assert_equal "string", properties.dig("legacy_collection", "items", "type")
+      assert properties.dig("legacy_collection", "x-nullable")
+    end
+
+    def test_oas3_entity_multi_types
+      properties = entity_properties(:oas3)
+
+      expected = {
+        "type" => "string",
+        "description" => "Public display name",
+        "nullable" => true
+      }
+
+      assert_equal expected, properties.fetch("display_name")
+      assert_equal "array", properties.dig("legacy_collection", "type")
+      assert_equal "string", properties.dig("legacy_collection", "items", "type")
+      assert properties.dig("legacy_collection", "nullable")
+    end
+
+    def test_oas31_entity_multi_types
+      properties = entity_properties(:oas31)
+      display_name = properties.fetch("display_name")
+
+      assert_equal %w[string null], display_name["type"]
+      assert_equal "Public display name", display_name["description"]
+      refute display_name.key?("items")
+      refute display_name.key?("nullable")
+      assert_equal %w[array null], properties.dig("legacy_collection", "type")
+      assert_equal "string", properties.dig("legacy_collection", "items", "type")
+    end
+
+    private
+
+    def entity_properties(schema_type)
+      schema = GrapeOAS.generate(app: EntityMultiTypeAPI, schema_type: schema_type)
+      schemas = schema["definitions"] || schema.dig("components", "schemas")
+      schemas.dig(EntityMultiType.name.gsub("::", "_"), "properties")
+    end
   end
 end

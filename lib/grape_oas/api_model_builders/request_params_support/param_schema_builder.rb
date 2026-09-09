@@ -149,18 +149,6 @@ module GrapeOAS
           type_names.one? { |t| nil_type_name?(t) }
         end
 
-        # Checks if the type name represents a nil/null type
-        def nil_type_name?(type_name)
-          normalized = type_name.to_s
-          # Match common nil type patterns:
-          # - "NilClass" (Ruby's nil type)
-          # - "Nil" (shorthand)
-          # - "Foo::Nil", "Types::Nil" (namespaced nil types)
-          normalized == "NilClass" ||
-            normalized == "Nil" ||
-            normalized.end_with?("::Nil")
-        end
-
         def build_primitive_schema(raw_type, doc)
           schema_type = sanitize_type(raw_type)
           ApiModel::Schema.new(

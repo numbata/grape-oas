@@ -195,6 +195,18 @@ module GrapeOAS
         assert note_schema.nullable, "Expected x: { nullable: true } to set schema.nullable on entity exposure"
       end
 
+      def test_nullable_entity_multi_type_does_not_mutate_shared_schema
+        entity_class = Class.new(Grape::Entity) do
+          expose :optional_profile, documentation: { types: [ProfileEntity, NilClass] }
+          expose :profile, using: ProfileEntity
+        end
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+
+        assert schema.properties["optional_profile"].nullable
+        refute schema.properties["profile"].nullable
+      end
+
       def test_merge_flattens_properties
         schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
 

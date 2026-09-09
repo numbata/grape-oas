@@ -91,6 +91,11 @@ module GrapeOAS
           match[1].split(/,\s*/)
         end
 
+        def nil_type_name?(type)
+          name = type.to_s
+          name == "NilClass" || name == "Nil" || name.end_with?("::Nil")
+        end
+
         # Builds a basic Schema object for the given Ruby primitive type.
         # Handles special cases like Array and Hash.
         # Note: Uses == instead of case/when because Ruby's === doesn't work for class equality

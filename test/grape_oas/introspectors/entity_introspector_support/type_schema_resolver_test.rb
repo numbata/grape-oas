@@ -100,6 +100,15 @@ module GrapeOAS
           assert_equal Constants::SchemaTypes::STRING, schema.items.type
         end
 
+        def test_multi_type_nil_aliases_build_nullable_scalars
+          [NilClass, "Nil", "Types::Nil"].each do |nil_type|
+            schema = @resolver.build_nullable_type_schema([String, nil_type])
+
+            assert_equal Constants::SchemaTypes::STRING, schema.type
+            assert schema.nullable
+          end
+        end
+
         # === String-to-entity resolution with a valid entity class ===
 
         def test_string_type_resolving_to_entity_produces_object_schema

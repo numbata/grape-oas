@@ -9,6 +9,7 @@ module GrapeOAS
       # concern can be read and tested in isolation.
       class TypeSchemaResolver
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
+        include GrapeOAS::ApiModelBuilders::Concerns::TypeResolver
 
         def initialize(stack:, registry:)
           @stack = stack
@@ -35,6 +36,19 @@ module GrapeOAS
           else
             schema_for_type(type)
           end
+        end
+
+        def nullable_type_pair?(types)
+          types.is_a?(Array) && types.size == 2 && types.one? { |type| nil_type_name?(type) }
+        end
+
+        def build_nullable_type_schema(types)
+          type = types.find { |member| !nil_type_name?(member) }
+          schema = schema_for_type(type)
+          return ApiModel::Schema.new(nullable: true, all_of: [schema]) if schema.canonical_name
+
+          schema.nullable = true
+          schema
         end
 
         # Builds and returns a flattened object schema from the merge-target entity.
