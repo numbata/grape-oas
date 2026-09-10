@@ -17,8 +17,11 @@ module GrapeOAS
       end
 
       def build
-        request_params = RequestParams.new(api: api, route: route, path_param_name_map: path_param_name_map)
-        body_schema, route_params = request_params.build
+        body_schema, route_params, request_body_requested = RequestParams.new(
+          api: api,
+          route: route,
+          path_param_name_map: path_param_name_map,
+        ).build
 
         contract_schema = build_contract_schema
 
@@ -32,21 +35,16 @@ module GrapeOAS
         end
 
         operation.add_parameters(*route_params)
-        append_request_body(body_schema, request_params: request_params) unless body_schema.empty?
+        append_request_body(body_schema, request_body_requested:) unless body_schema.empty?
       end
 
       private
 
-      def append_request_body(body_schema, request_params:)
+      def append_request_body(body_schema, request_body_requested:)
         http_method = operation.http_method.to_s.downcase
-        if Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
-          # OAS allows GET/HEAD/DELETE request bodies, but clients and servers
-          # may ignore them. Keep them opt-in via route or parameter metadata.
-          allow_body = route.options.dig(:documentation, :request_body) ||
-                       route.options[:request_body] ||
-                       request_params.explicit_body_params?
-          return unless allow_body
-        end
+        # OAS allows GET/HEAD/DELETE request bodies, but clients and servers
+        # may ignore them. Keep them opt-in via route or parameter metadata.
+        return if Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method) && !request_body_requested
 
         media_ext = media_type_extensions(Constants::MimeTypes::JSON)
 
@@ -235,7 +233,11 @@ module GrapeOAS
         http_method = operation.http_method.to_s.downcase
         return false unless Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
 
-        !(route.options.dig(:documentation, :request_body) || route.options[:request_body])
+        # Parameter-level body annotations apply to Grape params only; contracts
+        # retain route-level body opt-in semantics.
+        !(route.options.dig(:documentation, :request_body) ||
+          route.options[:request_body] ||
+          route.options[:body_name])
       end
 
       def build_query_parameter(name, schema, required, doc = {})

@@ -216,7 +216,7 @@ end
 post do; end
 ```
 
-**Note:** In OAS 3.x, request bodies don't have names, so `body_name` only affects OAS 2.0 output.
+**Note:** In OAS 3.x, request bodies don't have names, so `body_name` does not set a name. It still opts parameters into a request body.
 
 ### Hiding Endpoints
 

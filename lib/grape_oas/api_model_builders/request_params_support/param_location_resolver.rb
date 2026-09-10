@@ -24,11 +24,11 @@ module GrapeOAS
         # @param spec [Hash] the parameter specification
         # @return [Boolean] true if it's a body parameter
         def self.body_param?(spec)
-          explicit_body_param?(spec) || [Hash, "Hash"].include?(spec[:type])
+          body_annotation?(spec) || [Hash, "Hash"].include?(spec[:type])
         end
 
         # Checks if a parameter is explicitly marked as a body parameter.
-        def self.explicit_body_param?(spec)
+        def self.body_annotation?(spec)
           explicit_location(spec) == "body"
         end
 
@@ -74,7 +74,10 @@ module GrapeOAS
           def extract_from_spec(spec, route)
             # If body_name is set on the route, treat non-path params as body by default
             location = explicit_location(spec)
-            return "body" if route.options[:body_name] && location.nil?
+            route_body_requested = route.options[:body_name] ||
+                                   route.options.dig(:documentation, :request_body) ||
+                                   route.options[:request_body]
+            return "body" if route_body_requested && location.nil?
 
             # Support both param_type and in for grape-swagger compatibility
             # param_type takes precedence over in when both are specified

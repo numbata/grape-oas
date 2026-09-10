@@ -9,19 +9,26 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
-      def test_explicit_body_check_uses_current_declarations
-        route = Struct.new(:path, :request_method, :options).new("/items", "DELETE", {})
-        builder = RequestParams.new(api: @api, route: route)
-        declarations = { "note" => { type: String, documentation: { in: "body" } } }
+      def test_build_reports_request_body_opt_in
+        route_class = Struct.new(:path, :request_method, :options)
+        body_route = route_class.new(
+          "/items",
+          "DELETE",
+          { params: { "note" => { type: String, documentation: { in: "body" } } } },
+        )
+        query_route = route_class.new(
+          "/items",
+          "DELETE",
+          { params: { "note" => { type: String } } },
+        )
 
-        builder.define_singleton_method(:declared_params) { declarations }
-        builder.build
+        _body_schema, _params, body_requested = RequestParams.new(api: @api, route: body_route).build
 
-        assert_predicate builder, :explicit_body_params?
+        assert body_requested
 
-        declarations = {}
+        _body_schema, _params, body_requested = RequestParams.new(api: @api, route: query_route).build
 
-        refute_predicate builder, :explicit_body_params?
+        refute body_requested
       end
 
       def test_explicit_body_check_ignores_path_parameters
@@ -31,23 +38,23 @@ module GrapeOAS
           {},
         )
         builder = RequestParams.new(api: @api, route: route)
-        declarations = { "id" => { type: Integer, documentation: { in: "body" } } }
+        route.options[:params] = { "id" => { type: Integer, documentation: { in: "body" } } }
 
-        builder.define_singleton_method(:declared_params) { declarations }
+        _body_schema, _params, body_requested = builder.build
 
-        refute_predicate builder, :explicit_body_params?
+        refute body_requested
       end
 
       def test_explicit_body_check_honors_param_type_precedence
         route = Struct.new(:path, :request_method, :options).new("/items", "DELETE", {})
         builder = RequestParams.new(api: @api, route: route)
-        declarations = {
+        route.options[:params] = {
           "filter" => { type: String, documentation: { param_type: "query", in: "body" } }
         }
 
-        builder.define_singleton_method(:declared_params) { declarations }
+        _body_schema, _params, body_requested = builder.build
 
-        refute_predicate builder, :explicit_body_params?
+        refute body_requested
       end
 
       def test_extracts_path_parameters

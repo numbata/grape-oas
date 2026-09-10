@@ -22,33 +22,43 @@ module GrapeOAS
       def build
         route_params = self.class.path_param_names(route.path)
         all_params = declared_params
+        request_body_requested = request_body_requested?(all_params)
 
         # Check if we have nested params (bracket notation)
         has_nested = all_params.keys.any? { |k| k.include?("[") }
 
         if has_nested
-          build_with_nested_params(all_params, route_params)
+          body_schema, parameters = build_with_nested_params(all_params, route_params, request_body_requested)
         else
-          build_flat_params(all_params, route_params)
+          body_schema, parameters = build_flat_params(all_params, route_params)
         end
-      end
 
-      def explicit_body_params?(all_params = declared_params)
-        route_params = self.class.path_param_names(route.path)
-
-        all_params.any? do |name, spec|
-          next false if name.include?("[") || route_params.include?(name)
-
-          location_resolver.explicit_body_param?(spec)
-        end
+        [body_schema, parameters, request_body_requested]
       end
 
       private
 
+      def request_body_requested?(all_params)
+        return true if route.options.dig(:documentation, :request_body) ||
+                       route.options[:request_body] ||
+                       route.options[:body_name]
+
+        route_params = self.class.path_param_names(route.path)
+
+        all_params.any? do |name, spec|
+          # Bracket params are child fields, not standalone body declarations.
+          next false if name.include?("[")
+          next false if route_params.include?(name)
+          next false if location_resolver.hidden_parameter?(spec)
+
+          location_resolver.body_annotation?(spec)
+        end
+      end
+
       # Builds params when nested structures are detected.
-      def build_with_nested_params(all_params, route_params)
+      def build_with_nested_params(all_params, route_params, request_body_requested)
         body_schema = nested_params_builder.build(all_params, path_params: route_params)
-        non_body_params = extract_non_body_params(all_params, route_params)
+        non_body_params = extract_non_body_params(all_params, route_params, request_body_requested)
 
         [body_schema, non_body_params]
       end
@@ -85,10 +95,10 @@ module GrapeOAS
       # For non-body HTTP methods (GET, HEAD, DELETE), also includes nested params
       # as flat query parameters with bracket notation (e.g., "tax_id[type]"),
       # unless request_body is explicitly enabled.
-      def extract_non_body_params(all_params, route_params)
+      def extract_non_body_params(all_params, route_params, request_body_requested)
         params = []
         http_method = route.request_method.to_s.downcase
-        flatten_nested = should_flatten_nested_to_query?(http_method, all_params)
+        flatten_nested = should_flatten_nested_to_query?(http_method, request_body_requested)
 
         all_params.each do |name, spec|
           # Skip hidden params
@@ -127,15 +137,12 @@ module GrapeOAS
 
       # Determines whether nested params should be flattened to query params.
       # Returns true for GET/HEAD/DELETE unless body is explicitly requested via:
-      # - route-level `request_body: true` option
+      # - route-level `request_body: true` or `body_name:` option
       # - any parameter with `documentation: { in: 'body' }` or `documentation: { param_type: 'body' }`
-      def should_flatten_nested_to_query?(http_method, all_params)
+      def should_flatten_nested_to_query?(http_method, request_body_requested)
         return false unless Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
 
-        # If request_body is explicitly enabled at route level, use body schema
-        return false if route.options.dig(:documentation, :request_body) || route.options[:request_body]
-
-        !explicit_body_params?(all_params)
+        !request_body_requested
       end
 
       def build_parameter(name, location, required, schema, spec)

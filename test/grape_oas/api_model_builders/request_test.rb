@@ -436,6 +436,28 @@ module GrapeOAS
         refute_nil operation.request_body, "GET should have request body when explicitly allowed"
       end
 
+      def test_request_body_for_get_when_body_name_is_set
+        api_class = Class.new(Grape::API) do
+          format :json
+
+          contract = Dry::Schema.Params do
+            required(:query).filled(:string)
+          end
+
+          desc "Search", contract: contract, body_name: "payload"
+          get "/search" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        operation = GrapeOAS::ApiModel::Operation.new(http_method: :get)
+
+        Request.new(api: @api, route: route, operation: operation).build
+
+        refute_nil operation.request_body, "GET should have body with body_name"
+      end
+
       def test_request_body_for_delete_when_explicitly_allowed_via_option
         api_class = Class.new(Grape::API) do
           format :json
