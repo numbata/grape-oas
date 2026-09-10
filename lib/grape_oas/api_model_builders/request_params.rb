@@ -99,7 +99,6 @@ module GrapeOAS
           next if location_resolver.hidden_parameter?(spec)
 
           is_nested = name.include?("[")
-          is_body_param = location_resolver.body_param?(spec)
 
           if is_nested
             next unless flatten_nested
@@ -113,8 +112,8 @@ module GrapeOAS
             next
           end
 
-          # Route captures take precedence over inherited body documentation.
-          next if is_body_param && !route_params.include?(name)
+          # Hash parents are represented by their children or the request body.
+          next if [Hash, "Hash"].include?(spec[:type])
 
           location = location_resolver.resolve(
             name: name,
@@ -139,7 +138,7 @@ module GrapeOAS
         ApiModel::Parameter.new(
           location: location,
           name: name,
-          required: required,
+          required: location == "path" || required,
           schema: schema,
           description: spec[:documentation]&.dig(:desc) || spec[:desc],
           collection_format: extract_collection_format(spec),

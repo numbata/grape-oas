@@ -9,11 +9,11 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
-      def test_path_capture_preserves_metadata_inside_body_group
+      def test_optional_path_capture_preserves_metadata_and_is_required
         api_class = Class.new(Grape::API) do
           params do
             with(documentation: { param_type: "body" }) do
-              requires :id, type: Integer, desc: "The resource ID", documentation: { format: "int64" }
+              optional :id, type: Integer, desc: "The resource ID", documentation: { format: "int64" }
               requires :payload, type: Hash do
                 requires :name, type: String
               end

@@ -56,16 +56,26 @@ module GrapeOAS
         assert_equal "path", fallback["in"]
         assert fallback["required"]
         assert_equal "string", fallback_schema["type"]
+      end
+    end
 
-        body = if version == :oas2
-                 params.find { |param| param["in"] == "body" }.fetch("schema")
-               else
-                 operation.dig("requestBody", "content", "application/json", "schema")
-               end
-        body = spec.dig(*body.fetch("$ref").delete_prefix("#/").split("/"))
+    def test_hash_path_capture_keeps_string_fallback
+      api = Class.new(Grape::API) do
+        params do
+          requires :payload, type: Hash do
+            requires :name, type: String
+          end
+        end
+        post(":payload") { {} }
+      end
+      %i[oas2 oas3 oas31].each do |version|
+        spec = GrapeOAS.generate(app: api, schema_type: version)
+        parameter = spec.dig("paths", "/{payload}", "post", "parameters").first
+        schema = version == :oas2 ? parameter : parameter.fetch("schema")
 
-        refute_includes body.fetch("properties").keys, "id"
-        assert_equal "string", body.dig("properties", "payload", "properties", "name", "type")
+        assert_equal "path", parameter["in"]
+        assert parameter["required"]
+        assert_equal "string", schema["type"]
       end
     end
 
