@@ -508,14 +508,7 @@ module GrapeOAS
         assert_includes body_schema.properties.keys, "filter"
       end
 
-      # Pins pre-existing (not introduced here) behavior: an explicit
-      # `in: "path"` is honored even when the name has no matching route
-      # capture, producing a path parameter that can never appear in the
-      # URL template. Reproduces identically for flat params on main.
-      # `location if VALID_EXPLICIT_LOCATIONS.include?(location)` only
-      # rejects *unrecognized* location strings; "path" is a recognized
-      # one, so this needs a route-template-aware fix, out of scope here.
-      def test_post_request_with_path_located_nested_hash_on_unrelated_route
+      def test_post_request_with_path_located_nested_hash_on_unrelated_route_falls_back_to_body
         api_class = Class.new(Grape::API) do
           format :json
           params do
@@ -530,14 +523,39 @@ module GrapeOAS
 
         route = api_class.routes.first
         builder = RequestParams.new(api: @api, route: route)
-        _body_schema, params = builder.build
+        body_schema, params = builder.build
 
-        min_param = params.find { |p| p.name == "filter[min]" }
-
-        refute_nil min_param
-        assert_equal "path", min_param.location
+        # "path" is explicit, but /items has no "filter[min]" path template
+        # segment — it can never appear in the URL, so it isn't honored as
+        # a path location for this route and falls back to the body.
+        refute_includes params.map(&:name), "filter[min]"
+        assert_includes body_schema.properties.keys, "filter"
       end
 
+      def test_flat_path_located_param_on_unrelated_route_falls_back_to_body
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :min, type: Integer, documentation: { in: "path" }
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        refute_includes params.map(&:name), "min"
+        assert_includes body_schema.properties.keys, "min"
+      end
+
+      # "cookie" is OAS 3-only; an OAS 2.0 export of this same input emits an
+      # invalid `in: "cookie"` parameter (Swagger 2.0 only allows
+      # query|header|path|formData|body). Location resolution has no
+      # visibility into the target OAS version, so this can't be caught
+      # here — it would need a check in the OAS2 exporter itself.
       def test_post_request_with_cookie_located_nested_hash_stays_in_cookie
         api_class = Class.new(Grape::API) do
           format :json

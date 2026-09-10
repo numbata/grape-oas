@@ -281,7 +281,7 @@ end
 |--------|---------------|-----------|-------|
 | `desc` | ✅ | ✅ | Parameter description |
 | `type` | ✅ | ✅ | Override type |
-| `param_type` | ✅ | ✅ | query, path, header, body, formData |
+| `param_type` | ✅ | ✅ | query, path, header, body, cookie (OAS 3 only). `formData` is not a supported location — grape-oas never places parameters there directly; declare the field on a form-consuming route instead and let the OAS 2.0 exporter derive `formData` automatically. |
 | `example` | ✅ | ✅ | Example value |
 | `default` | ✅ | ✅ | Default value |
 | `hidden` | ✅ | ✅ | Hide from docs |
