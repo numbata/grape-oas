@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#145](https://github.com/numbata/grape-oas/pull/145): Preserve explicitly body-located DELETE parameters - [@numbata](https://github.com/numbata).
+- [#145](https://github.com/numbata/grape-oas/pull/145): Preserve explicitly body-located GET, HEAD, and DELETE parameters - [@numbata](https://github.com/numbata).
 
 ## [1.5.1] - 2026-09-09
 

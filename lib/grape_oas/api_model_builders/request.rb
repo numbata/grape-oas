@@ -42,7 +42,7 @@ module GrapeOAS
         if Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
           allow_body = route.options.dig(:documentation, :request_body) ||
                        route.options[:request_body] ||
-                       (http_method == "delete" && request_params.explicit_body_params?)
+                       request_params.explicit_body_params?
           return unless allow_body
         end
 
