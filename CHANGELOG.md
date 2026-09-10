@@ -11,10 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [#110](https://github.com/numbata/grape-oas/pull/110): Honor Grape `desc` `default` / `default_response` as OAS `responses.default` - [@numbata](https://github.com/numbata).
 - [#136](https://github.com/numbata/grape-oas/pull/136): Preserve top-level Grape `desc:` metadata on request-body properties - [@numbata](https://github.com/numbata).
-- [#146](https://github.com/numbata/grape-oas/pull/146): Preserve declared path metadata inside nested body parameter groups - [@numbata](https://github.com/numbata).
 - [#140](https://github.com/numbata/grape-oas/pull/140): Preserve nullable entity scalars documented with `types:` - [@numbata](https://github.com/numbata).
 - [#142](https://github.com/numbata/grape-oas/pull/142): Normalize symbolic response status keys to numeric HTTP codes - [@numbata](https://github.com/numbata).
 - [#145](https://github.com/numbata/grape-oas/pull/145): Preserve explicitly body-located GET, HEAD, and DELETE parameters - [@numbata](https://github.com/numbata).
+- [#146](https://github.com/numbata/grape-oas/pull/146): Preserve declared path metadata inside nested body parameter groups and always mark path parameters as required, per OAS, even when their Grape declaration is optional - [@numbata](https://github.com/numbata).
 
 ### Changed
 
