@@ -10,28 +10,33 @@ module GrapeOAS
       end
 
       def test_optional_path_capture_preserves_metadata_and_is_required
-        api_class = Class.new(Grape::API) do
-          params do
-            with(documentation: { param_type: "body" }) do
-              optional :id, type: Integer, desc: "The resource ID", documentation: { format: "int64" }
-              requires :payload, type: Hash do
-                requires :name, type: String
+        %i[get post delete].product(%i[param_type in]).each do |verb, location_key|
+          api_class = Class.new(Grape::API) do
+            params do
+              with(documentation: { location_key => "body" }) do
+                optional :id, type: Integer, desc: "The resource ID", documentation: { format: "int64" }
+                optional :note, type: String
+                requires :payload, type: Hash do
+                  requires :name, type: String
+                end
               end
             end
+            public_send(verb, ":id") { {} }
           end
-          post(":id") { {} }
-        end
-        body, params = RequestParams.new(api: @api, route: api_class.routes.first).build
-        id = params.find { |param| param.name == "id" }
+          body, params = RequestParams.new(api: @api, route: api_class.routes.first).build
+          id = params.find { |param| param.name == "id" }
 
-        refute_nil id
-        assert_equal "path", id.location
-        assert id.required
-        assert_equal "The resource ID", id.description
-        assert_equal "integer", id.schema.type
-        assert_equal "int64", id.schema.format
-        refute_includes body.properties.keys, "id"
-        assert_equal "string", body.properties["payload"].properties["name"].type
+          refute_nil id, "#{verb}, #{location_key}"
+          assert_equal "path", id.location
+          assert id.required
+          assert_equal "The resource ID", id.description
+          assert_equal "integer", id.schema.type
+          assert_equal "int64", id.schema.format
+          assert_equal ["id"], params.map(&:name)
+          refute_includes body.properties.keys, "id"
+          assert_equal "string", body.properties["note"].type
+          assert_equal "string", body.properties["payload"].properties["name"].type
+        end
       end
 
       # === Simple nested hash (1 level) ===
