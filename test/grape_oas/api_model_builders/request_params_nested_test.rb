@@ -392,6 +392,165 @@ module GrapeOAS
         assert_includes body_schema.properties.keys, "tax_id"
       end
 
+      def test_post_request_with_explicit_query_nested_hash_stays_in_query
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { in: "query" } do
+              optional :kind, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        param_names = params.map(&:name)
+
+        assert_includes param_names, "filter[kind]"
+        kind_param = params.find { |p| p.name == "filter[kind]" }
+
+        assert_equal "query", kind_param.location
+        refute_includes body_schema.properties.keys, "filter"
+      end
+
+      def test_put_and_patch_requests_with_explicit_query_nested_hash_stay_in_query
+        %i[put patch].each do |verb|
+          api_class = Class.new(Grape::API) do
+            format :json
+            params do
+              optional :filter, type: Hash, documentation: { param_type: "query" } do
+                optional :kind, type: String
+              end
+            end
+            public_send(verb, "items") { {} }
+          end
+
+          route = api_class.routes.first
+          builder = RequestParams.new(api: @api, route: route)
+          body_schema, params = builder.build
+
+          kind_param = params.find { |p| p.name == "filter[kind]" }
+
+          refute_nil kind_param, "expected filter[kind] as a query param for #{verb}"
+          assert_equal "query", kind_param.location, "expected filter[kind] to resolve to query for #{verb}"
+          refute_includes body_schema.properties.keys, "filter", "expected filter to stay out of the body for #{verb}"
+        end
+      end
+
+      def test_post_request_with_explicit_header_nested_hash_stays_in_header
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { in: "header" } do
+              optional :kind, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        kind_param = params.find { |p| p.name == "filter[kind]" }
+
+        refute_nil kind_param
+        assert_equal "header", kind_param.location
+        refute_includes body_schema.properties.keys, "filter"
+      end
+
+      def test_childless_query_hash_is_still_emitted_as_a_parameter
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :meta, type: Hash, documentation: { in: "query" }
+            optional :payload, type: Hash do
+              optional :name, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        meta_param = params.find { |p| p.name == "meta" }
+
+        refute_nil meta_param
+        assert_equal "query", meta_param.location
+        refute_includes body_schema.properties.keys, "meta"
+      end
+
+      # Pins existing (pre-#147) two-level flattening behavior on a write
+      # method: leaf params flatten correctly, but the intermediate Hash
+      # node ("filter[range]") also leaks through as a bare object-typed
+      # parameter, matching the same pre-existing shape GET/HEAD/DELETE
+      # already produced. Not introduced by #147 — documented here so a
+      # future cleanup of the intermediate-node case has a fence to check.
+      def test_post_request_with_deeply_nested_query_hash_flattens_all_levels
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { in: "query" } do
+              optional :range, type: Hash do
+                optional :min, type: Integer
+                optional :max, type: Integer
+              end
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        param_names = params.map(&:name)
+
+        assert_equal ["filter[range]", "filter[range][min]", "filter[range][max]"], param_names
+        params.each { |param| assert_equal "query", param.location }
+      end
+
+      def test_post_request_keeps_mixed_body_and_query_nested_hashes_separate
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { in: "query" } do
+              optional :kind, type: String
+            end
+            optional :payload, type: Hash do
+              optional :name, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        param_names = params.map(&:name)
+
+        assert_includes param_names, "filter[kind]"
+        refute_includes param_names, "payload[name]"
+        assert_includes body_schema.properties.keys, "payload"
+        refute_includes body_schema.properties.keys, "filter"
+      end
+
       def test_get_request_with_explicit_request_body_keeps_nested_in_body
         api_class = Class.new(Grape::API) do
           format :json

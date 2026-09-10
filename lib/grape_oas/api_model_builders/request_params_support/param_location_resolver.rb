@@ -28,15 +28,6 @@ module GrapeOAS
           [Hash, "Hash"].include?(spec[:type])
         end
 
-        # Checks if a parameter is explicitly marked as NOT a body param.
-        # Supports both `param_type` and `in` for grape-swagger compatibility.
-        #
-        # @param spec [Hash] the parameter specification
-        # @return [Boolean] true if explicitly non-body
-        def self.explicit_non_body_param?(spec)
-          %w[query header path].include?(explicit_location(spec))
-        end
-
         # Checks if a parameter should be hidden from documentation.
         # Required parameters are never hidden (matching grape-swagger behavior).
         #

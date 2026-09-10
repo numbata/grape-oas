@@ -86,33 +86,34 @@ module GrapeOAS
       end
 
       # Extracts non-body params (path, query, header) from flat params.
-      # For non-body HTTP methods (GET, HEAD, DELETE), also includes nested params
-      # as flat query parameters with bracket notation (e.g., "tax_id[type]")
-      # when their parent resolves to query.
+      # Nested params (bracket notation, e.g. "tax_id[type]") are included as
+      # flat non-body parameters, taking their parent's resolved location,
+      # regardless of HTTP method — a nested Hash explicitly documented
+      # `in: "header"` on a write route (POST/PUT/PATCH) still belongs in
+      # the header, not the body.
       def extract_non_body_params(all_params, route_params)
         params = []
-        http_method = route.request_method.to_s.downcase
-        flatten_nested = Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
 
         all_params.each do |name, spec|
           # Skip hidden params
           next if location_resolver.hidden_parameter?(spec)
 
-          is_nested = name.include?("[")
-
-          if is_nested
-            next unless flatten_nested
-
+          if name.include?("[")
             root = name.split("[", 2).first
             root_spec = all_params[root] || {}
             next if location_resolver.hidden_parameter?(root_spec)
-            next unless location_resolver.resolve(name: root, spec: root_spec, route_params: route_params, route: route) == "query"
 
-            params << build_parameter(name, "query", spec[:required] || false, schema_builder.build(spec), spec)
+            root_location = location_resolver.resolve(name: root, spec: root_spec, route_params: route_params, route: route)
+            next if root_location == "body"
+
+            params << build_parameter(name, root_location, spec[:required] || false, schema_builder.build(spec), spec)
             next
           end
 
-          next if location_resolver.hash_param?(spec)
+          # Skip Hash type params with nested children of their own (they're
+          # handled via the nested bracket branch above or via body schema).
+          # A childless Hash falls through to the generic path below.
+          next if location_resolver.hash_param?(spec) && all_params.keys.any? { |k| k.start_with?("#{name}[") }
 
           location = location_resolver.resolve(
             name: name,
