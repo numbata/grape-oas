@@ -43,6 +43,45 @@ module GrapeOAS
       end
     end
 
+    def test_path_annotation_does_not_enable_request_body
+      api = Class.new(Grape::API) do
+        format :json
+        params do
+          requires :id, type: Integer, documentation: { in: "body" }
+          optional :filter, type: Hash do
+            optional :kind, type: String
+          end
+        end
+        get "items/:id" do
+          {}
+        end
+      end
+
+      SCHEMA_TYPES.each do |version|
+        spec = GrapeOAS.generate(app: api, schema_type: version)
+        operation = spec.dig("paths", "/items/{id}", "get")
+
+        assert_nil body_schema(spec, operation, version)
+        filter = operation.fetch("parameters").find { |param| param["name"] == "filter[kind]" }
+
+        assert_equal "query", filter["in"]
+      end
+    end
+
+    def test_param_type_takes_precedence_over_in_for_body_opt_in
+      api = build_api(documentation: { param_type: "query", in: "body" }, nested: true, http_method: :delete)
+
+      SCHEMA_TYPES.each do |version|
+        spec = GrapeOAS.generate(app: api, schema_type: version)
+        operation = spec.dig("paths", "/items/{id}", "delete")
+
+        assert_nil body_schema(spec, operation, version)
+        note = operation.fetch("parameters").find { |param| param["name"] == "note[text]" }
+
+        assert_equal "query", note["in"]
+      end
+    end
+
     private
 
     def build_api(documentation: {}, nested: false, http_method: :delete)
@@ -64,7 +103,7 @@ module GrapeOAS
 
     def body_schema(spec, operation, version)
       schema = if version == :oas2
-                 operation.fetch("parameters", []).find { |param| param["in"] == "body" }&.fetch("schema")
+                 operation.fetch("parameters", []).find { |param| param["in"] == "body" }&.fetch("schema", nil)
                else
                  operation.dig("requestBody", "content", "application/json", "schema")
                end

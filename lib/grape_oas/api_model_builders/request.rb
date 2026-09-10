@@ -40,6 +40,8 @@ module GrapeOAS
       def append_request_body(body_schema, request_params:)
         http_method = operation.http_method.to_s.downcase
         if Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
+          # OAS allows GET/HEAD/DELETE request bodies, but clients and servers
+          # may ignore them. Keep them opt-in via route or parameter metadata.
           allow_body = route.options.dig(:documentation, :request_body) ||
                        route.options[:request_body] ||
                        request_params.explicit_body_params?

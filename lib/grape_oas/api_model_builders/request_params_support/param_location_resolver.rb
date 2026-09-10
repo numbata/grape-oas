@@ -24,10 +24,12 @@ module GrapeOAS
         # @param spec [Hash] the parameter specification
         # @return [Boolean] true if it's a body parameter
         def self.body_param?(spec)
-          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
-          in_location = spec.dig(:documentation, :in)&.to_s&.downcase
+          explicit_body_param?(spec) || [Hash, "Hash"].include?(spec[:type])
+        end
 
-          param_type == "body" || in_location == "body" || [Hash, "Hash"].include?(spec[:type])
+        # Checks if a parameter is explicitly marked as a body parameter.
+        def self.explicit_body_param?(spec)
+          explicit_location(spec) == "body"
         end
 
         # Checks if a parameter is explicitly marked as NOT a body param.
@@ -36,11 +38,7 @@ module GrapeOAS
         # @param spec [Hash] the parameter specification
         # @return [Boolean] true if explicitly non-body
         def self.explicit_non_body_param?(spec)
-          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
-          in_location = spec.dig(:documentation, :in)&.to_s&.downcase
-          location = param_type || in_location
-
-          location && %w[query header path].include?(location)
+          %w[query header path].include?(explicit_location(spec))
         end
 
         # Checks if a parameter should be hidden from documentation.
@@ -75,18 +73,22 @@ module GrapeOAS
           # @return [String] the parameter location
           def extract_from_spec(spec, route)
             # If body_name is set on the route, treat non-path params as body by default
-            param_type = spec.dig(:documentation, :param_type)
-            in_location = spec.dig(:documentation, :in)
-            return "body" if route.options[:body_name] && !param_type && !in_location
+            location = explicit_location(spec)
+            return "body" if route.options[:body_name] && location.nil?
 
             # Support both param_type and in for grape-swagger compatibility
             # param_type takes precedence over in when both are specified
-            explicit_location = (param_type || in_location)&.to_s&.downcase
-            return explicit_location if explicit_location
+            return location if location
 
             # Default: body for write methods (POST/PUT/PATCH), query for read methods (GET/DELETE/HEAD)
             http_method = route.request_method.to_s.downcase
             Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method) ? "query" : "body"
+          end
+
+          def explicit_location(spec)
+            param_type = spec.dig(:documentation, :param_type)
+            in_location = spec.dig(:documentation, :in)
+            (param_type || in_location)&.to_s&.downcase
           end
         end
       end

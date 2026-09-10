@@ -21,7 +21,7 @@ module GrapeOAS
 
       def build
         route_params = self.class.path_param_names(route.path)
-        all_params = @declared_params = declared_params
+        all_params = declared_params
 
         # Check if we have nested params (bracket notation)
         has_nested = all_params.keys.any? { |k| k.include?("[") }
@@ -33,13 +33,13 @@ module GrapeOAS
         end
       end
 
-      def explicit_body_params?(all_params = @declared_params || declared_params)
-        all_params.any? do |name, spec|
-          next false if name.include?("[")
+      def explicit_body_params?(all_params = declared_params)
+        route_params = self.class.path_param_names(route.path)
 
-          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
-          in_location = spec.dig(:documentation, :in)&.to_s&.downcase
-          param_type == "body" || in_location == "body"
+        all_params.any? do |name, spec|
+          next false if name.include?("[") || route_params.include?(name)
+
+          location_resolver.explicit_body_param?(spec)
         end
       end
 

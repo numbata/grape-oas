@@ -770,13 +770,17 @@ desc 'Endpoint without auto 400',
      documentation: { suppress_default_error_response: true }
 ```
 
-### 6. Request Body for GET/DELETE
+### 6. Request Body for GET/HEAD/DELETE
 
 ```ruby
-# Opt-in request body for methods that normally don't have one
+# Route-level opt-in for methods that normally don't have a body
+desc 'Search with body', documentation: { request_body: true }
+get :search do; end
+
+# Or, a body-located parameter also opts in to a request body
 desc 'Search with body'
 params do
-  requires :query, type: Hash, documentation: { request_body: true }
+  requires :query, type: Hash, documentation: { param_type: 'body' }
 end
 get :search do; end
 ```

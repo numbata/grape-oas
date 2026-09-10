@@ -9,27 +9,45 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
-      def test_explicit_body_check_reuses_declarations_from_each_build
+      def test_explicit_body_check_uses_current_declarations
         route = Struct.new(:path, :request_method, :options).new("/items", "DELETE", {})
         builder = RequestParams.new(api: @api, route: route)
-        scans = 0
         declarations = { "note" => { type: String, documentation: { in: "body" } } }
-        read_declarations = lambda do
-          scans += 1
-          declarations
-        end
 
-        builder.define_singleton_method(:declared_params, read_declarations)
+        builder.define_singleton_method(:declared_params) { declarations }
         builder.build
 
         assert_predicate builder, :explicit_body_params?
-        assert_equal 1, scans
 
         declarations = {}
-        builder.build
 
         refute_predicate builder, :explicit_body_params?
-        assert_equal 2, scans
+      end
+
+      def test_explicit_body_check_ignores_path_parameters
+        route = Struct.new(:path, :request_method, :options).new(
+          "/items/:id",
+          "DELETE",
+          {},
+        )
+        builder = RequestParams.new(api: @api, route: route)
+        declarations = { "id" => { type: Integer, documentation: { in: "body" } } }
+
+        builder.define_singleton_method(:declared_params) { declarations }
+
+        refute_predicate builder, :explicit_body_params?
+      end
+
+      def test_explicit_body_check_honors_param_type_precedence
+        route = Struct.new(:path, :request_method, :options).new("/items", "DELETE", {})
+        builder = RequestParams.new(api: @api, route: route)
+        declarations = {
+          "filter" => { type: String, documentation: { param_type: "query", in: "body" } }
+        }
+
+        builder.define_singleton_method(:declared_params) { declarations }
+
+        refute_predicate builder, :explicit_body_params?
       end
 
       def test_extracts_path_parameters

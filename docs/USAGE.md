@@ -75,6 +75,24 @@ params do
 end
 ```
 
+### Request bodies for GET/HEAD/DELETE
+
+These methods remain bodyless by default. Opt in at the route level:
+
+```ruby
+desc 'Search with body', documentation: { request_body: true }
+get :search do; end
+```
+
+Or mark a parameter as body-located with `param_type: 'body'` or `in: 'body'`:
+
+```ruby
+params do
+  requires :query, type: Hash, documentation: { param_type: 'body' }
+end
+get :search do; end
+```
+
 ## Response Documentation
 
 ### one_of Responses
