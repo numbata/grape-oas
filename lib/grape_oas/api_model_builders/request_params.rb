@@ -99,7 +99,7 @@ module GrapeOAS
           next if location_resolver.hidden_parameter?(spec)
 
           is_nested = name.include?("[")
-          is_hash_param = location_resolver.body_param?(spec)
+          is_body_param = location_resolver.body_param?(spec)
 
           if is_nested
             next unless flatten_nested
@@ -113,9 +113,8 @@ module GrapeOAS
             next
           end
 
-          # Skip Hash type params (they're handled via nested bracket params above
-          # or via body schema for POST/PUT/PATCH)
-          next if is_hash_param && !route_params.include?(name)
+          # Route captures take precedence over inherited body documentation.
+          next if is_body_param && !route_params.include?(name)
 
           location = location_resolver.resolve(
             name: name,
