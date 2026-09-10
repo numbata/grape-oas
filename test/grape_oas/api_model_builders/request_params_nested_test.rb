@@ -466,6 +466,102 @@ module GrapeOAS
         refute_includes body_schema.properties.keys, "filter"
       end
 
+      def test_post_request_with_unrecognized_nested_location_falls_back_to_body
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { in: "quer" } do
+              optional :kind, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        refute_includes params.map(&:name), "filter[kind]"
+        assert_includes body_schema.properties.keys, "filter"
+      end
+
+      def test_post_request_with_form_data_location_falls_back_to_body
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { param_type: "formData" } do
+              optional :kind, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        refute_includes params.map(&:name), "filter[kind]"
+        assert_includes body_schema.properties.keys, "filter"
+      end
+
+      # Pins pre-existing (not introduced here) behavior: an explicit
+      # `in: "path"` is honored even when the name has no matching route
+      # capture, producing a path parameter that can never appear in the
+      # URL template. Reproduces identically for flat params on main.
+      # `location if VALID_EXPLICIT_LOCATIONS.include?(location)` only
+      # rejects *unrecognized* location strings; "path" is a recognized
+      # one, so this needs a route-template-aware fix, out of scope here.
+      def test_post_request_with_path_located_nested_hash_on_unrelated_route
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { in: "path" } do
+              optional :min, type: Integer
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        min_param = params.find { |p| p.name == "filter[min]" }
+
+        refute_nil min_param
+        assert_equal "path", min_param.location
+      end
+
+      def test_post_request_with_cookie_located_nested_hash_stays_in_cookie
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash, documentation: { in: "cookie" } do
+              optional :kind, type: String
+            end
+          end
+          post "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        kind_param = params.find { |p| p.name == "filter[kind]" }
+
+        refute_nil kind_param
+        assert_equal "cookie", kind_param.location
+        refute_includes body_schema.properties.keys, "filter"
+      end
+
       def test_childless_query_hash_is_still_emitted_as_a_parameter
         api_class = Class.new(Grape::API) do
           format :json

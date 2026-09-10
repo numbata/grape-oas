@@ -5,6 +5,12 @@ module GrapeOAS
     module RequestParamsSupport
       # Resolves the location (path, query, body, header) for a parameter.
       class ParamLocationResolver
+        # Locations `param_type:`/`in:` may explicitly name. An unrecognized
+        # value (a typo, or a grape-swagger location this library doesn't
+        # resolve to, like `formData`) is treated as unset rather than
+        # emitted verbatim, since nothing downstream validates `Parameter#location`.
+        VALID_EXPLICIT_LOCATIONS = %w[body query header path cookie].freeze
+
         # Determines the location for a parameter.
         #
         # @param name [String] the parameter name
@@ -79,7 +85,8 @@ module GrapeOAS
             doc = spec[:documentation] || {}
             param_type = doc[:param_type] || doc["param_type"]
             in_location = doc[:in] || doc["in"]
-            (param_type || in_location)&.to_s&.downcase
+            location = (param_type || in_location)&.to_s&.downcase
+            location if VALID_EXPLICIT_LOCATIONS.include?(location)
           end
         end
       end
