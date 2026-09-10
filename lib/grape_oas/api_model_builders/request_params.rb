@@ -99,7 +99,6 @@ module GrapeOAS
           next if location_resolver.hidden_parameter?(spec)
 
           is_nested = name.include?("[")
-          is_hash_param = location_resolver.body_param?(spec)
 
           if is_nested
             next unless flatten_nested
@@ -113,9 +112,7 @@ module GrapeOAS
             next
           end
 
-          # Skip Hash type params (they're handled via nested bracket params above
-          # or via body schema for POST/PUT/PATCH)
-          next if is_hash_param
+          next if location_resolver.hash_param?(spec)
 
           location = location_resolver.resolve(
             name: name,
@@ -140,7 +137,7 @@ module GrapeOAS
         ApiModel::Parameter.new(
           location: location,
           name: name,
-          required: required,
+          required: location == "path" || required,
           schema: schema,
           description: spec[:documentation]&.dig(:desc) || spec[:desc],
           collection_format: extract_collection_format(spec),

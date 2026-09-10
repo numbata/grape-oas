@@ -78,6 +78,27 @@ module GrapeOAS
         assert id_param.required
       end
 
+      def test_optional_flat_path_parameter_is_still_required
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :id, type: Integer, desc: "User ID"
+          end
+          get "users/:id" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        id_param = params.find { |p| p.name == "id" }
+
+        assert_equal "path", id_param.location
+        assert id_param.required
+      end
+
       def test_extracts_query_parameters
         api_class = Class.new(Grape::API) do
           format :json

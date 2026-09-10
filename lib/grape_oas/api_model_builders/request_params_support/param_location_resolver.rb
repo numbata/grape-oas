@@ -18,18 +18,14 @@ module GrapeOAS
           extract_from_spec(spec, route)
         end
 
-        # Checks if a parameter should be in the request body.
-        # Supports both `param_type: 'body'` and `in: 'body'` for grape-swagger compatibility.
+        # Checks if a parameter is a Hash type. Hash parents are represented
+        # by their children (nested params) or the request body, never
+        # themselves as a parameter.
         #
         # @param spec [Hash] the parameter specification
-        # @return [Boolean] true if it's a body parameter
-        def self.body_param?(spec)
-          body_annotation?(spec) || [Hash, "Hash"].include?(spec[:type])
-        end
-
-        # Checks if a parameter is explicitly marked as a body parameter.
-        def self.body_annotation?(spec)
-          explicit_location(spec) == "body"
+        # @return [Boolean] true if the parameter type is Hash
+        def self.hash_param?(spec)
+          [Hash, "Hash"].include?(spec[:type])
         end
 
         # Checks if a parameter is explicitly marked as NOT a body param.
