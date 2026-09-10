@@ -17,7 +17,7 @@ module GrapeOAS
       end
 
       def build
-        body_schema, route_params, request_body_requested = RequestParams.new(
+        body_schema, route_params = RequestParams.new(
           api: api,
           route: route,
           path_param_name_map: path_param_name_map,
@@ -35,17 +35,12 @@ module GrapeOAS
         end
 
         operation.add_parameters(*route_params)
-        append_request_body(body_schema, request_body_requested:) unless body_schema.empty?
+        append_request_body(body_schema) unless body_schema.empty?
       end
 
       private
 
-      def append_request_body(body_schema, request_body_requested:)
-        http_method = operation.http_method.to_s.downcase
-        # OAS allows GET/HEAD/DELETE request bodies, but clients and servers
-        # may ignore them. Keep them opt-in via route or parameter metadata.
-        return if Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method) && !request_body_requested
-
+      def append_request_body(body_schema)
         media_ext = media_type_extensions(Constants::MimeTypes::JSON)
 
         # Set canonical_name if not already set (e.g., DryIntrospector may have set it for polymorphism)
@@ -235,9 +230,7 @@ module GrapeOAS
 
         # Parameter-level body annotations apply to Grape params only; contracts
         # retain route-level body opt-in semantics.
-        !(route.options.dig(:documentation, :request_body) ||
-          route.options[:request_body] ||
-          route.options[:body_name])
+        !RequestParamsSupport::ParamLocationResolver.route_body_opted_in?(route)
       end
 
       def build_query_parameter(name, schema, required, doc = {})

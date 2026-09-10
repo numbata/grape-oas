@@ -22,7 +22,6 @@ module GrapeOAS
       def build
         route_params = self.class.path_param_names(route.path)
         all_params = declared_params
-        request_body_requested = request_body_requested?(all_params)
 
         # Check if we have nested params (bracket notation)
         has_nested = all_params.keys.any? { |k| k.include?("[") }
@@ -33,27 +32,10 @@ module GrapeOAS
           body_schema, parameters = build_flat_params(all_params, route_params)
         end
 
-        [body_schema, parameters, request_body_requested]
+        [body_schema, parameters]
       end
 
       private
-
-      def request_body_requested?(all_params)
-        return true if route.options.dig(:documentation, :request_body) ||
-                       route.options[:request_body] ||
-                       route.options[:body_name]
-
-        route_params = self.class.path_param_names(route.path)
-
-        all_params.any? do |name, spec|
-          # Bracket params are child fields, not standalone body declarations.
-          next false if name.include?("[")
-          next false if route_params.include?(name)
-          next false if location_resolver.hidden_parameter?(spec)
-
-          location_resolver.body_annotation?(spec)
-        end
-      end
 
       # Builds params when nested structures are detected.
       def build_with_nested_params(all_params, route_params)

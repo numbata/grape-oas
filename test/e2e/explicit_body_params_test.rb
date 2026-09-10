@@ -8,23 +8,14 @@ module GrapeOAS
     NESTING_OPTIONS = [false, true].freeze
 
     def test_explicit_body_parameters_survive_all_exporters
-      %i[get head delete].product(%i[param_type in], NESTING_OPTIONS).each do |http_method, location_key, nested|
-        api = build_api(documentation: { location_key => "body" }, nested: nested, http_method: http_method)
-        SCHEMA_TYPES.each do |version|
-          spec = GrapeOAS.generate(app: api, schema_type: version)
-          operation = spec.dig("paths", "/items/{id}", http_method.to_s)
-          body = body_schema(spec, operation, version)
-          context = "#{http_method}, #{version}, #{location_key}, nested=#{nested}"
+      api = build_api(documentation: { in: "body" }, http_method: :delete)
+      SCHEMA_TYPES.each do |version|
+        spec = GrapeOAS.generate(app: api, schema_type: version)
+        operation = spec.dig("paths", "/items/{id}", "delete")
+        body = body_schema(spec, operation, version)
 
-          refute_nil body, context
-          note = body.dig("properties", "note")
-          note = note.dig("properties", "text") if nested
-
-          assert_equal "string", note["type"], context
-          non_body = operation.fetch("parameters", []).reject { |param| param["in"] == "body" }
-
-          assert_equal([%w[id path]], non_body.map { |param| param.values_at("name", "in") }, context)
-        end
+        refute_nil body, version.to_s
+        assert_equal "string", body.dig("properties", "note", "type")
       end
     end
 
@@ -192,6 +183,34 @@ module GrapeOAS
 
         refute_nil body, "route request_body, #{version}"
         assert_equal "string", body.dig("properties", "filter", "type"), "route request_body, #{version}"
+      end
+    end
+
+    def test_route_opt_in_moves_unlocated_fields_to_body_and_preserves_explicit_query
+      %i[get head delete].each do |verb|
+        api = Class.new(Grape::API) do
+          format :json
+          desc "Search", documentation: { request_body: true }
+          params do
+            optional :page, type: Integer
+            optional :limit, type: Integer, documentation: { in: "query" }
+            optional :filter, type: Hash do
+              optional :kind, type: String
+            end
+          end
+          public_send(verb, "items") { {} }
+        end
+        SCHEMA_TYPES.each do |version|
+          spec = GrapeOAS.generate(app: api, schema_type: version)
+          operation = spec.dig("paths", "/items", verb.to_s)
+          body = body_schema(spec, operation, version)
+          query = operation.fetch("parameters").select { |param| param["in"] == "query" }
+
+          assert_equal %w[filter page], body.fetch("properties").keys.sort
+          assert_equal "integer", body.dig("properties", "page", "type")
+          assert_equal "string", body.dig("properties", "filter", "properties", "kind", "type")
+          assert_equal(["limit"], query.map { |param| param["name"] })
+        end
       end
     end
 

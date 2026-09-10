@@ -54,6 +54,10 @@ module GrapeOAS
           hidden
         end
 
+        def self.route_body_opted_in?(route)
+          !!(route.options[:body_name] || route.options.dig(:documentation, :request_body) || route.options[:request_body])
+        end
+
         class << self
           private
 
@@ -72,12 +76,8 @@ module GrapeOAS
           # @param route [Object] the Grape route object
           # @return [String] the parameter location
           def extract_from_spec(spec, route)
-            # If body_name is set on the route, treat non-path params as body by default
             location = explicit_location(spec)
-            route_body_requested = route.options[:body_name] ||
-                                   route.options.dig(:documentation, :request_body) ||
-                                   route.options[:request_body]
-            return "body" if route_body_requested && location.nil?
+            return "body" if route_body_opted_in?(route) && location.nil?
 
             # Support both param_type and in for grape-swagger compatibility
             # param_type takes precedence over in when both are specified
@@ -89,8 +89,9 @@ module GrapeOAS
           end
 
           def explicit_location(spec)
-            param_type = spec.dig(:documentation, :param_type)
-            in_location = spec.dig(:documentation, :in)
+            doc = spec[:documentation] || {}
+            param_type = doc[:param_type] || doc["param_type"]
+            in_location = doc[:in] || doc["in"]
             (param_type || in_location)&.to_s&.downcase
           end
         end

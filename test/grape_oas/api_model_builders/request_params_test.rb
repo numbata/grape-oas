@@ -9,7 +9,7 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
-      def test_build_reports_request_body_opt_in
+      def test_build_resolves_body_and_query_schemas
         route_class = Struct.new(:path, :request_method, :options)
         body_route = route_class.new(
           "/items",
@@ -22,13 +22,13 @@ module GrapeOAS
           { params: { "note" => { type: String } } },
         )
 
-        _body_schema, _params, body_requested = RequestParams.new(api: @api, route: body_route).build
+        body_schema, = RequestParams.new(api: @api, route: body_route).build
 
-        assert body_requested
+        refute_empty body_schema.properties
 
-        _body_schema, _params, body_requested = RequestParams.new(api: @api, route: query_route).build
+        body_schema, = RequestParams.new(api: @api, route: query_route).build
 
-        refute body_requested
+        assert_empty body_schema.properties
       end
 
       def test_explicit_body_check_ignores_path_parameters
@@ -40,9 +40,9 @@ module GrapeOAS
         builder = RequestParams.new(api: @api, route: route)
         route.options[:params] = { "id" => { type: Integer, documentation: { in: "body" } } }
 
-        _body_schema, _params, body_requested = builder.build
+        body_schema, = builder.build
 
-        refute body_requested
+        assert_empty body_schema.properties
       end
 
       def test_explicit_body_check_honors_param_type_precedence
@@ -52,9 +52,9 @@ module GrapeOAS
           "filter" => { type: String, documentation: { param_type: "query", in: "body" } }
         }
 
-        _body_schema, _params, body_requested = builder.build
+        body_schema, = builder.build
 
-        refute body_requested
+        assert_empty body_schema.properties
       end
 
       def test_extracts_path_parameters

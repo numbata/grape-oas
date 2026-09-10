@@ -9,6 +9,32 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
+      def test_explicit_body_parameters_survive_request_build
+        %i[get head delete].product([:in, :param_type, "in", "param_type"], [false, true]).each do |verb, key, nested|
+          api_class = Class.new(Grape::API) do
+            params do
+              if nested
+                optional :note, type: Hash, documentation: { key => "body" } do
+                  optional :text, type: String
+                end
+              else
+                optional :note, type: String, documentation: { key => "body" }
+              end
+            end
+            public_send(verb, "items") { {} }
+          end
+          operation = GrapeOAS::ApiModel::Operation.new(http_method: verb)
+          Request.new(api: @api, route: api_class.routes.first, operation: operation).build
+
+          refute_nil operation.request_body, "#{verb}, #{key.inspect}, nested=#{nested}"
+          note = operation.request_body.media_types.first.schema.properties.fetch("note")
+          note = note.properties.fetch("text") if nested
+
+          assert_equal "string", note.type
+          assert_empty operation.parameters
+        end
+      end
+
       def test_builds_request_body_from_dry_schema_contract
         api_class = Class.new(Grape::API) do
           format :json

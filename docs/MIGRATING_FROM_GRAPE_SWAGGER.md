@@ -202,7 +202,7 @@ end
 | `failure` | ✅ | ✅ | Failure responses |
 | `consumes` | ✅ | ✅ | Operation consumes |
 | `produces` | ✅ | ✅ | Operation produces |
-| `body_name` | ✅ | ✅ | Override body parameter name (OAS 2.0 only) |
+| `body_name` | ✅ | ✅ | Opt into a body (all OAS versions); override its name in OAS 2.0 |
 
 ### Body Parameter Name (OAS 2.0)
 
@@ -686,7 +686,7 @@ get ':id' do; end
 | Root wrapping | ✅ | ❌ | Not implemented |
 | Nested namespace standalone | ✅ | ❌ | Not implemented |
 | Custom operationId (nickname) | ✅ | ✅ | Used as operationId |
-| body_name override | ✅ | ✅ | OAS 2.0 only |
+| body_name override | ✅ | ✅ | Body opt-in in all versions; naming in OAS 2.0 |
 
 ---
 
@@ -775,6 +775,9 @@ desc 'Endpoint without auto 400',
 ```ruby
 # Route-level opt-in for methods that normally don't have a body
 desc 'Search with body', documentation: { request_body: true }
+params do
+  optional :query, type: String
+end
 get :search do; end
 
 # Or, a body-located parameter also opts in to a request body
@@ -784,6 +787,8 @@ params do
 end
 get :search do; end
 ```
+
+Parameter-level `documentation: { request_body: true }` is ignored. Use `in: 'body'` / `param_type: 'body'` on the parameter, or set `request_body: true` on the route.
 
 ### 7. Custom Introspector Registry
 
