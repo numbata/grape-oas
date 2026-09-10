@@ -281,7 +281,7 @@ end
 |--------|---------------|-----------|-------|
 | `desc` | ✅ | ✅ | Parameter description |
 | `type` | ✅ | ✅ | Override type |
-| `param_type` | ✅ | ✅ | query, path, header, body, formData |
+| `param_type` | ✅ | ✅ | query, path, header, body, cookie — see note below |
 | `example` | ✅ | ✅ | Example value |
 | `default` | ✅ | ✅ | Default value |
 | `hidden` | ✅ | ✅ | Hide from docs |
@@ -294,6 +294,16 @@ end
 | `maximum` | ❌ | ✅ | Numeric maximum |
 | `minLength` | ❌ | ✅ | String min length |
 | `maxLength` | ❌ | ✅ | String max length |
+
+`param_type`/`in` note: `cookie` is OAS 3+ only — the OAS 2.0 exporter
+drops a cookie-located parameter and logs a warning, since Swagger 2.0
+has no `in: cookie`. `formData` is not a settable location at all;
+grape-oas never places a parameter there directly — declare the field
+on a form-consuming route and the OAS 2.0 exporter derives `formData`
+automatically from the request body schema. An explicit `path` is only
+honored when the name is an actual route capture; otherwise it's
+ignored and the field falls back to its default location, the same as
+an unrecognized value.
 
 ### Array Parameters
 

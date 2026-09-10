@@ -5,6 +5,12 @@ module GrapeOAS
     module RequestParamsSupport
       # Resolves the location (path, query, body, header) for a parameter.
       class ParamLocationResolver
+        # Locations `param_type:`/`in:` may explicitly name. An unrecognized
+        # value (a typo, or a grape-swagger location this library doesn't
+        # resolve to, like `formData`) is treated as unset rather than
+        # emitted verbatim, since nothing downstream validates `Parameter#location`.
+        VALID_EXPLICIT_LOCATIONS = %w[body query header path cookie].freeze
+
         # Determines the location for a parameter.
         #
         # @param name [String] the parameter name
@@ -26,15 +32,6 @@ module GrapeOAS
         # @return [Boolean] true if the parameter type is Hash
         def self.hash_param?(spec)
           [Hash, "Hash"].include?(spec[:type])
-        end
-
-        # Checks if a parameter is explicitly marked as NOT a body param.
-        # Supports both `param_type` and `in` for grape-swagger compatibility.
-        #
-        # @param spec [Hash] the parameter specification
-        # @return [Boolean] true if explicitly non-body
-        def self.explicit_non_body_param?(spec)
-          %w[query header path].include?(explicit_location(spec))
         end
 
         # Checks if a parameter should be hidden from documentation.
@@ -68,11 +65,17 @@ module GrapeOAS
           # Note: If both `param_type` and `in` are specified, `param_type` takes precedence.
           # For example, `{ param_type: 'query', in: 'body' }` will be treated as query.
           #
+          # `resolve` already returns "path" for an actual route capture before
+          # calling this method, so an explicit `in: "path"` / `param_type: "path"`
+          # reaching here is always a mismatch (the name can never appear in the
+          # URL template) and is ignored, same as an unrecognized location.
+          #
           # @param spec [Hash] the parameter specification
           # @param route [Object] the Grape route object
           # @return [String] the parameter location
           def extract_from_spec(spec, route)
             location = explicit_location(spec)
+            location = nil if location == "path"
             return "body" if route_body_opted_in?(route) && location.nil?
 
             # Support both param_type and in for grape-swagger compatibility
@@ -88,7 +91,8 @@ module GrapeOAS
             doc = spec[:documentation] || {}
             param_type = doc[:param_type] || doc["param_type"]
             in_location = doc[:in] || doc["in"]
-            (param_type || in_location)&.to_s&.downcase
+            location = (param_type || in_location)&.to_s&.downcase
+            location if VALID_EXPLICIT_LOCATIONS.include?(location)
           end
         end
       end

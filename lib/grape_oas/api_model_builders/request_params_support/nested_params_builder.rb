@@ -30,7 +30,6 @@ module GrapeOAS
 
           top_level.each do |name, spec|
             next if path_params.include?(name)
-            next if ParamLocationResolver.explicit_non_body_param?(spec)
             next if ParamLocationResolver.hidden_parameter?(spec)
 
             child_schema = @schema_builder.build(spec)
