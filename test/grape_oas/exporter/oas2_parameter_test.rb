@@ -586,6 +586,49 @@ module GrapeOAS
 
         refute status_param.key?("enum")
       end
+
+      def test_cookie_parameter_is_dropped_and_warned
+        param = ApiModel::Parameter.new(
+          location: "cookie",
+          name: "session",
+          schema: ApiModel::Schema.new(type: "string"),
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = nil
+        log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+
+        assert_empty result
+        assert_match(/Dropping cookie parameter 'session'/, log)
+      end
+
+      def test_non_cookie_parameters_survive_alongside_a_dropped_cookie
+        cookie_param = ApiModel::Parameter.new(
+          location: "cookie",
+          name: "session",
+          schema: ApiModel::Schema.new(type: "string"),
+          required: false,
+        )
+        query_param = ApiModel::Parameter.new(
+          location: "query",
+          name: "limit",
+          schema: ApiModel::Schema.new(type: "integer"),
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [cookie_param, query_param],
+        )
+
+        result = nil
+        capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+
+        assert_equal(["limit"], result.map { |p| p["name"] })
+      end
     end
   end
 end

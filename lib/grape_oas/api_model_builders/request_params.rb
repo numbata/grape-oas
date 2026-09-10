@@ -105,6 +105,10 @@ module GrapeOAS
 
             root_location = location_resolver.resolve(name: root, spec: root_spec, route_params: route_params, route: route)
             next if root_location == "body"
+            # A Hash root can itself be a real route capture (e.g. ":filter"),
+            # but that doesn't make its bracket children path segments too —
+            # only the root itself matches the URL template.
+            next if root_location == "path"
 
             params << build_parameter(name, root_location, spec[:required] || false, schema_builder.build(spec), spec)
             next

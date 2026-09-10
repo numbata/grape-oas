@@ -551,11 +551,10 @@ module GrapeOAS
         assert_includes body_schema.properties.keys, "min"
       end
 
-      # "cookie" is OAS 3-only; an OAS 2.0 export of this same input emits an
-      # invalid `in: "cookie"` parameter (Swagger 2.0 only allows
-      # query|header|path|formData|body). Location resolution has no
-      # visibility into the target OAS version, so this can't be caught
-      # here — it would need a check in the OAS2 exporter itself.
+      # "cookie" is OAS 3-only; location resolution has no visibility into
+      # the target OAS version, so it resolves "cookie" here regardless.
+      # The OAS 2.0 exporter is what actually rejects it — see
+      # GrapeOAS::Exporter::OAS2::Parameter#non_cookie_parameters.
       def test_post_request_with_cookie_located_nested_hash_stays_in_cookie
         api_class = Class.new(Grape::API) do
           format :json
@@ -875,6 +874,31 @@ module GrapeOAS
 
         assert_includes param_names, "filter[status]"
         assert_includes param_names, "filter[active]"
+      end
+
+      # A Hash root can itself be a real route capture — here ":filter" makes
+      # "filter" resolve to "path". That doesn't make its bracket children
+      # path segments too (only "filter" itself matches the URL template),
+      # so they must not be emitted as bogus path parameters.
+      def test_nested_hash_root_matching_a_route_capture_does_not_leak_children_as_path_params
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :filter, type: Hash do
+              optional :min, type: Integer
+            end
+          end
+          post "items/:filter" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        body_schema, params = builder.build
+
+        refute_includes params.map(&:name), "filter[min]"
+        refute_includes body_schema.properties.keys, "filter"
       end
     end
   end

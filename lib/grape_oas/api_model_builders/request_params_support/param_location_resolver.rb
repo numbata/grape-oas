@@ -21,7 +21,7 @@ module GrapeOAS
         def self.resolve(name:, spec:, route_params:, route:)
           return "path" if route_params.include?(name)
 
-          extract_from_spec(spec, route, name: name, route_params: route_params)
+          extract_from_spec(spec, route)
         end
 
         # Checks if a parameter is a Hash type. Hash parents are represented
@@ -65,19 +65,17 @@ module GrapeOAS
           # Note: If both `param_type` and `in` are specified, `param_type` takes precedence.
           # For example, `{ param_type: 'query', in: 'body' }` will be treated as query.
           #
-          # An explicit `in: "path"` / `param_type: "path"` only takes effect when
-          # `name` is an actual route capture — `resolve` already returns "path" for
-          # those before reaching here, so an explicit `path` on any other name is a
-          # mismatch (it can never appear in the URL template) and is ignored.
+          # `resolve` already returns "path" for an actual route capture before
+          # calling this method, so an explicit `in: "path"` / `param_type: "path"`
+          # reaching here is always a mismatch (the name can never appear in the
+          # URL template) and is ignored, same as an unrecognized location.
           #
           # @param spec [Hash] the parameter specification
           # @param route [Object] the Grape route object
-          # @param name [String] the parameter name
-          # @param route_params [Array<String>] list of path parameter names
           # @return [String] the parameter location
-          def extract_from_spec(spec, route, name:, route_params:)
+          def extract_from_spec(spec, route)
             location = explicit_location(spec)
-            location = nil if location == "path" && !route_params.include?(name)
+            location = nil if location == "path"
             return "body" if route_body_opted_in?(route) && location.nil?
 
             # Support both param_type and in for grape-swagger compatibility
