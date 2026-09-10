@@ -9,6 +9,29 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
+      def test_explicit_body_check_reuses_declarations_from_each_build
+        route = Struct.new(:path, :request_method, :options).new("/items", "DELETE", {})
+        builder = RequestParams.new(api: @api, route: route)
+        scans = 0
+        declarations = { "note" => { type: String, documentation: { in: "body" } } }
+        read_declarations = lambda do
+          scans += 1
+          declarations
+        end
+
+        builder.define_singleton_method(:declared_params, read_declarations)
+        builder.build
+
+        assert_predicate builder, :explicit_body_params?
+        assert_equal 1, scans
+
+        declarations = {}
+        builder.build
+
+        refute_predicate builder, :explicit_body_params?
+        assert_equal 2, scans
+      end
+
       def test_extracts_path_parameters
         api_class = Class.new(Grape::API) do
           format :json
