@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- [#145](https://github.com/numbata/grape-oas/pull/145): Apply route-level body opt-in consistently to flat parameters and `body_name` contracts - [@numbata](https://github.com/numbata).
+
 - [#108](https://github.com/numbata/grape-oas/pull/108): Bump actions/checkout from 6 to 7 - [@dependabot[bot]](https://github.com/dependabot[bot]).
 - [#137](https://github.com/numbata/grape-oas/pull/137): Test against Grape 4.0 in CI - [@numbata](https://github.com/numbata).
 

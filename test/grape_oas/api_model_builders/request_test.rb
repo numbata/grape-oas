@@ -482,6 +482,11 @@ module GrapeOAS
         Request.new(api: @api, route: route, operation: operation).build
 
         refute_nil operation.request_body, "GET should have body with body_name"
+        schema = operation.request_body.media_types.first.schema
+
+        assert_equal "string", schema.properties.fetch("query").type
+        assert_includes schema.required, "query"
+        assert_empty operation.parameters
       end
 
       def test_request_body_for_delete_when_explicitly_allowed_via_option
