@@ -45,6 +45,44 @@ module GrapeOAS
       end
     end
 
+    def test_mixed_body_and_query_parameters_have_distinct_locations
+      %i[get head delete].product(NESTING_OPTIONS).each do |http_method, nested_body|
+        api = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :limit, type: Integer
+            optional :filter, type: Hash do
+              optional :kind, type: String
+            end
+            if nested_body
+              optional :note, type: Hash, documentation: { in: "body" } do
+                optional :text, type: String
+              end
+            else
+              optional :note, type: String, documentation: { in: "body" }
+            end
+          end
+          public_send(http_method, "items") { {} }
+        end
+        SCHEMA_TYPES.each do |version|
+          spec = GrapeOAS.generate(app: api, schema_type: version)
+          operation = spec.dig("paths", "/items", http_method.to_s)
+          body = body_schema(spec, operation, version)
+          context = "#{http_method}, #{version}, nested_body=#{nested_body}"
+
+          assert_equal ["note"], body.fetch("properties").keys, context
+          note = body.dig("properties", "note")
+          note = note.dig("properties", "text") if nested_body
+
+          assert_equal "string", note["type"], context
+          parameters = operation.fetch("parameters").reject { |param| param["in"] == "body" }
+
+          assert_equal %w[filter[kind] limit], parameters.map { |param| param["name"] }.sort, context
+          assert_equal ["query"], parameters.map { |param| param["in"] }.uniq, context
+        end
+      end
+    end
+
     def test_path_annotation_does_not_enable_request_body
       api = Class.new(Grape::API) do
         format :json
