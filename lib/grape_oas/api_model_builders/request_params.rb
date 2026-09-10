@@ -112,8 +112,7 @@ module GrapeOAS
             next
           end
 
-          # Hash parents are represented by their children or the request body.
-          next if [Hash, "Hash"].include?(spec[:type])
+          next if location_resolver.hash_param?(spec)
 
           location = location_resolver.resolve(
             name: name,
