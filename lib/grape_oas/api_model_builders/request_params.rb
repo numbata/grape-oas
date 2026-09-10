@@ -115,7 +115,7 @@ module GrapeOAS
 
           # Skip Hash type params (they're handled via nested bracket params above
           # or via body schema for POST/PUT/PATCH)
-          next if is_hash_param
+          next if is_hash_param && !route_params.include?(name)
 
           location = location_resolver.resolve(
             name: name,

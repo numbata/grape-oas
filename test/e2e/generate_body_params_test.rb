@@ -25,6 +25,50 @@ module GrapeOAS
       end
     end
 
+    def test_body_group_preserves_declared_path_metadata_and_undeclared_fallback
+      api = Class.new(Grape::API) do
+        format :json
+        params do
+          with(documentation: { param_type: "body" }) do
+            requires :id, type: Integer, desc: "The resource ID", documentation: { format: "int64" }
+            requires :payload, type: Hash do
+              requires :name, type: String
+            end
+          end
+        end
+        post(":id/:undeclared") { {} }
+      end
+
+      %i[oas2 oas3 oas31].each do |version|
+        spec = GrapeOAS.generate(app: api, schema_type: version)
+        operation = spec.dig("paths", "/{id}/{undeclared}", "post")
+        params = operation.fetch("parameters")
+        id = params.find { |param| param["name"] == "id" }
+        fallback = params.find { |param| param["name"] == "undeclared" }
+        id_schema = version == :oas2 ? id : id.fetch("schema")
+        fallback_schema = version == :oas2 ? fallback : fallback.fetch("schema")
+
+        assert_equal "path", id["in"]
+        assert id["required"]
+        assert_equal "The resource ID", id["description"]
+        assert_equal "integer", id_schema["type"]
+        assert_equal "int64", id_schema["format"]
+        assert_equal "path", fallback["in"]
+        assert fallback["required"]
+        assert_equal "string", fallback_schema["type"]
+
+        body = if version == :oas2
+                 params.find { |param| param["in"] == "body" }.fetch("schema")
+               else
+                 operation.dig("requestBody", "content", "application/json", "schema")
+               end
+        body = spec.dig(*body.fetch("$ref").delete_prefix("#/").split("/"))
+
+        refute_includes body.fetch("properties").keys, "id"
+        assert_equal "string", body.dig("properties", "payload", "properties", "name", "type")
+      end
+    end
+
     # ---- OAS3 -------------------------------------------------------
 
     def test_oas3_flat_string_param_appears_in_request_body

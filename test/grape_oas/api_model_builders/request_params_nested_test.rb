@@ -9,6 +9,31 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
+      def test_path_capture_preserves_metadata_inside_body_group
+        api_class = Class.new(Grape::API) do
+          params do
+            with(documentation: { param_type: "body" }) do
+              requires :id, type: Integer, desc: "The resource ID", documentation: { format: "int64" }
+              requires :payload, type: Hash do
+                requires :name, type: String
+              end
+            end
+          end
+          post(":id") { {} }
+        end
+        body, params = RequestParams.new(api: @api, route: api_class.routes.first).build
+        id = params.find { |param| param.name == "id" }
+
+        refute_nil id
+        assert_equal "path", id.location
+        assert id.required
+        assert_equal "The resource ID", id.description
+        assert_equal "integer", id.schema.type
+        assert_equal "int64", id.schema.format
+        refute_includes body.properties.keys, "id"
+        assert_equal "string", body.properties["payload"].properties["name"].type
+      end
+
       # === Simple nested hash (1 level) ===
 
       def test_nested_hash_creates_object_property
