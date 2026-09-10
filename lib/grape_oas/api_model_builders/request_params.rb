@@ -27,20 +27,34 @@ module GrapeOAS
         has_nested = all_params.keys.any? { |k| k.include?("[") }
 
         if has_nested
-          build_with_nested_params(all_params, route_params)
+          body_schema, parameters = build_with_nested_params(all_params, route_params)
         else
-          build_flat_params(all_params, route_params)
+          body_schema, parameters = build_flat_params(all_params, route_params)
         end
+
+        [body_schema, parameters]
       end
 
       private
 
       # Builds params when nested structures are detected.
       def build_with_nested_params(all_params, route_params)
-        body_schema = nested_params_builder.build(all_params, path_params: route_params)
+        body_params = nested_body_params(all_params, route_params)
+        body_schema = nested_params_builder.build(body_params, path_params: route_params)
         non_body_params = extract_non_body_params(all_params, route_params)
 
         [body_schema, non_body_params]
+      end
+
+      def nested_body_params(all_params, route_params)
+        body_roots = all_params.filter_map do |name, spec|
+          next if name.include?("[")
+
+          location = location_resolver.resolve(name: name, spec: spec, route_params: route_params, route: route)
+          name if location == "body"
+        end.to_set
+
+        all_params.select { |name, _spec| body_roots.include?(name.split("[", 2).first) }
       end
 
       # Builds params for flat (non-nested) structures.
@@ -73,12 +87,12 @@ module GrapeOAS
 
       # Extracts non-body params (path, query, header) from flat params.
       # For non-body HTTP methods (GET, HEAD, DELETE), also includes nested params
-      # as flat query parameters with bracket notation (e.g., "tax_id[type]"),
-      # unless request_body is explicitly enabled.
+      # as flat query parameters with bracket notation (e.g., "tax_id[type]")
+      # when their parent resolves to query.
       def extract_non_body_params(all_params, route_params)
         params = []
         http_method = route.request_method.to_s.downcase
-        flatten_nested = should_flatten_nested_to_query?(http_method, all_params)
+        flatten_nested = Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
 
         all_params.each do |name, spec|
           # Skip hidden params
@@ -87,10 +101,13 @@ module GrapeOAS
           is_nested = name.include?("[")
           is_hash_param = location_resolver.body_param?(spec)
 
-          # For nested bracket params (e.g., "tax_id[type]"), include as query params
-          # for non-body HTTP methods (unless request_body is explicitly enabled)
           if is_nested
             next unless flatten_nested
+
+            root = name.split("[", 2).first
+            root_spec = all_params[root] || {}
+            next if location_resolver.hidden_parameter?(root_spec)
+            next unless location_resolver.resolve(name: root, spec: root_spec, route_params: route_params, route: route) == "query"
 
             params << build_parameter(name, "query", spec[:required] || false, schema_builder.build(spec), spec)
             next
@@ -113,28 +130,6 @@ module GrapeOAS
         end
 
         params
-      end
-
-      # Determines whether nested params should be flattened to query params.
-      # Returns true for GET/HEAD/DELETE unless body is explicitly requested via:
-      # - route-level `request_body: true` option
-      # - any parameter with `documentation: { in: 'body' }` or `documentation: { param_type: 'body' }`
-      def should_flatten_nested_to_query?(http_method, all_params)
-        return false unless Constants::HttpMethods::BODYLESS_HTTP_METHODS.include?(http_method)
-
-        # If request_body is explicitly enabled at route level, use body schema
-        return false if route.options.dig(:documentation, :request_body) || route.options[:request_body]
-
-        # If any parameter is explicitly marked as body, use body schema
-        has_explicit_body_param = all_params.any? do |name, spec|
-          next false if name.include?("[") # Skip bracket params, check parent Hash params only
-
-          param_type = spec.dig(:documentation, :param_type)&.to_s&.downcase
-          in_location = spec.dig(:documentation, :in)&.to_s&.downcase
-          param_type == "body" || in_location == "body"
-        end
-
-        !has_explicit_body_param
       end
 
       def build_parameter(name, location, required, schema, spec)

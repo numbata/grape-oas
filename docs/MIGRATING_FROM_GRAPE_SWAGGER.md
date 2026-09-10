@@ -202,7 +202,7 @@ end
 | `failure` | ✅ | ✅ | Failure responses |
 | `consumes` | ✅ | ✅ | Operation consumes |
 | `produces` | ✅ | ✅ | Operation produces |
-| `body_name` | ✅ | ✅ | Override body parameter name (OAS 2.0 only) |
+| `body_name` | ✅ | ✅ | Opt into a body (all OAS versions); override its name in OAS 2.0 |
 
 ### Body Parameter Name (OAS 2.0)
 
@@ -216,7 +216,7 @@ end
 post do; end
 ```
 
-**Note:** In OAS 3.x, request bodies don't have names, so `body_name` only affects OAS 2.0 output.
+**Note:** In OAS 3.x, request bodies don't have names, so `body_name` does not set a name. It still opts parameters into a request body.
 
 ### Hiding Endpoints
 
@@ -686,7 +686,7 @@ get ':id' do; end
 | Root wrapping | ✅ | ❌ | Not implemented |
 | Nested namespace standalone | ✅ | ❌ | Not implemented |
 | Custom operationId (nickname) | ✅ | ✅ | Used as operationId |
-| body_name override | ✅ | ✅ | OAS 2.0 only |
+| body_name override | ✅ | ✅ | Body opt-in in all versions; naming in OAS 2.0 |
 
 ---
 
@@ -770,16 +770,25 @@ desc 'Endpoint without auto 400',
      documentation: { suppress_default_error_response: true }
 ```
 
-### 6. Request Body for GET/DELETE
+### 6. Request Body for GET/HEAD/DELETE
 
 ```ruby
-# Opt-in request body for methods that normally don't have one
+# Route-level opt-in for methods that normally don't have a body
+desc 'Search with body', documentation: { request_body: true }
+params do
+  optional :query, type: String
+end
+get :search do; end
+
+# Or, a body-located parameter also opts in to a request body
 desc 'Search with body'
 params do
-  requires :query, type: Hash, documentation: { request_body: true }
+  requires :query, type: Hash, documentation: { param_type: 'body' }
 end
 get :search do; end
 ```
+
+Parameter-level `documentation: { request_body: true }` is ignored. Use `in: 'body'` / `param_type: 'body'` on the parameter, or set `request_body: true` on the route.
 
 ### 7. Custom Introspector Registry
 

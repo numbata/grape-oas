@@ -9,6 +9,54 @@ module GrapeOAS
         @api = GrapeOAS::ApiModel::API.new(title: "Test API", version: "1.0")
       end
 
+      def test_build_resolves_body_and_query_schemas
+        route_class = Struct.new(:path, :request_method, :options)
+        body_route = route_class.new(
+          "/items",
+          "DELETE",
+          { params: { "note" => { type: String, documentation: { in: "body" } } } },
+        )
+        query_route = route_class.new(
+          "/items",
+          "DELETE",
+          { params: { "note" => { type: String } } },
+        )
+
+        body_schema, = RequestParams.new(api: @api, route: body_route).build
+
+        refute_empty body_schema.properties
+
+        body_schema, = RequestParams.new(api: @api, route: query_route).build
+
+        assert_empty body_schema.properties
+      end
+
+      def test_explicit_body_check_ignores_path_parameters
+        route = Struct.new(:path, :request_method, :options).new(
+          "/items/:id",
+          "DELETE",
+          {},
+        )
+        builder = RequestParams.new(api: @api, route: route)
+        route.options[:params] = { "id" => { type: Integer, documentation: { in: "body" } } }
+
+        body_schema, = builder.build
+
+        assert_empty body_schema.properties
+      end
+
+      def test_explicit_body_check_honors_param_type_precedence
+        route = Struct.new(:path, :request_method, :options).new("/items", "DELETE", {})
+        builder = RequestParams.new(api: @api, route: route)
+        route.options[:params] = {
+          "filter" => { type: String, documentation: { param_type: "query", in: "body" } }
+        }
+
+        body_schema, = builder.build
+
+        assert_empty body_schema.properties
+      end
+
       def test_extracts_path_parameters
         api_class = Class.new(Grape::API) do
           format :json

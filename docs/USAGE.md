@@ -75,6 +75,31 @@ params do
 end
 ```
 
+### Request bodies for GET/HEAD/DELETE
+
+These methods remain bodyless by default. Opt in at the route level:
+
+```ruby
+desc 'Search with body', documentation: { request_body: true }
+params do
+  optional :query, type: String
+end
+get :search do; end
+```
+
+Or mark a parameter as body-located with `param_type: 'body'` or `in: 'body'`:
+
+```ruby
+params do
+  requires :query, type: Hash, documentation: { param_type: 'body' }
+end
+get :search do; end
+```
+
+Parameter-level `documentation: { request_body: true }` is ignored. Use `in: 'body'` / `param_type: 'body'` on the parameter, or set `request_body: true` on the route.
+
+Route-level `body_name:` also opts unlocated parameters into the body in all OAS versions; it additionally sets the body parameter name in OAS 2.0. With route-level opt-in, use `in: 'query'` / `param_type: 'query'` to retain query parameters. An empty parameter schema does not produce a request body.
+
 ## Response Documentation
 
 ### one_of Responses
