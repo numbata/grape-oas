@@ -24,6 +24,8 @@ module GrapeOAS
           operation = spec.dig("paths", "/items", http_method.to_s)
           context = "#{http_method}, #{version}"
 
+          OASValidator.validate!(spec)
+
           assert_nil body_schema(spec, operation, version), context
 
           kind = operation.fetch("parameters", []).find { |param| param["name"] == "filter[kind]" }
@@ -53,6 +55,9 @@ module GrapeOAS
       SCHEMA_TYPES.each do |version|
         spec = GrapeOAS.generate(app: api, schema_type: version)
         operation = spec.dig("paths", "/items", "post")
+
+        OASValidator.validate!(spec)
+
         body = body_schema(spec, operation, version)
         query_names = operation.fetch("parameters", [])
                                .select { |param| param["in"] == "query" }

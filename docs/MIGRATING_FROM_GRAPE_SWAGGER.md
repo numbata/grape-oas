@@ -281,7 +281,7 @@ end
 |--------|---------------|-----------|-------|
 | `desc` | ✅ | ✅ | Parameter description |
 | `type` | ✅ | ✅ | Override type |
-| `param_type` | ✅ | Partial | query, path, header, body, cookie — see note below |
+| `param_type` | ✅ | ✅ | query, path, header, body, cookie — see note below |
 | `example` | ✅ | ✅ | Example value |
 | `default` | ✅ | ✅ | Default value |
 | `hidden` | ✅ | ✅ | Hide from docs |
