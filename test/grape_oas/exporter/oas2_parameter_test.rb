@@ -622,8 +622,27 @@ module GrapeOAS
         log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
 
         assert_empty result
-        assert_match(/Dropping object parameter 'filters' from OAS 2\.0/, log)
+        assert_match(/Dropping object parameter 'filters': not representable in OAS 2\.0/, log)
         assert_match(/define nested fields or use a JSON parameter explicitly/, log)
+      end
+
+      def test_array_of_object_non_body_parameter_is_dropped_and_warned
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "rows",
+          schema: ApiModel::Schema.new(type: "array", items: ApiModel::Schema.new(type: "object")),
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = nil
+        log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+
+        assert_empty result
+        assert_match(/Dropping object parameter 'rows': not representable in OAS 2\.0/, log)
       end
 
       def test_non_cookie_parameters_survive_alongside_a_dropped_cookie

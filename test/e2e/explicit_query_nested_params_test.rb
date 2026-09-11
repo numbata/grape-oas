@@ -88,6 +88,50 @@ module GrapeOAS
       assert_empty operation.fetch("parameters")
     end
 
+    def test_array_of_hash_query_parameter_is_omitted_from_oas2
+      api = Class.new(Grape::API) do
+        format :json
+        params do
+          optional :rows, type: [Hash]
+        end
+        get "items" do
+          {}
+        end
+      end
+
+      spec = GrapeOAS.generate(app: api, schema_type: :oas2)
+
+      OASValidator.validate!(spec)
+
+      operation = spec.dig("paths", "/items", "get")
+
+      assert_empty operation.fetch("parameters")
+    end
+
+    def test_childless_hash_query_parameter_is_unchanged_in_oas3
+      api = Class.new(Grape::API) do
+        format :json
+        params do
+          optional :filters, type: Hash
+        end
+        get "items" do
+          {}
+        end
+      end
+
+      %i[oas3 oas31].each do |version|
+        spec = GrapeOAS.generate(app: api, schema_type: version)
+
+        OASValidator.validate!(spec)
+
+        operation = spec.dig("paths", "/items", "get")
+        filters = operation.fetch("parameters", []).find { |param| param["name"] == "filters" }
+
+        refute_nil filters, version.to_s
+        assert_equal "object", filters.dig("schema", "type"), version.to_s
+      end
+    end
+
     private
 
     def body_schema(spec, operation, version)

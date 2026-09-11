@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#145](https://github.com/numbata/grape-oas/pull/145): Preserve explicitly body-located GET, HEAD, and DELETE parameters - [@numbata](https://github.com/numbata).
 - [#146](https://github.com/numbata/grape-oas/pull/146): Preserve declared path metadata inside nested body parameter groups and always mark path parameters as required, per OAS, even when their Grape declaration is optional - [@numbata](https://github.com/numbata).
 - [#149](https://github.com/numbata/grape-oas/pull/149): Preserve explicitly query/header/path-located nested parameters on POST, PUT, and PATCH routes; reject unrecognized `param_type:`/`in:` values and `path` locations without a matching route capture instead of emitting invalid output; drop OAS 2.0-invalid `cookie` parameters with a warning instead of emitting them - [@numbata](https://github.com/numbata).
-- [#152](https://github.com/numbata/grape-oas/pull/152): Keep OAS 2.0 non-body parameters spec-valid by dropping unsupported object parameters with a warning - [@numbata](https://github.com/numbata).
+- [#152](https://github.com/numbata/grape-oas/pull/152): Keep OAS 2.0 non-body parameters spec-valid by dropping object parameters, including arrays of objects, with a warning - [@numbata](https://github.com/numbata).
 
 ### Changed
 

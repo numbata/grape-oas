@@ -42,18 +42,19 @@ module GrapeOAS
         private
 
         # Swagger 2.0 restricts `in` to query|header|path|formData|body and
-        # non-body parameters to primitive types. Drop unsupported parameters
-        # rather than emit an invalid document, since ParamLocationResolver
-        # resolves per-parameter without knowing the target OAS version.
+        # non-body parameters to primitive types or arrays of primitives.
+        # Drop unsupported parameters rather than emit an invalid document,
+        # since ParamLocationResolver resolves per-parameter without knowing
+        # the target OAS version.
         def representable_parameters
           Array(@op.parameters).reject do |param|
             if param.location == "cookie"
               GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
               true
-            elsif param.location != "body" && param.schema&.type == Constants::SchemaTypes::OBJECT
+            elsif param.location != "body" && unrepresentable?(param.schema)
               GrapeOAS.logger.warn(
-                "Dropping object parameter '#{param.name}' from OAS 2.0: " \
-                "define nested fields or use a JSON parameter explicitly",
+                "Dropping object parameter '#{param.name}': not representable in OAS 2.0 " \
+                "(define nested fields or use a JSON parameter explicitly)",
               )
               true
             else
@@ -62,10 +63,19 @@ module GrapeOAS
           end
         end
 
+        # An object anywhere in a non-body parameter's shape — directly, or
+        # as array items — has no Swagger 2.0 representation.
+        def unrepresentable?(schema)
+          return false unless schema
+          return unrepresentable?(schema.items) if schema.type == Constants::SchemaTypes::ARRAY
+
+          schema.type == Constants::SchemaTypes::OBJECT
+        end
+
         def build_parameter(param)
           type = param.schema&.type
           format = param.schema&.format
-          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[object string boolean file json array number]
+          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[string boolean file json array number]
           is_primitive = type && primitive_types.include?(type)
 
           if is_primitive && param.location != "body"
