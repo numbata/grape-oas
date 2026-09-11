@@ -606,6 +606,25 @@ module GrapeOAS
         assert_match(/Dropping cookie parameter 'session'/, log)
       end
 
+      def test_object_non_body_parameter_is_dropped_and_warned
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "filters",
+          schema: ApiModel::Schema.new(type: "object"),
+          required: false,
+        )
+        operation = ApiModel::Operation.new(
+          http_method: "get",
+          parameters: [param],
+        )
+
+        result = nil
+        log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+
+        assert_empty result
+        assert_match(/Dropping object parameter 'filters'/, log)
+      end
+
       def test_non_cookie_parameters_survive_alongside_a_dropped_cookie
         cookie_param = ApiModel::Parameter.new(
           location: "cookie",

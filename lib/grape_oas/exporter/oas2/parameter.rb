@@ -28,7 +28,7 @@ module GrapeOAS
         FORM_MEDIA_TYPES = %w[application/x-www-form-urlencoded multipart/form-data].freeze
 
         def build
-          params = non_cookie_parameters.map { |param| build_parameter(param) }
+          params = representable_parameters.map { |param| build_parameter(param) }
           if @op.request_body
             if form_only_request?
               params.concat(build_form_parameters(@op.request_body))
@@ -41,16 +41,21 @@ module GrapeOAS
 
         private
 
-        # Swagger 2.0 restricts `in` to query|header|path|formData|body;
-        # `cookie` is OAS 3+ only. Drop it rather than emit an invalid
-        # document, since ParamLocationResolver resolves per-parameter
-        # without knowing the target OAS version.
-        def non_cookie_parameters
+        # Swagger 2.0 restricts `in` to query|header|path|formData|body and
+        # non-body parameters to primitive types. Drop unsupported parameters
+        # rather than emit an invalid document, since ParamLocationResolver
+        # resolves per-parameter without knowing the target OAS version.
+        def representable_parameters
           Array(@op.parameters).reject do |param|
-            next false unless param.location == "cookie"
-
-            GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
-            true
+            if param.location == "cookie"
+              GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
+              true
+            elsif param.location != "body" && param.schema&.type == Constants::SchemaTypes::OBJECT
+              GrapeOAS.logger.warn("Dropping object parameter '#{param.name}': not representable outside the body in OAS 2.0")
+              true
+            else
+              false
+            end
           end
         end
 
