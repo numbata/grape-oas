@@ -28,7 +28,7 @@ module GrapeOAS
         FORM_MEDIA_TYPES = %w[application/x-www-form-urlencoded multipart/form-data].freeze
 
         def build
-          params = non_cookie_parameters.map { |param| build_parameter(param) }
+          params = representable_parameters.map { |param| build_parameter(param) }
           if @op.request_body
             if form_only_request?
               params.concat(build_form_parameters(@op.request_body))
@@ -41,23 +41,41 @@ module GrapeOAS
 
         private
 
-        # Swagger 2.0 restricts `in` to query|header|path|formData|body;
-        # `cookie` is OAS 3+ only. Drop it rather than emit an invalid
-        # document, since ParamLocationResolver resolves per-parameter
-        # without knowing the target OAS version.
-        def non_cookie_parameters
+        # Swagger 2.0 restricts `in` to query|header|path|formData|body and
+        # non-body parameters to primitive types or arrays of primitives.
+        # Drop unsupported parameters rather than emit an invalid document,
+        # since ParamLocationResolver resolves per-parameter without knowing
+        # the target OAS version.
+        def representable_parameters
           Array(@op.parameters).reject do |param|
-            next false unless param.location == "cookie"
-
-            GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
-            true
+            if param.location == "cookie"
+              GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
+              true
+            elsif param.location != "body" && unrepresentable?(param.schema)
+              GrapeOAS.logger.warn(
+                "Dropping object parameter '#{param.name}': not representable in OAS 2.0 " \
+                "(define nested fields or use a JSON parameter explicitly)",
+              )
+              true
+            else
+              false
+            end
           end
+        end
+
+        # An object anywhere in a non-body parameter's shape — directly, or
+        # as array items — has no Swagger 2.0 representation.
+        def unrepresentable?(schema)
+          return false unless schema
+          return unrepresentable?(schema.items) if schema.type == Constants::SchemaTypes::ARRAY
+
+          schema.type == Constants::SchemaTypes::OBJECT
         end
 
         def build_parameter(param)
           type = param.schema&.type
           format = param.schema&.format
-          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[object string boolean file json array number]
+          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[string boolean file json array number]
           is_primitive = type && primitive_types.include?(type)
 
           if is_primitive && param.location != "body"
