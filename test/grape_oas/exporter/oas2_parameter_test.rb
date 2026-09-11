@@ -622,7 +622,8 @@ module GrapeOAS
         log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
 
         assert_empty result
-        assert_match(/Dropping object parameter 'filters'/, log)
+        assert_match(/Dropping object parameter 'filters' from OAS 2\.0/, log)
+        assert_match(/define nested fields or use a JSON parameter explicitly/, log)
       end
 
       def test_non_cookie_parameters_survive_alongside_a_dropped_cookie

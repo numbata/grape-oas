@@ -51,7 +51,10 @@ module GrapeOAS
               GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
               true
             elsif param.location != "body" && param.schema&.type == Constants::SchemaTypes::OBJECT
-              GrapeOAS.logger.warn("Dropping object parameter '#{param.name}': not representable outside the body in OAS 2.0")
+              GrapeOAS.logger.warn(
+                "Dropping object parameter '#{param.name}' from OAS 2.0: " \
+                "define nested fields or use a JSON parameter explicitly",
+              )
               true
             else
               false
