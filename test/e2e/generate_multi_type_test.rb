@@ -57,14 +57,18 @@ module GrapeOAS
     def test_oas2_uses_first_type_fallback
       schema = GrapeOAS.generate(app: MultiTypeAPI, schema_type: :oas2)
 
+      OASValidator.validate!(schema)
+
       params = schema.dig("paths", "/items", "get", "parameters")
 
       query_param = params.find { |p| p["name"] == "query" }
       value_param = params.find { |p| p["name"] == "value" }
 
       # OAS2 doesn't support oneOf for parameters, uses first type
-      assert_equal "string", query_param["schema"]["type"]
-      assert_equal "string", value_param["schema"]["type"]
+      assert_equal "string", query_param["type"]
+      assert_equal "string", value_param["type"]
+      refute query_param.key?("schema")
+      refute value_param.key?("schema")
     end
 
     def test_multi_type_in_path_parameter
@@ -107,11 +111,14 @@ module GrapeOAS
     def test_oas2_three_types_uses_first
       schema = GrapeOAS.generate(app: ThreeTypeAPI, schema_type: :oas2)
 
+      OASValidator.validate!(schema)
+
       params = schema.dig("paths", "/mixed", "get", "parameters")
       mixed_param = params.find { |p| p["name"] == "mixed" }
 
       # Should use first type (String)
-      assert_equal "string", mixed_param["schema"]["type"]
+      assert_equal "string", mixed_param["type"]
+      refute mixed_param.key?("schema")
     end
 
     # === Boolean type ===

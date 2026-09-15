@@ -622,8 +622,7 @@ module GrapeOAS
         log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
 
         assert_empty result
-        assert_match(/Dropping object parameter 'filters': not representable in OAS 2\.0/, log)
-        assert_match(/define nested fields or use a JSON parameter explicitly/, log)
+        assert_match(/Dropping parameter 'filters': schema is not representable as an OAS 2\.0 query parameter/, log)
       end
 
       def test_array_of_object_non_body_parameter_is_dropped_and_warned
@@ -642,7 +641,72 @@ module GrapeOAS
         log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
 
         assert_empty result
-        assert_match(/Dropping object parameter 'rows': not representable in OAS 2\.0/, log)
+        assert_match(/Dropping parameter 'rows': schema is not representable as an OAS 2\.0 query parameter/, log)
+      end
+
+      def test_file_non_body_parameters_are_dropped
+        scalar = ApiModel::Parameter.new(
+          location: "query",
+          name: "upload",
+          schema: ApiModel::Schema.new(type: "file"),
+        )
+        array = ApiModel::Parameter.new(
+          location: "query",
+          name: "uploads",
+          schema: ApiModel::Schema.new(type: "array", items: ApiModel::Schema.new(type: "file")),
+        )
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [scalar, array])
+
+        result = nil
+        log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+
+        assert_empty result
+        assert_match(/Dropping parameter 'upload'/, log)
+        assert_match(/Dropping parameter 'uploads'/, log)
+      end
+
+      def test_scalar_form_data_file_parameter_is_preserved
+        param = ApiModel::Parameter.new(
+          location: "formData",
+          name: "upload",
+          schema: ApiModel::Schema.new(type: "file"),
+        )
+        operation = ApiModel::Operation.new(http_method: "post", parameters: [param])
+
+        assert_equal [{ "name" => "upload", "in" => "formData", "required" => false, "type" => "file" }],
+                     OAS2::Parameter.new(operation).build
+      end
+
+      def test_composed_non_body_parameter_is_dropped
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "choice",
+          schema: ApiModel::Schema.new(
+            one_of: [ApiModel::Schema.new(type: "object"), ApiModel::Schema.new(type: "string")],
+          ),
+        )
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = nil
+        log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+
+        assert_empty result
+        assert_match(/Dropping parameter 'choice'/, log)
+      end
+
+      def test_composed_body_parameter_keeps_first_alternative_fallback
+        param = ApiModel::Parameter.new(
+          location: "body",
+          name: "choice",
+          schema: ApiModel::Schema.new(
+            one_of: [ApiModel::Schema.new(type: "object"), ApiModel::Schema.new(type: "string")],
+          ),
+        )
+        operation = ApiModel::Operation.new(http_method: "post", parameters: [param])
+
+        result = OAS2::Parameter.new(operation).build.first
+
+        assert_equal "object", result.dig("schema", "type")
       end
 
       def test_non_cookie_parameters_survive_alongside_a_dropped_cookie

@@ -108,6 +108,25 @@ module GrapeOAS
       assert_empty operation.fetch("parameters")
     end
 
+    def test_unrepresentable_nested_query_parameters_are_omitted_from_oas2
+      api = Class.new(Grape::API) do
+        format :json
+        params do
+          optional :filter, type: Hash, documentation: { in: "query" } do
+            optional :upload, type: File
+            optional :choice, types: [Hash, String]
+          end
+        end
+        post("items") { {} }
+      end
+
+      spec = GrapeOAS.generate(app: api, schema_type: :oas2)
+
+      OASValidator.validate!(spec)
+
+      assert_empty spec.dig("paths", "/items", "post").fetch("parameters")
+    end
+
     def test_childless_hash_query_parameter_is_unchanged_in_oas3
       api = Class.new(Grape::API) do
         format :json
