@@ -52,7 +52,7 @@ module GrapeOAS
               GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
               true
             elsif param.location != "body" &&
-                  unrepresentable?(parameter_schema(param.schema), location: param.location)
+                  unrepresentable?(param.schema, location: param.location)
               GrapeOAS.logger.warn(
                 "Dropping parameter '#{param.name}': schema is not representable as an " \
                 "OAS 2.0 #{param.location} parameter",
@@ -64,28 +64,27 @@ module GrapeOAS
           end
         end
 
-        def parameter_schema(schema)
-          return schema unless schema && !schema.type
+        def first_alternative_schema(schema)
+          return schema if schema.nil? || schema.type
           return schema if schema.all_of&.any?
-          return parameter_schema(schema.one_of.first) if schema.one_of&.any?
-          return parameter_schema(schema.any_of.first) if schema.any_of&.any?
+          return first_alternative_schema(schema.one_of.first) if schema.one_of&.any?
+          return first_alternative_schema(schema.any_of.first) if schema.any_of&.any?
 
           schema
         end
 
         def unrepresentable?(schema, location:, array_item: false)
+          schema = first_alternative_schema(schema)
           return true unless schema&.type
           return true if schema.all_of&.any?
-          if schema.type == Constants::SchemaTypes::ARRAY
-            return unrepresentable?(parameter_schema(schema.items), location: location, array_item: true)
-          end
+          return unrepresentable?(schema.items, location: location, array_item: true) if schema.type == Constants::SchemaTypes::ARRAY
           return true if schema.type == Constants::SchemaTypes::OBJECT
 
           schema.type == Constants::SchemaTypes::FILE && (location != "formData" || array_item)
         end
 
         def build_parameter(param)
-          schema = param.location == "body" ? param.schema : parameter_schema(param.schema)
+          schema = param.location == "body" ? param.schema : first_alternative_schema(param.schema)
           type = schema&.type
           format = schema&.format
           primitive_types = PRIMITIVE_MAPPINGS.keys + %w[string boolean file json array number]

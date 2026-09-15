@@ -677,7 +677,7 @@ module GrapeOAS
                      OAS2::Parameter.new(operation).build
       end
 
-      def test_composed_non_body_parameter_is_dropped
+      def test_one_of_non_body_parameter_with_object_fallback_is_dropped
         param = ApiModel::Parameter.new(
           location: "query",
           name: "choice",
@@ -687,10 +687,10 @@ module GrapeOAS
         )
         operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
 
-        result = nil
-        log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+        parameters = nil
+        log = capture_grape_oas_log { parameters = OAS2::Parameter.new(operation).build }
 
-        assert_empty result
+        assert_empty parameters
         assert_match(/Dropping parameter 'choice'/, log)
       end
 
@@ -707,11 +707,11 @@ module GrapeOAS
         )
         operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
 
-        result = OAS2::Parameter.new(operation).build.first
+        parameter = OAS2::Parameter.new(operation).build.first
 
-        assert_equal "array", result["type"]
-        assert_equal({ "type" => "string" }, result["items"])
-        refute result.key?("schema")
+        assert_equal "array", parameter["type"]
+        assert_equal({ "type" => "string" }, parameter["items"])
+        refute parameter.key?("schema")
       end
 
       def test_untyped_non_body_parameter_is_dropped
@@ -722,14 +722,14 @@ module GrapeOAS
         )
         operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
 
-        result = nil
-        log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+        parameters = nil
+        log = capture_grape_oas_log { parameters = OAS2::Parameter.new(operation).build }
 
-        assert_empty result
+        assert_empty parameters
         assert_match(/Dropping parameter 'choice'/, log)
       end
 
-      def test_composed_body_parameter_keeps_first_alternative_fallback
+      def test_one_of_body_parameter_keeps_first_alternative_fallback
         param = ApiModel::Parameter.new(
           location: "body",
           name: "choice",
@@ -739,9 +739,9 @@ module GrapeOAS
         )
         operation = ApiModel::Operation.new(http_method: "post", parameters: [param])
 
-        result = OAS2::Parameter.new(operation).build.first
+        parameter = OAS2::Parameter.new(operation).build.first
 
-        assert_equal "object", result.dig("schema", "type")
+        assert_equal "object", parameter.dig("schema", "type")
       end
 
       def test_non_cookie_parameters_survive_alongside_a_dropped_cookie

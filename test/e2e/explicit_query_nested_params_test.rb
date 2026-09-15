@@ -68,30 +68,11 @@ module GrapeOAS
       end
     end
 
-    def test_childless_hash_query_parameter_is_omitted_from_oas2
+    def test_object_query_parameters_are_omitted_from_oas2
       api = Class.new(Grape::API) do
         format :json
         params do
           optional :filters, type: Hash
-        end
-        get "items" do
-          {}
-        end
-      end
-
-      spec = GrapeOAS.generate(app: api, schema_type: :oas2)
-
-      OASValidator.validate!(spec)
-
-      operation = spec.dig("paths", "/items", "get")
-
-      assert_empty operation.fetch("parameters")
-    end
-
-    def test_array_of_hash_query_parameter_is_omitted_from_oas2
-      api = Class.new(Grape::API) do
-        format :json
-        params do
           optional :rows, type: [Hash]
         end
         get "items" do
