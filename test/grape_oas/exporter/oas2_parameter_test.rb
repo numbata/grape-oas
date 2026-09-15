@@ -694,6 +694,37 @@ module GrapeOAS
         assert_match(/Dropping parameter 'choice'/, log)
       end
 
+      def test_any_of_non_body_parameter_uses_first_alternative
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "choice",
+          schema: ApiModel::Schema.new(
+            any_of: [ApiModel::Schema.new(type: "string"), ApiModel::Schema.new(type: "integer")],
+          ),
+        )
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = OAS2::Parameter.new(operation).build.first
+
+        assert_equal "string", result["type"]
+        refute result.key?("schema")
+      end
+
+      def test_untyped_non_body_parameter_is_dropped
+        param = ApiModel::Parameter.new(
+          location: "query",
+          name: "choice",
+          schema: ApiModel::Schema.new,
+        )
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = nil
+        log = capture_grape_oas_log { result = OAS2::Parameter.new(operation).build }
+
+        assert_empty result
+        assert_match(/Dropping parameter 'choice'/, log)
+      end
+
       def test_composed_body_parameter_keeps_first_alternative_fallback
         param = ApiModel::Parameter.new(
           location: "body",

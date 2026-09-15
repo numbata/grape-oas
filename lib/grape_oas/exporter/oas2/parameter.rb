@@ -74,7 +74,7 @@ module GrapeOAS
         end
 
         def unrepresentable?(schema, location:, array_item: false)
-          return false unless schema
+          return true unless schema&.type
           return true if schema.all_of&.any?
           return unrepresentable?(schema.items, location: location, array_item: true) if schema.type == Constants::SchemaTypes::ARRAY
           return true if schema.type == Constants::SchemaTypes::OBJECT
