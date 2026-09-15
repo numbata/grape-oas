@@ -76,7 +76,9 @@ module GrapeOAS
         def unrepresentable?(schema, location:, array_item: false)
           return true unless schema&.type
           return true if schema.all_of&.any?
-          return unrepresentable?(schema.items, location: location, array_item: true) if schema.type == Constants::SchemaTypes::ARRAY
+          if schema.type == Constants::SchemaTypes::ARRAY
+            return unrepresentable?(parameter_schema(schema.items), location: location, array_item: true)
+          end
           return true if schema.type == Constants::SchemaTypes::OBJECT
 
           schema.type == Constants::SchemaTypes::FILE && (location != "formData" || array_item)

@@ -694,19 +694,23 @@ module GrapeOAS
         assert_match(/Dropping parameter 'choice'/, log)
       end
 
-      def test_any_of_non_body_parameter_uses_first_alternative
+      def test_array_with_any_of_items_uses_first_alternative
         param = ApiModel::Parameter.new(
           location: "query",
           name: "choice",
           schema: ApiModel::Schema.new(
-            any_of: [ApiModel::Schema.new(type: "string"), ApiModel::Schema.new(type: "integer")],
+            type: "array",
+            items: ApiModel::Schema.new(
+              any_of: [ApiModel::Schema.new(type: "string"), ApiModel::Schema.new(type: "integer")],
+            ),
           ),
         )
         operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
 
         result = OAS2::Parameter.new(operation).build.first
 
-        assert_equal "string", result["type"]
+        assert_equal "array", result["type"]
+        assert_equal({ "type" => "string" }, result["items"])
         refute result.key?("schema")
       end
 
