@@ -28,7 +28,7 @@ module GrapeOAS
         FORM_MEDIA_TYPES = %w[application/x-www-form-urlencoded multipart/form-data].freeze
 
         def build
-          params = non_cookie_parameters.map { |param| build_parameter(param) }
+          params = representable_parameters.map { |param| build_parameter(param) }
           if @op.request_body
             if form_only_request?
               params.concat(build_form_parameters(@op.request_body))
@@ -41,23 +41,53 @@ module GrapeOAS
 
         private
 
-        # Swagger 2.0 restricts `in` to query|header|path|formData|body;
-        # `cookie` is OAS 3+ only. Drop it rather than emit an invalid
-        # document, since ParamLocationResolver resolves per-parameter
-        # without knowing the target OAS version.
-        def non_cookie_parameters
+        # Swagger 2.0 restricts `in` to query|header|path|formData|body and
+        # non-body parameters to primitive types or arrays of primitives.
+        # Drop unsupported parameters rather than emit an invalid document,
+        # since ParamLocationResolver resolves per-parameter without knowing
+        # the target OAS version.
+        def representable_parameters
           Array(@op.parameters).reject do |param|
-            next false unless param.location == "cookie"
-
-            GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
-            true
+            if param.location == "cookie"
+              GrapeOAS.logger.warn("Dropping cookie parameter '#{param.name}': not representable in OAS 2.0")
+              true
+            elsif param.location != "body" &&
+                  unrepresentable?(param.schema, location: param.location)
+              GrapeOAS.logger.warn(
+                "Dropping parameter '#{param.name}': schema is not representable as an " \
+                "OAS 2.0 #{param.location} parameter",
+              )
+              true
+            else
+              false
+            end
           end
         end
 
+        def first_alternative_schema(schema)
+          return schema if schema.nil? || schema.type
+          return schema if schema.all_of&.any?
+          return first_alternative_schema(schema.one_of.first) if schema.one_of&.any?
+          return first_alternative_schema(schema.any_of.first) if schema.any_of&.any?
+
+          schema
+        end
+
+        def unrepresentable?(schema, location:, array_item: false)
+          schema = first_alternative_schema(schema)
+          return true unless schema&.type
+          return true if schema.all_of&.any?
+          return unrepresentable?(schema.items, location: location, array_item: true) if schema.type == Constants::SchemaTypes::ARRAY
+          return true if schema.type == Constants::SchemaTypes::OBJECT
+
+          schema.type == Constants::SchemaTypes::FILE && (location != "formData" || array_item)
+        end
+
         def build_parameter(param)
-          type = param.schema&.type
-          format = param.schema&.format
-          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[object string boolean file json array number]
+          schema = param.location == "body" ? param.schema : first_alternative_schema(param.schema)
+          type = schema&.type
+          format = schema&.format
+          primitive_types = PRIMITIVE_MAPPINGS.keys + %w[string boolean file json array number]
           is_primitive = type && primitive_types.include?(type)
 
           if is_primitive && param.location != "body"
@@ -70,8 +100,8 @@ module GrapeOAS
               "type" => mapping ? mapping[:type] : type,
               "format" => format || (mapping ? mapping[:format] : nil)
             }
-            apply_schema_constraints(result, param.schema)
-            apply_collection_format(result, param, type)
+            apply_schema_constraints(result, schema)
+            apply_collection_format(result, param, schema)
             result.compact
           else
             {
@@ -79,7 +109,7 @@ module GrapeOAS
               "in" => param.location,
               "required" => param.required,
               "description" => param.description,
-              "schema" => build_schema_or_ref(param.schema)
+              "schema" => build_schema_or_ref(schema)
             }.tap do |h|
               h["type"] = type if type
               h["format"] = format if format
@@ -124,10 +154,10 @@ module GrapeOAS
           result
         end
 
-        def apply_collection_format(result, param, type)
-          return unless type == Constants::SchemaTypes::ARRAY
+        def apply_collection_format(result, param, schema)
+          return unless schema.type == Constants::SchemaTypes::ARRAY
 
-          result["items"] = build_schema_or_ref(param.schema.items) if param.schema.items
+          result["items"] = build_schema_or_ref(schema.items) if schema.items
           return unless param.collection_format
 
           valid_formats = %w[csv ssv tsv pipes multi brackets]
