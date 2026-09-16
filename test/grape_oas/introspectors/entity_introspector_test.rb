@@ -252,6 +252,24 @@ module GrapeOAS
         refute species.items.nullable, "Expected array items to remain non-nullable"
       end
 
+      def test_nullable_item_schema_does_not_make_array_nullable
+        item_class = Class.new(Grape::Entity) do
+          expose :name, documentation: { type: String }
+
+          def self.documentation
+            { nullable: true }
+          end
+        end
+        entity_class = Class.new(Grape::Entity) do
+          expose :items, using: item_class, documentation: { is_array: true }
+        end
+
+        items = Introspectors::EntityIntrospector.new(entity_class).build_schema.properties["items"]
+
+        refute items.nullable
+        assert items.items.nullable
+      end
+
       def test_merge_flattens_properties
         schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
 
