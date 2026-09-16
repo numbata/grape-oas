@@ -238,6 +238,38 @@ module GrapeOAS
         refute_same optional_profile, profile
       end
 
+      def test_nullable_array_marks_array_not_items
+        entity_class = Class.new(Grape::Entity) do
+          expose :species, documentation: { type: "string", is_array: true, x: { nullable: true } }
+        end
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+        species = schema.properties["species"]
+
+        assert_equal "array", species.type
+        assert species.nullable, "Expected the array itself to be nullable"
+        assert_equal "string", species.items.type
+        refute species.items.nullable, "Expected array items to remain non-nullable"
+      end
+
+      def test_nullable_item_schema_does_not_make_array_nullable
+        item_class = Class.new(Grape::Entity) do
+          expose :name, documentation: { type: String }
+
+          def self.documentation
+            { nullable: true }
+          end
+        end
+        entity_class = Class.new(Grape::Entity) do
+          expose :items, using: item_class, documentation: { is_array: true }
+        end
+
+        items = Introspectors::EntityIntrospector.new(entity_class).build_schema.properties["items"]
+
+        refute items.nullable
+        assert items.items.nullable
+      end
+
       def test_merge_flattens_properties
         schema = Introspectors::EntityIntrospector.new(ConditionalEntity).build_schema
 

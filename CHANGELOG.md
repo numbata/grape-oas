@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Your contribution here
+- [#106](https://github.com/numbata/grape-oas/pull/106): Apply `nullable` to the array, not its items, on `is_array: true` entity exposures - [@olivier-thatch](https://github.com/olivier-thatch).
 
 ### Changed
 
