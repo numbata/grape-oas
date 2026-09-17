@@ -27,6 +27,60 @@ module GrapeOAS
           assert_equal "Success", specs[0][:message]
         end
 
+        def test_returns_201_for_post
+          route = mock_route
+          route.request_method = "POST"
+
+          specs = @parser.parse(route)
+
+          assert_equal "201", specs[0][:code]
+        end
+
+        def test_returns_200_for_get
+          route = mock_route
+          route.request_method = "GET"
+
+          specs = @parser.parse(route)
+
+          assert_equal "200", specs[0][:code]
+        end
+
+        def test_returns_200_for_put
+          route = mock_route
+          route.request_method = "PUT"
+
+          specs = @parser.parse(route)
+
+          assert_equal "200", specs[0][:code]
+        end
+
+        def test_returns_200_for_patch
+          route = mock_route
+          route.request_method = "PATCH"
+
+          specs = @parser.parse(route)
+
+          assert_equal "200", specs[0][:code]
+        end
+
+        def test_returns_200_for_delete
+          route = mock_route
+          route.request_method = "DELETE"
+
+          specs = @parser.parse(route)
+
+          assert_equal "200", specs[0][:code]
+        end
+
+        def test_default_status_overrides_post_inference
+          route = mock_route(default_status: 202)
+          route.request_method = "POST"
+
+          specs = @parser.parse(route)
+
+          assert_equal "202", specs[0][:code]
+        end
+
         def test_uses_custom_default_status
           route = mock_route(default_status: 201)
 
@@ -54,7 +108,7 @@ module GrapeOAS
         private
 
         def mock_route(options = {})
-          OpenStruct.new(options: options)
+          OpenStruct.new(options: options, request_method: nil)
         end
       end
     end

@@ -26,6 +26,18 @@ backtrace.
 Check model names, remove unsupported entries, and fix errors raised by custom
 introspectors before generating the document again.
 
+#### POST success responses use consistent defaults
+
+POST `success:` declarations without an explicit response code or
+`default_status:` now infer status `201`. Entity response paths that previously
+hardcoded `200` now use the same precedence. Undocumented POST responses already
+inferred `201`.
+
+If a POST endpoint returns `200`, set `code: 200` in the response declaration or
+`default_status: 200` on the route. Explicit response codes take precedence over
+`default_status:`. Entity responses now honor `default_status:` for every HTTP
+method; bodyless statuses such as `204` omit response content.
+
 ### Upgrading to >= 1.5.0
 
 When upgrading from 1.4.0, regenerate your OpenAPI documents and review the diff before regenerating clients.
