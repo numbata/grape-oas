@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 * Your contribution here
+- [#155](https://github.com/numbata/grape-oas/pull/155): Fail generation when explicit `models:` entries cannot be resolved or introspected instead of silently omitting them - [@numbata](https://github.com/numbata).
 
 ## [1.5.1] - 2026-09-16
 
