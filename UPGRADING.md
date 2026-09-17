@@ -16,6 +16,16 @@ while remaining valid in OAS reference names:
 GrapeOAS.schema_ref_name = ->(name) { name.gsub("::", ".") }
 ```
 
+#### Invalid explicit models stop generation
+
+Entries passed through `models:` that cannot be resolved or introspected now
+stop generation instead of silently disappearing from the generated document.
+Exceptions from custom introspectors propagate with their original type and
+backtrace.
+
+Check model names, remove unsupported entries, and fix errors raised by custom
+introspectors before generating the document again.
+
 ### Upgrading to >= 1.5.0
 
 When upgrading from 1.4.0, regenerate your OpenAPI documents and review the diff before regenerating clients.
