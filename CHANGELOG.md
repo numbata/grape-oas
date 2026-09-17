@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Your contribution here
+- [#154](https://github.com/numbata/grape-oas/pull/154): Keep nullable enum members aligned with the emitted null representation across OAS versions - [@numbata](https://github.com/numbata).
 - [#153](https://github.com/numbata/grape-oas/pull/153): Reject colliding schema reference names instead of silently overwriting definitions - [@numbata](https://github.com/numbata).
 - [#106](https://github.com/numbata/grape-oas/pull/106): Apply `nullable` to the array, not its items, on `is_array: true` entity exposures - [@olivier-thatch](https://github.com/olivier-thatch).
 

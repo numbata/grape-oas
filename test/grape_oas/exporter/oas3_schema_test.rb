@@ -234,6 +234,14 @@ module GrapeOAS
         assert_equal [nil], result["enum"]
       end
 
+      def test_typeless_nullable_enum_drops_nil_without_null_representation
+        schema = ApiModel::Schema.new(nullable: true, enum: [nil])
+
+        result = OAS3::Schema.new(schema, nil, nullable_strategy: Constants::NullableStrategy::KEYWORD).build
+
+        refute result.key?("enum")
+      end
+
       # === Example coercion tests ===
 
       def test_coerce_example_with_type_array_integer
@@ -843,6 +851,19 @@ module GrapeOAS
 
         assert_equal %w[integer null], result["type"]
         assert_equal [1, 2, 3], result["enum"]
+      end
+
+      def test_typeless_nullable_compositions_preserve_nil_in_enum_type_array
+        %i[all_of one_of any_of].each do |composition|
+          child = ApiModel::Schema.new(type: "integer")
+          schema = ApiModel::Schema.new(**{ composition => [child] }, nullable: true, enum: [1, nil])
+
+          result = OAS3::Schema.new(
+            schema, nil, nullable_strategy: Constants::NullableStrategy::TYPE_ARRAY,
+          ).build
+
+          assert_equal [1, nil], result["enum"]
+        end
       end
 
       def test_allof_schema_drops_enum_key_when_normalization_yields_nil
