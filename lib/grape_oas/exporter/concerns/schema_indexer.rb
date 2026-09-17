@@ -7,11 +7,28 @@ module GrapeOAS
       # Handles building schema indexes from operations and collecting nested schema references.
       module SchemaIndexer
         def find_schema_by_canonical_name(canonical_name)
-          @ref_schemas[canonical_name] || schema_index[canonical_name]
+          schema = @ref_schemas[canonical_name] || schema_index[canonical_name]
+          ensure_unique_schema_ref_name!(canonical_name) if schema
+          schema
         end
 
         def schema_index
           @schema_index ||= build_schema_index
+        end
+
+        def ensure_unique_schema_ref_name!(canonical_name)
+          ref_name = GrapeOAS.schema_ref_name.call(canonical_name)
+          canonical_names_by_ref = @canonical_names_by_ref ||= {}
+          existing_name = canonical_names_by_ref[ref_name]
+
+          if existing_name && existing_name != canonical_name
+            raise ArgumentError,
+                  "Schema reference name #{ref_name.inspect} is generated for both " \
+                  "#{existing_name.inspect} and #{canonical_name.inspect}; " \
+                  "configure GrapeOAS.schema_ref_name to generate unique names"
+          end
+
+          canonical_names_by_ref[ref_name] = canonical_name
         end
 
         def build_schema_index

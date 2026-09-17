@@ -1,5 +1,21 @@
 # Upgrading grape-oas
 
+### Upgrading to >= 1.6.0
+
+#### Schema reference-name collisions stop generation
+
+Distinct schemas that map to the same OAS reference name now raise
+`ArgumentError` instead of silently overwriting one schema. The error identifies
+both canonical names and the shared reference name.
+
+Rename one of the schemas or configure a mapping that produces unique names for
+your application. For example, dots distinguish Ruby namespaces from underscores
+while remaining valid in OAS reference names:
+
+```ruby
+GrapeOAS.schema_ref_name = ->(name) { name.gsub("::", ".") }
+```
+
 ### Upgrading to >= 1.5.0
 
 When upgrading from 1.4.0, regenerate your OpenAPI documents and review the diff before regenerating clients.
