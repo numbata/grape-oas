@@ -112,9 +112,10 @@ GrapeOAS.generate(app: API, schema_type: :oas31)
 ### Nullable Enum Values
 
 A `nil` enum member is retained only when the emitted schema can represent
-null. OAS 3.0 `:keyword` and `:type_array` schemas retain it, as do OAS 2.0
-schemas using the default `:extension`. OAS 2.0 non-body parameters always
-drop it because Swagger parameters cannot carry JSON null.
+null. For OAS 3.0 `:keyword` and `:type_array`, this requires an emitted type
+or null union. OAS 2.0 schemas using the default `:extension` also retain it.
+OAS 2.0 non-body parameters always drop it because Swagger parameters cannot
+carry JSON null.
 
 OAS 3.0 `:extension` drops `nil` because `x-nullable` is a non-standard
 compatibility extension. Use `:keyword` or `:type_array` when nullable enum
