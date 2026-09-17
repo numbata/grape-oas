@@ -45,6 +45,11 @@ add_oas_documentation(
 )
 ```
 
+The `models:` list is explicit: every entry must resolve to a model supported by
+a registered introspector. Generation raises when a model name is missing, a
+model is unsupported, or its introspector fails, instead of emitting an
+incomplete schema document.
+
 ## Schema Ref Names
 
 Override how a schema's canonical Ruby class name becomes an OAS component or

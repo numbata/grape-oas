@@ -54,11 +54,12 @@ module GrapeOAS
     def build_registered_schemas(models)
       return [] unless models
 
-      Array(models).filter_map do |model|
+      Array(models).map do |model|
         model = model.constantize if model.is_a?(String)
-        GrapeOAS.introspectors.build_schema(model, stack: [], registry: {})
-      rescue StandardError
-        nil
+        schema = GrapeOAS.introspectors.build_schema(model, stack: [], registry: {})
+        raise ArgumentError, "No introspector can build a schema for #{model.inspect}" unless schema
+
+        schema
       end
     end
   end
