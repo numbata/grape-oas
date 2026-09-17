@@ -4,6 +4,8 @@ module GrapeOAS
   module Exporter
     module OAS2
       class Parameter
+        include Concerns::EnumNormalizer
+
         PRIMITIVE_MAPPINGS = {
           Constants::SchemaTypes::INTEGER => { type: Constants::SchemaTypes::INTEGER },
           "long" => { type: Constants::SchemaTypes::INTEGER, format: "int64" },
@@ -132,26 +134,6 @@ module GrapeOAS
           result["pattern"] = schema.pattern if schema.respond_to?(:pattern) && schema.pattern
           result["enum"] = normalize_enum(schema.enum, result["type"]) if schema.respond_to?(:enum) && schema.enum
           result["default"] = schema.default if schema.respond_to?(:default) && !schema.default.nil?
-        end
-
-        def normalize_enum(enum_vals, type)
-          return nil unless enum_vals.is_a?(Array)
-
-          result = enum_vals.each_with_object([]) do |v, acc|
-            next if v.nil?
-
-            coerced_v = case type
-                        when Constants::SchemaTypes::INTEGER then v.to_i if v.respond_to?(:to_i)
-                        when Constants::SchemaTypes::NUMBER then v.to_f if v.respond_to?(:to_f)
-                        else v
-                        end
-            acc << coerced_v unless coerced_v.nil?
-          end
-
-          result.uniq!
-          return nil if result.empty?
-
-          result
         end
 
         def apply_collection_format(result, param, schema)

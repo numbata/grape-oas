@@ -109,6 +109,17 @@ GrapeOAS.generate(app: API, schema_type: :oas31)
 
 **Note:** OAS 3.1 always uses `:type_array` (JSON Schema null unions) regardless of the `nullable_strategy` option, because `nullable` is not a valid keyword in OAS 3.1.
 
+### Nullable Enum Values
+
+A `nil` enum member is retained only when the emitted schema can represent
+null. OAS 3.0 `:keyword` and `:type_array` schemas retain it, as do OAS 2.0
+schemas using the default `:extension`. OAS 2.0 non-body parameters always
+drop it because Swagger parameters cannot carry JSON null.
+
+OAS 3.0 `:extension` drops `nil` because `x-nullable` is a non-standard
+compatibility extension. Use `:keyword` or `:type_array` when nullable enum
+members must be represented explicitly.
+
 ### Backward Compatibility
 
 The legacy `nullable_keyword` option is still accepted for OAS 3.0 and mapped automatically:

@@ -219,13 +219,24 @@ module GrapeOAS
 
       # === Enum normalization: nil preservation on nullable schemas ===
 
-      def test_nullable_integer_enum_preserves_nil
+      def test_nullable_integer_enum_preserves_nil_with_extension
+        schema = ApiModel::Schema.new(type: "integer", nullable: true)
+        schema.enum = [1, 2, nil]
+
+        result = OAS2::Schema.new(
+          schema, nil, nullable_strategy: Constants::NullableStrategy::EXTENSION,
+        ).build
+
+        assert_equal [1, 2, nil], result["enum"]
+      end
+
+      def test_nullable_integer_enum_drops_nil_without_nullable_representation
         schema = ApiModel::Schema.new(type: "integer", nullable: true)
         schema.enum = [1, 2, nil]
 
         result = OAS2::Schema.new(schema).build
 
-        assert_equal [1, 2, nil], result["enum"]
+        assert_equal [1, 2], result["enum"]
       end
 
       def test_non_nullable_integer_enum_drops_nil
@@ -295,12 +306,14 @@ module GrapeOAS
         assert_equal [1, 2, 3], result["enum"]
       end
 
-      def test_allof_schema_normalizes_integer_enum_preserves_nil
+      def test_allof_schema_normalizes_integer_enum_preserves_nil_with_extension
         child = ApiModel::Schema.new(type: "object")
         schema = ApiModel::Schema.new(all_of: [child], type: "integer", nullable: true)
         schema.enum = [1, 2, nil]
 
-        result = OAS2::Schema.new(schema).build
+        result = OAS2::Schema.new(
+          schema, nil, nullable_strategy: Constants::NullableStrategy::EXTENSION,
+        ).build
 
         assert_equal [1, 2, nil], result["enum"]
       end
@@ -509,7 +522,9 @@ module GrapeOAS
         parent_schema = ApiModel::Schema.new(type: "object")
         parent_schema.add_property("child", ref_schema)
 
-        result = OAS2::Schema.new(parent_schema, ref_tracker).build
+        result = OAS2::Schema.new(
+          parent_schema, ref_tracker, nullable_strategy: Constants::NullableStrategy::EXTENSION,
+        ).build
 
         child = result["properties"]["child"]
 
