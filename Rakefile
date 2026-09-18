@@ -69,7 +69,7 @@ namespace :release do
     )
 
     # Remove "Your contribution here" placeholder lines
-    new_changelog.gsub!(/^\s*-?\s*Your contribution here\.?\s*$/i, "")
+    new_changelog.gsub!(/^\s*[-*]?\s*Your contribution here\.?\s*$/i, "")
 
     File.write(changelog_file, new_changelog)
 
