@@ -62,6 +62,12 @@ gem 'dry-validation'  # Dry::Validation::Contract request schemas
 gem 'dry-schema'      # Standalone Dry::Schema request schemas
 ```
 
+Sorbet users can import the bundled RBI signatures with Tapioca:
+
+```bash
+bundle exec tapioca gem grape-oas
+```
+
 ## Quick Start
 
 ### Mount Documentation Endpoint

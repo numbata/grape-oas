@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 * Your contribution here
+- [#156](https://github.com/numbata/grape-oas/pull/156): Ship Sorbet RBI signatures for public entry points and the documentation DSL - [@numbata](https://github.com/numbata).
 
 ### Fixed
 
