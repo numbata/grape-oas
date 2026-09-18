@@ -11,6 +11,8 @@ module GrapeOAS
     class ResultEntity < Grape::Entity
       expose :details, using: DetailsEntity, documentation: { nullable: true }
       expose :related_details, using: DetailsEntity, documentation: { is_array: true, nullable: true }
+      expose :described_related_details, using: DetailsEntity,
+                                         documentation: { is_array: true, nullable: true, desc: "Related details" }
       expose :strict_details, using: DetailsEntity
     end
 
@@ -83,9 +85,12 @@ module GrapeOAS
         result_name = schemas.keys.grep(/ResultEntity/).first
         details_name = schemas.keys.grep(/DetailsEntity/).first
         items = schemas.dig(result_name, "properties", "related_details", "items")
+        described_items = schemas.dig(result_name, "properties", "described_related_details", "items")
         ref_prefix = dialect == :oas2 ? "#/definitions" : "#/components/schemas"
+        ref = { "$ref" => "#{ref_prefix}/#{details_name}" }
 
-        assert_equal({ "$ref" => "#{ref_prefix}/#{details_name}" }, items, "Unexpected #{dialect} items schema")
+        assert_equal ref, items, "Unexpected #{dialect} items schema"
+        assert_equal [ref], described_items["allOf"], "Expected #{dialect} metadata wrapper"
       end
     end
 
