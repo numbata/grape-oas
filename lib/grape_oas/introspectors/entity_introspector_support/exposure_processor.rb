@@ -170,10 +170,24 @@ module GrapeOAS
           array_schema = ApiModel::Schema.new(type: Constants::SchemaTypes::ARRAY, items: prop_schema)
           if PropertyExtractor.extract_nullable(doc)
             array_schema.nullable = true
-            prop_schema.nullable = false
+            if bare_nullable_ref_wrapper?(prop_schema)
+              array_schema.items = prop_schema.all_of.first.dup
+              array_schema.items.nullable = false
+            else
+              prop_schema.nullable = false
+            end
           end
           array_schema.examples = doc[:example] if array_valued_example?(doc)
           array_schema
+        end
+
+        def bare_nullable_ref_wrapper?(schema)
+          return false unless schema.all_of&.one? && schema.all_of.first.canonical_name
+
+          empty_schema = ApiModel::Schema.new
+          (ApiModel::Schema::VALID_ATTRIBUTES - %i[nullable all_of]).all? do |attribute|
+            schema.public_send(attribute) == empty_schema.public_send(attribute)
+          end
         end
 
         # Detects block-based nesting exposures (NestingExposure) that should become
