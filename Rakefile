@@ -14,6 +14,11 @@ require "rubocop/rake_task"
 RuboCop::RakeTask.new
 
 namespace :benchmark do
+  desc "Benchmark OAS generation time (use ROUTE_COUNTS=100,500,1000 ITERATIONS=5)"
+  task :generation do
+    sh "ruby benchmark/generation_time.rb"
+  end
+
   desc "Run memory profiling benchmark (use ITERATIONS=N to adjust, FORMAT=json|markdown|text)"
   task :memory do
     format = ENV.fetch("FORMAT", "text")
