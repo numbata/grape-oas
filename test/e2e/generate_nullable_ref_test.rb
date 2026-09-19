@@ -10,6 +10,9 @@ module GrapeOAS
 
     class ResultEntity < Grape::Entity
       expose :details, using: DetailsEntity, documentation: { nullable: true }
+      expose :related_details, using: DetailsEntity, documentation: { is_array: true, nullable: true }
+      expose :described_related_details, using: DetailsEntity,
+                                         documentation: { is_array: true, nullable: true, desc: "Related details" }
       expose :strict_details, using: DetailsEntity
     end
 
@@ -73,6 +76,22 @@ module GrapeOAS
 
       assert details_prop.key?("anyOf")
       assert(details_prop["anyOf"].any? { |b| b["type"] == "null" }, "OAS 3.1 uses type: null")
+    end
+
+    def test_nullable_array_ref_items_use_bare_ref
+      %i[oas2 oas3 oas31].each do |dialect|
+        spec = GrapeOAS.generate(app: ResultAPI, schema_type: dialect)
+        schemas = dialect == :oas2 ? spec.fetch("definitions") : spec.dig("components", "schemas")
+        result_name = schemas.keys.grep(/ResultEntity/).first
+        details_name = schemas.keys.grep(/DetailsEntity/).first
+        items = schemas.dig(result_name, "properties", "related_details", "items")
+        described_items = schemas.dig(result_name, "properties", "described_related_details", "items")
+        ref_prefix = dialect == :oas2 ? "#/definitions" : "#/components/schemas"
+        ref = { "$ref" => "#{ref_prefix}/#{details_name}" }
+
+        assert_equal ref, items, "Unexpected #{dialect} items schema"
+        assert_equal [ref], described_items["allOf"], "Expected #{dialect} metadata wrapper"
+      end
     end
 
     private

@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Your contribution here
+- [#158](https://github.com/numbata/grape-oas/pull/158): Emit bare item references for nullable arrays of entities instead of redundant `allOf` wrappers - [@numbata](https://github.com/numbata).
 - [#72](https://github.com/numbata/grape-oas/pull/72): Infer `201` for POST success responses without an explicit status; honor entity `default_status:` for all methods, omitting content for bodyless statuses - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#154](https://github.com/numbata/grape-oas/pull/154): Keep nullable enum members aligned with the emitted null representation across OAS versions - [@numbata](https://github.com/numbata).
 - [#153](https://github.com/numbata/grape-oas/pull/153): Reject colliding schema reference names instead of silently overwriting definitions - [@numbata](https://github.com/numbata).
