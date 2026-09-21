@@ -5,16 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.6.0] - 2026-09-21
 
 ### Added
 
-* Your contribution here
 - [#89](https://github.com/numbata/grape-oas/pull/89): Add `GrapeOAS.entity_exposure_required_default` to make entity exposures without explicit required metadata optional in generated schemas - [@abeljim8am](https://github.com/abeljim8am).
 
 ### Fixed
 
-* Your contribution here
 - [#158](https://github.com/numbata/grape-oas/pull/158): Emit bare item references for nullable arrays of entities instead of redundant `allOf` wrappers - [@numbata](https://github.com/numbata).
 - [#72](https://github.com/numbata/grape-oas/pull/72): Infer `201` for POST success responses without an explicit status; honor entity `default_status:` for all methods, omitting content for bodyless statuses - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#154](https://github.com/numbata/grape-oas/pull/154): Keep nullable enum members aligned with the emitted null representation across OAS versions - [@numbata](https://github.com/numbata).
@@ -23,7 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-* Your contribution here
 - [#155](https://github.com/numbata/grape-oas/pull/155): Fail generation when explicit `models:` entries cannot be resolved or introspected instead of silently omitting them - [@numbata](https://github.com/numbata).
 
 ## [1.5.1] - 2026-09-16
