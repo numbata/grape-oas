@@ -16,7 +16,7 @@ module GrapeOAS
             normalized_value = case base_type
                                when Constants::SchemaTypes::INTEGER then value.to_i if value.respond_to?(:to_i)
                                when Constants::SchemaTypes::NUMBER then value.to_f if value.respond_to?(:to_f)
-                               else value
+                               else value.is_a?(Symbol) ? value.to_s : value
                                end
             values << normalized_value unless normalized_value.nil?
           end
