@@ -11,6 +11,10 @@ module GrapeOAS
         assert PrimitiveResolver.handles?("String")
       end
 
+      def test_handles_uuid
+        assert PrimitiveResolver.handles?("uuid")
+      end
+
       def test_handles_integer
         assert PrimitiveResolver.handles?("Integer")
       end
@@ -61,6 +65,13 @@ module GrapeOAS
         schema = PrimitiveResolver.build_schema("String")
 
         assert_equal Constants::SchemaTypes::STRING, schema.type
+      end
+
+      def test_builds_uuid_schema
+        schema = PrimitiveResolver.build_schema("uuid")
+
+        assert_equal Constants::SchemaTypes::STRING, schema.type
+        assert_equal "uuid", schema.format
       end
 
       def test_builds_integer_schema
