@@ -142,7 +142,7 @@ module GrapeOAS
 
         def apply_documentation_extensions(schema, parent_spec)
           doc = parent_spec[:documentation] || {}
-          schema.description = doc[:desc] if doc[:desc]
+          schema.description ||= doc[:desc] || parent_spec[:desc]
           schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
           schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
           schema.format = doc[:format] if doc[:format]
