@@ -67,12 +67,14 @@ module GrapeOAS
         # @param doc [Hash] normalized documentation hash
         # @return [ApiModel::Schema]
         def build_property_schema(exposure, doc)
-          prop_schema = if nesting_exposure?(exposure)
-                          build_nesting_exposure_schema(exposure, doc)
-                        else
-                          schema_for_exposure(exposure, doc)
-                        end
-          wrap_in_array_if_needed(prop_schema, doc)
+          return wrap_in_array_if_needed(build_nesting_exposure_schema(exposure, doc), doc) if nesting_exposure?(exposure)
+
+          # Array descriptions belong to the array, not its shared item schema.
+          array_desc = doc[:desc] if doc[:is_array] && exposure_options(exposure)[:using]
+          item_doc = array_desc ? doc.except(:desc) : doc
+          array_schema = wrap_in_array_if_needed(schema_for_exposure(exposure, item_doc), doc)
+          array_schema.description = array_desc if array_desc
+          array_schema
         end
 
         # Checks if an exposure should be included in the schema.
@@ -260,7 +262,12 @@ module GrapeOAS
               RangeUtils.apply_to_schema(schema, normalized)
             end
           end
-          schema.description = doc[:desc] if doc[:desc]
+          if doc[:desc]
+            # Keep the description local to this property: wrap shared entity
+            # schemas instead of mutating the cached canonical schema.
+            schema = ApiModel::Schema.new(all_of: [schema]) if schema.canonical_name
+            schema.description = doc[:desc]
+          end
           schema.format = doc[:format] if doc[:format]
           schema = apply_example_to_schema(schema, doc[:example]) if doc.key?(:example) && !array_valued_example?(doc)
           schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)

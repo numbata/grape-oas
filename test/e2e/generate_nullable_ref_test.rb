@@ -85,12 +85,14 @@ module GrapeOAS
         result_name = schemas.keys.grep(/ResultEntity/).first
         details_name = schemas.keys.grep(/DetailsEntity/).first
         items = schemas.dig(result_name, "properties", "related_details", "items")
-        described_items = schemas.dig(result_name, "properties", "described_related_details", "items")
+        described = schemas.dig(result_name, "properties", "described_related_details")
         ref_prefix = dialect == :oas2 ? "#/definitions" : "#/components/schemas"
         ref = { "$ref" => "#{ref_prefix}/#{details_name}" }
 
         assert_equal ref, items, "Unexpected #{dialect} items schema"
-        assert_equal [ref], described_items["allOf"], "Expected #{dialect} metadata wrapper"
+        assert_equal ref, described["items"], "Unexpected #{dialect} described items schema"
+        assert_equal "Related details", described["description"]
+        refute schemas.fetch(details_name).key?("description")
       end
     end
 
