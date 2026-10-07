@@ -72,6 +72,28 @@ module GrapeOAS
         assert_equal "string", address.properties["zip"].type
       end
 
+      def test_nested_hash_uses_spec_description_unless_documentation_description_is_present
+        api_class = Class.new(Grape::API) do
+          params do
+            optional :crop, type: Hash, desc: "The crop area" do
+              requires :x, type: Integer
+            end
+            optional :region, type: Hash, desc: "Fallback description",
+                               documentation: { desc: "Documented description" } do
+              requires :name, type: String
+            end
+          end
+          post "pictures" do
+            {}
+          end
+        end
+
+        body_schema, = RequestParams.new(api: @api, route: api_class.routes.first).build
+
+        assert_equal "The crop area", body_schema.properties["crop"].description
+        assert_equal "Documented description", body_schema.properties["region"].description
+      end
+
       def test_nested_hash_propagates_required_fields
         api_class = Class.new(Grape::API) do
           format :json
