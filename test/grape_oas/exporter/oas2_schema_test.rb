@@ -219,6 +219,15 @@ module GrapeOAS
 
       # === Enum normalization: nil preservation on nullable schemas ===
 
+      def test_string_enum_normalizes_symbols
+        schema = ApiModel::Schema.new(type: "string")
+        schema.enum = %i[asc desc]
+
+        result = OAS2::Schema.new(schema).build
+
+        assert_equal %w[asc desc], result["enum"]
+      end
+
       def test_nullable_integer_enum_preserves_nil_with_extension
         schema = ApiModel::Schema.new(type: "integer", nullable: true)
         schema.enum = [1, 2, nil]
