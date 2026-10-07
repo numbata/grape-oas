@@ -129,6 +129,15 @@ module GrapeOAS
 
       # === Enum normalization tests ===
 
+      def test_string_schema_enum_normalized_from_symbols
+        schema = ApiModel::Schema.new(type: "string")
+        schema.enum = %i[asc desc]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert_equal %w[asc desc], result["enum"]
+      end
+
       def test_integer_schema_enum_normalized_from_strings
         schema = ApiModel::Schema.new(type: "integer")
         schema.enum = %w[1 2 3]
@@ -136,6 +145,15 @@ module GrapeOAS
         result = OAS3::Schema.new(schema).build
 
         assert_equal [1, 2, 3], result["enum"]
+      end
+
+      def test_integer_schema_symbol_enum_remains_incompatible
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.enum = [:one]
+
+        result = OAS3::Schema.new(schema).build
+
+        refute result.key?("enum")
       end
 
       def test_number_schema_enum_normalized_from_strings
