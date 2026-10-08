@@ -13,6 +13,7 @@ cases = []
 schema_types = %i[oas2 oas3 oas31]
 
 route_counts.each do |route_count|
+  warn "  Building #{route_count}-route API"
   api = Class.new(Grape::API) do
     format :json
     route_count.times do |index|
@@ -25,6 +26,7 @@ route_counts.each do |route_count|
   end
 
   schema_types.each do |schema_type|
+    warn "  Measuring #{route_count} routes / #{schema_type}"
     benchmark_case = { "routes" => route_count, "format" => schema_type.to_s }
     begin
       document = GrapeOAS.generate(app: api, schema_type: schema_type)
@@ -40,6 +42,7 @@ route_counts.each do |route_count|
       benchmark_case["error"] = "#{e.class}: #{e.message}"
     end
     cases << benchmark_case
+    warn "  Finished #{route_count} routes / #{schema_type}"
   end
 end
 

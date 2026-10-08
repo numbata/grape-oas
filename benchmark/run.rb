@@ -66,8 +66,23 @@ options[:refs].each do |ref|
             "RUBY_YJIT_ENABLE" => nil, "RUBY_ZJIT_ENABLE" => nil, "RUBYLIB" => nil }
     jit_flags = ["--disable-yjit"]
     jit_flags << "--disable-zjit" if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("4.0")
-    stdout, stderr, status = Open3.capture3(env, RbConfig.ruby, *jit_flags, "-I", File.join(checkout, "lib"),
-                                            File.join(__dir__, "worker.rb"), JSON.generate(options[:routes]), options[:iterations].to_s,)
+    stdout = nil
+    stderr = +""
+    status = nil
+    Open3.popen3(env, RbConfig.ruby, *jit_flags, "-I", File.join(checkout, "lib"),
+                   File.join(__dir__, "worker.rb"), JSON.generate(options[:routes]), options[:iterations].to_s,) do |stdin, out, err, worker|
+      stdin.close
+      errors = Thread.new do
+        err.each_line do |line|
+          redacted = line.gsub(checkout, "<target>").gsub(root, "<harness>").gsub(Dir.home, "~")
+          stderr << redacted
+          warn redacted
+        end
+      end
+      stdout = out.read
+      errors.join
+      status = worker.value
+    end
     if status.success?
       target["cases"] = JSON.parse(stdout)
     else
