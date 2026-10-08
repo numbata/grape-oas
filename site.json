@@ -1,0 +1,6 @@
+{
+  "repository": "https://github.com/numbata/grape-oas",
+  "base_path": "/grape-oas",
+  "release": "v1.6.0",
+  "issue": "https://github.com/numbata/grape-oas/issues/170"
+}

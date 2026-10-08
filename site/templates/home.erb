@@ -1,0 +1,30 @@
+<section class="hero wrap">
+  <div class="hero-copy">
+    <p class="eyebrow">FOR RUBY / BUILT FOR GRAPE</p>
+    <h1>Your API.<br>A clear<br><em>specification.</em></h1>
+    <p class="intro">Turn your Grape API into OpenAPI documentation. Keep routes, parameters, and schemas together in the Ruby you already write.</p>
+    <a class="button" href="<%= url('getting-started/') %>">Document your first API <span aria-hidden="true">↗</span></a>
+    <p class="install-line"><code>gem install grape-oas</code><span>MIT licensed</span></p>
+  </div>
+  <div class="hero-example">
+    <div class="code-label"><span>catalog_api.rb</span><span>RUBY</span></div>
+    <%= code(@example.lines.reject { |line| line.start_with?('# frozen') }.join) %>
+    <div class="output-strip"><span aria-hidden="true">↳</span><code>/swagger_doc</code><span>OpenAPI 3.0</span></div>
+    <p class="example-note">Your API definition is the starting point.<br>grape-oas turns its metadata into a specification.</p>
+  </div>
+</section>
+<section class="formats wrap" aria-label="Supported OpenAPI formats">
+  <p>One API definition.<br><strong>Three OpenAPI formats.</strong></p>
+  <div><span>2.0</span><small>Swagger</small></div><div><span>3.0</span><small>OpenAPI</small></div><div><span>3.1</span><small>OpenAPI + JSON Schema</small></div>
+</section>
+<section class="overview wrap">
+  <div><p class="eyebrow">FROM ROUTES TO SCHEMAS</p><h2>Already in your API.<br>Now in your docs.</h2><p>grape-oas reads the metadata you declare in Grape and builds a shared API model. Separate exporters turn that model into the OpenAPI format you need.</p><a class="text-link" href="<%= docs('docs/ARCHITECTURE.md') %>">Read about the architecture <span aria-hidden="true">↗</span></a></div>
+  <dl class="feature-list">
+    <div><dt><span>01</span> Parameters and responses</dt><dd>Document routes with Grape’s parameter DSL, descriptions, and response declarations.</dd></div>
+    <div><dt><span>02</span> Entities and contracts</dt><dd>Use optional grape-entity, dry-validation, and dry-schema integrations to describe your schemas.</dd></div>
+    <div><dt><span>03</span> Your choice of output</dt><dd>Serve a documentation endpoint or generate a plain Ruby hash for export to JSON.</dd></div>
+  </dl>
+</section>
+<section class="benchmark-callout wrap">
+  <p class="eyebrow">MEASURED, WITH CONTEXT</p><div><h2>How does generation scale?</h2><p>Explore release-by-release timings across API sizes and OpenAPI formats. Every report includes the environment and raw measurements.</p></div><a class="text-link" href="<%= url('benchmarks/') %>">Explore benchmarks <span aria-hidden="true">↗</span></a>
+</section>
