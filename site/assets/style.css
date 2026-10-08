@@ -81,7 +81,7 @@ pre code { font-size: 13px; }
 .guide-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 70px; padding-bottom: 70px; align-items: start; }
 .section-nav { position: sticky; top: 30px; display: flex; flex-direction: column; border-top: 1px solid var(--line); padding-top: 16px; }
 .section-nav a { font-size: 13px; text-decoration: none; padding-block: 9px; }
-.guide-content { max-width: 740px; }
+.guide-content { max-width: 740px; min-width: 0; }
 .guide-content section { border-top: 1px solid var(--line); padding-block: 30px 24px; }
 .guide-content h2 { font-size: 34px; margin-bottom: 20px; }
 .guide-content p { color: var(--muted); font-size: 16px; }
