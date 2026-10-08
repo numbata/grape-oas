@@ -75,7 +75,8 @@ class GemSite
     @content = template(page)
     destination = File.join(output, directory)
     FileUtils.mkdir_p(destination)
-    File.write(File.join(destination, "index.html"), template("layout"))
+    html = template("layout").lines.map(&:rstrip).join("\n")
+    File.write(File.join(destination, "index.html"), "#{html}\n")
   end
 end
 
