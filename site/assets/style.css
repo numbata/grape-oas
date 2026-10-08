@@ -41,7 +41,7 @@ pre code { font-size: 13px; }
 .intro { color: var(--muted); font-size: 18px; line-height: 1.7; max-width: 48ch; }
 .hero-copy .intro { max-width: 38ch; margin-bottom: 28px; }
 .button { display: inline-flex; align-items: center; justify-content: space-between; gap: 25px; padding: 13px 20px; background: var(--grape); color: var(--paper); font-size: 14px; text-decoration: none; border-radius: 3px; transition: transform 120ms ease-out; }
-.button:active { transform: scale(.97); }
+.button:active:not(:focus-visible) { transform: scale(.97); }
 .install-line { display: flex; gap: 18px; align-items: center; margin: 24px 0 0; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
 .install-line code { padding: 0; background: none; font-size: 12px; }
 .hero-example { margin-top: 8px; }

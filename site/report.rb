@@ -57,11 +57,14 @@ module BenchmarkReport
         table_rows.select { |row| row[:error] }.each do |row|
           lines << "Failure for #{row[:label]}: #{row[:error].gsub(/\s+/, " ")}"
         end
+        lines << ""
       end
     end
     methodology = report.fetch("methodology")
     lines.push("## Methodology", "",
                "#{methodology.fetch("warmup")} warmup generation; #{methodology.fetch("iterations")} measured generations per case.",
+               "Case budget: #{methodology.fetch("case_timeout_seconds")} seconds. Timed-out cases have no partial timings or comparisons.",
+               "Harness: #{report.fetch("harness_sha")}",
                methodology.fetch("operation"), "", "Environment and exact dependencies:", "", "```json",
                JSON.pretty_generate(report.fetch("environment")), "```", "",)
     lines.join("\n")
