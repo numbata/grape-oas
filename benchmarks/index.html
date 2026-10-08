@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Measured OpenAPI generation times across grape-oas releases and API sizes.">
+  <meta name="theme-color" content="#673a79">
+  <title>Release benchmarks · grape-oas</title>
+  <link rel="icon" href="/grape-oas/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/grape-oas/assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header wrap">
+    <a class="wordmark" href="/grape-oas/" aria-label="grape-oas home"><span class="gem-mark" aria-hidden="true">◆</span> grape<span>-oas</span></a>
+    <nav aria-label="Main navigation">
+      <a href="/grape-oas/getting-started/" >Getting started</a>
+      <a href="/grape-oas/benchmarks/" aria-current="page">Benchmarks</a>
+      <a href="https://github.com/numbata/grape-oas/">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+  <main id="main-content"><div class="page-heading wrap"><p class="eyebrow">BENCHMARKS / RELEASE HISTORY</p><h1>Generation time,<br>with the details.</h1><p class="intro">The same API shapes, measured across grape-oas releases. Compare versions within each table. Lower milliseconds are better.</p></div>
+<div class="wrap benchmark-content">
+
+  <div class="report-summary"><div><span class="eyebrow">RUN AT</span><strong>2026-10-08T22:40:38Z</strong></div><div><span class="eyebrow">RUBY / GRAPE</span><strong>ruby 3.3.6 / 3.1.1</strong></div><div><span class="eyebrow">MEASUREMENT</span><strong>10 samples · JIT disabled</strong></div></div>
+  <div class="report-actions"><a href="/grape-oas/benchmarks/runs/20261008T224038-439440ea/results.json">Download raw JSON ↗</a><a href="/grape-oas/benchmarks/runs/20261008T224038-439440ea/RESULTS.md">Markdown report ↗</a><a href="#methodology">Methodology ↓</a></div>
+  <p class="reading-note">Negative changes mean faster generation; positive changes mean slower generation. These synthetic workloads measure route-count scaling, excluding API setup and JSON serialization. Small differences can reflect measurement noise.</p>
+
+  <section class="route-section"><p class="eyebrow">API SIZE</p><h2>100 routes</h2>
+
+    <div class="table-scroll" role="region" aria-label="100 routes, OpenAPI 2.0" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 2.0</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>156.21</td><td>52.33–248.50</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>147.52</td><td>53.37–248.04</td><td>-5.6%</td><td>-5.6%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>157.56</td><td>53.21–257.82</td><td>+6.8%</td><td>+0.9%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>146.06</td><td>52.62–254.56</td><td>-7.3%</td><td>-6.5%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>9.33</td><td>8.80–15.25</td><td>-93.6%</td><td>-94.0%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>10.70</td><td>9.68–15.50</td><td>+14.7%</td><td>-93.1%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>10.85</td><td>9.84–13.14</td><td>+1.4%</td><td>-93.1%</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>11.48</td><td>10.70–14.67</td><td>+5.8%</td><td>-92.6%</td></tr>
+
+    </tbody></table></div>
+
+    <div class="table-scroll" role="region" aria-label="100 routes, OpenAPI 3.0" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 3.0</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>432.40</td><td>311.55–515.16</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>403.45</td><td>289.56–524.55</td><td>-6.7%</td><td>-6.7%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>403.38</td><td>295.68–523.86</td><td>-0.0%</td><td>-6.7%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>403.43</td><td>315.84–504.68</td><td>+0.0%</td><td>-6.7%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>9.56</td><td>8.56–15.08</td><td>-97.6%</td><td>-97.8%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>10.39</td><td>9.95–11.50</td><td>+8.7%</td><td>-97.6%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>11.22</td><td>10.52–12.12</td><td>+7.9%</td><td>-97.4%</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>11.41</td><td>10.73–12.19</td><td>+1.7%</td><td>-97.4%</td></tr>
+
+    </tbody></table></div>
+
+    <div class="table-scroll" role="region" aria-label="100 routes, OpenAPI 3.1" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 3.1</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>680.19</td><td>573.69–838.65</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>719.86</td><td>587.56–822.02</td><td>+5.8%</td><td>+5.8%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>723.37</td><td>565.26–842.01</td><td>+0.5%</td><td>+6.3%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>685.61</td><td>541.50–879.14</td><td>-5.2%</td><td>+0.8%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>9.38</td><td>8.88–10.60</td><td>-98.6%</td><td>-98.6%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>10.75</td><td>10.17–13.55</td><td>+14.6%</td><td>-98.4%</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>11.49</td><td>10.38–14.91</td><td>+6.9%</td><td>-98.3%</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>11.76</td><td>10.62–15.67</td><td>+2.3%</td><td>-98.3%</td></tr>
+
+    </tbody></table></div>
+
+  </section>
+
+  <section class="route-section"><p class="eyebrow">API SIZE</p><h2>500 routes</h2>
+
+    <div class="table-scroll" role="region" aria-label="500 routes, OpenAPI 2.0" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 2.0</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>55.42</td><td>51.08–59.52</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>66.86</td><td>63.92–72.83</td><td>+20.6%</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>71.46</td><td>65.25–178.14</td><td>+6.9%</td><td>—</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>67.88</td><td>63.98–90.90</td><td>-5.0%</td><td>—</td></tr>
+
+    </tbody></table></div>
+
+    <div class="table-scroll" role="region" aria-label="500 routes, OpenAPI 3.0" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 3.0</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>58.13</td><td>55.41–64.27</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>63.56</td><td>59.29–71.00</td><td>+9.4%</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>65.83</td><td>57.60–70.54</td><td>+3.6%</td><td>—</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>67.43</td><td>59.70–69.98</td><td>+2.4%</td><td>—</td></tr>
+
+    </tbody></table></div>
+
+    <div class="table-scroll" role="region" aria-label="500 routes, OpenAPI 3.1" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 3.1</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>59.73</td><td>55.88–62.57</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>63.27</td><td>58.46–68.13</td><td>+5.9%</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>64.27</td><td>59.65–76.98</td><td>+1.6%</td><td>—</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>62.96</td><td>56.19–71.27</td><td>-2.0%</td><td>—</td></tr>
+
+    </tbody></table></div>
+
+  </section>
+
+  <section class="route-section"><p class="eyebrow">API SIZE</p><h2>1,000 routes</h2>
+
+    <div class="table-scroll" role="region" aria-label="1000 routes, OpenAPI 2.0" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 2.0</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>123.49</td><td>111.86–129.40</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>133.63</td><td>128.10–136.94</td><td>+8.2%</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>132.72</td><td>129.54–139.58</td><td>-0.7%</td><td>—</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>137.48</td><td>132.45–154.73</td><td>+3.6%</td><td>—</td></tr>
+
+    </tbody></table></div>
+
+    <div class="table-scroll" role="region" aria-label="1000 routes, OpenAPI 3.0" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 3.0</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>121.18</td><td>116.77–134.80</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>141.03</td><td>136.36–154.15</td><td>+16.4%</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>137.74</td><td>132.91–141.71</td><td>-2.3%</td><td>—</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>139.12</td><td>122.99–146.15</td><td>+1.0%</td><td>—</td></tr>
+
+    </tbody></table></div>
+
+    <div class="table-scroll" role="region" aria-label="1000 routes, OpenAPI 3.1" tabindex="0"><table class="benchmark-table"><caption>OpenAPI 3.1</caption><thead><tr><th scope="col">Version / commit</th><th scope="col">Median <span>ms</span></th><th scope="col">Range <span>ms</span></th><th scope="col">vs previous</th><th scope="col">vs oldest</th></tr></thead><tbody>
+
+      <tr class=""><th scope="row">v1.0.3<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/efc58951f74011c8e1edfdb88d045f778675ca19">efc58951</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.1.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/9b476a1e0b1ed7a2626df2b109eb3510972112b1">9b476a1e</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.2.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b3ac106d3b272363620f6b2cd5acb44058fce8b">8b3ac106</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.3.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/7648306b203308aaed395fe3be2e2a7973185b17">7648306b</a></th><td>Failed</td><td>—–—</td><td>—</td><td>—</td></tr>
+      <tr><td colspan="5" class="failure">Timed out after 30 seconds, including warmup and measured generations</td></tr>
+
+      <tr class=""><th scope="row">v1.4.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/eda6ce524c9c84a1c6e8e2b7a7bb1a1aa8ec4232">eda6ce52</a></th><td>120.86</td><td>118.56–128.06</td><td>—</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.5.1<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/00ab3e4d81d5758b687df24dce13f2796299ae6b">00ab3e4d</a></th><td>138.10</td><td>126.56–147.95</td><td>+14.3%</td><td>—</td></tr>
+
+
+      <tr class=""><th scope="row">v1.6.0<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/8b2dd871d3fe2a794ac7969145286f3b3be157a4">8b2dd871</a></th><td>137.28</td><td>128.47–155.73</td><td>-0.6%</td><td>—</td></tr>
+
+
+      <tr class="main-row"><th scope="row">main<a class="commit-link" href="https://github.com/numbata/grape-oas/commit/439440ea95e261e891e0d94bb4d277df38d6280a">439440ea</a></th><td>129.66</td><td>121.90–139.30</td><td>-5.5%</td><td>—</td></tr>
+
+    </tbody></table></div>
+
+  </section>
+
+  <section class="methodology" id="methodology"><p class="eyebrow">REPRODUCIBILITY</p><h2>What we measured</h2><p>One warmup generation per case, followed by 10 measured calls to <code>GrapeOAS.generate</code>. Timing uses Ruby’s monotonic clock. API construction and JSON serialization happen outside the timed operation. Garbage collection stays enabled.</p><p>Each version runs in a separate process with the same Ruby and locked dependencies. Format order is 2.0, 3.0, then 3.1. The API defines an integer path parameter and an optional string query parameter on each route. These results do not measure entity or contract introspection, HTTP throughput, or first-generation startup cost.</p><dl class="environment-list"><div><dt>Ruby</dt><dd>ruby 3.3.6 (2024-11-05 revision 75015d4c1f) [arm64-darwin24]</dd></div><div><dt>System</dt><dd>Darwin 24.6.0 arm64</dd></div><div><dt>CPU</dt><dd>Apple M1 Pro</dd></div><div><dt>Harness</dt><dd><a href="https://github.com/numbata/grape-oas/commit/b6feb9a364630d560c2561711dba6a3c592bb1bb">b6feb9a3</a></dd></div></dl><details><summary>Exact dependencies and environment</summary><pre tabindex="0"><code>{
+  &quot;ruby&quot;: &quot;ruby 3.3.6 (2024-11-05 revision 75015d4c1f) [arm64-darwin24]&quot;,
+  &quot;os&quot;: &quot;Darwin 24.6.0 arm64&quot;,
+  &quot;cpu&quot;: &quot;Apple M1 Pro&quot;,
+  &quot;jit&quot;: &quot;disabled&quot;,
+  &quot;dependencies&quot;: {
+    &quot;base64&quot;: &quot;0.3.0&quot;,
+    &quot;bigdecimal&quot;: &quot;4.1.3&quot;,
+    &quot;concurrent-ruby&quot;: &quot;1.3.8&quot;,
+    &quot;connection_pool&quot;: &quot;3.0.2&quot;,
+    &quot;drb&quot;: &quot;2.2.3&quot;,
+    &quot;i18n&quot;: &quot;1.15.2&quot;,
+    &quot;json&quot;: &quot;3.0.2&quot;,
+    &quot;logger&quot;: &quot;1.7.0&quot;,
+    &quot;prism&quot;: &quot;1.9.0&quot;,
+    &quot;minitest&quot;: &quot;6.0.5&quot;,
+    &quot;securerandom&quot;: &quot;0.4.1&quot;,
+    &quot;tzinfo&quot;: &quot;2.0.6&quot;,
+    &quot;uri&quot;: &quot;1.1.2&quot;,
+    &quot;activesupport&quot;: &quot;8.1.4&quot;,
+    &quot;bundler&quot;: &quot;4.0.8&quot;,
+    &quot;zeitwerk&quot;: &quot;2.7.5&quot;,
+    &quot;dry-core&quot;: &quot;1.2.0&quot;,
+    &quot;dry-configurable&quot;: &quot;1.4.0&quot;,
+    &quot;dry-inflector&quot;: &quot;1.3.1&quot;,
+    &quot;dry-logic&quot;: &quot;1.6.0&quot;,
+    &quot;dry-types&quot;: &quot;1.9.1&quot;,
+    &quot;mustermann&quot;: &quot;4.0.0&quot;,
+    &quot;mustermann-grape&quot;: &quot;1.1.0&quot;,
+    &quot;rack&quot;: &quot;3.2.7&quot;,
+    &quot;grape&quot;: &quot;3.1.1&quot;,
+    &quot;rack-test&quot;: &quot;2.2.0&quot;
+  },
+  &quot;lockfile_sha256&quot;: &quot;ed87b264038d5ee152f88a0bcf39eb99ca421536bef58163a40c1fe21e4544a9&quot;
+}</code></pre></details><p>Compare runs only when the environment, lockfile, and harness match. Rerun release baselines after changing any of them.</p><a class="text-link" href="https://github.com/numbata/grape-oas/tree/website">Runner and reproduction instructions ↗</a></section>
+
+<p class="reading-note">Each case has a 30-second budget for warmup and measured generations. Timed-out cases are excluded from comparisons.</p>
+<section class="archive"><p class="eyebrow">PREVIOUS MEASUREMENTS</p><h2>Run archive</h2><ul><li><a href="/grape-oas/benchmarks/runs/20261008T224038-439440ea/">2026-10-08T22:40:38Z<span>ruby 3.3.6 ↗</span></a></li></ul></section>
+</div>
+</main>
+  <footer class="site-footer wrap">
+    <p><strong>grape-oas</strong> <span>A Ruby gem. An open specification.</span></p>
+    <div><a href="https://rubygems.org/gems/grape-oas">RubyGems</a><a href="https://github.com/numbata/grape-oas/blob/main/CHANGELOG.md">Changelog</a><a href="https://github.com/numbata/grape-oas/blob/main/LICENSE.txt">MIT license</a></div>
+  </footer>
+</body>
+</html>

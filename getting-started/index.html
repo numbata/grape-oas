@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Install grape-oas, document a Grape API, and generate your first OpenAPI document.">
+  <meta name="theme-color" content="#673a79">
+  <title>Getting started · grape-oas</title>
+  <link rel="icon" href="/grape-oas/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/grape-oas/assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+  <header class="site-header wrap">
+    <a class="wordmark" href="/grape-oas/" aria-label="grape-oas home"><span class="gem-mark" aria-hidden="true">◆</span> grape<span>-oas</span></a>
+    <nav aria-label="Main navigation">
+      <a href="/grape-oas/getting-started/" aria-current="page">Getting started</a>
+      <a href="/grape-oas/benchmarks/" >Benchmarks</a>
+      <a href="https://github.com/numbata/grape-oas/">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+  <main id="main-content"><div class="page-heading wrap"><p class="eyebrow">GETTING STARTED / v1.6.0</p><h1>From a Grape API<br>to OpenAPI.</h1><p class="intro">Install the gem, describe an endpoint, and generate your first specification.</p></div>
+<div class="guide-layout wrap">
+  <nav class="section-nav" aria-label="On this page"><a href="#install">01 / Install</a><a href="#define">02 / Define your API</a><a href="#serve">03 / Serve the document</a><a href="#generate">04 / Generate directly</a><a href="#integrations">05 / Add integrations</a><a href="#reference">Reference docs ↗</a></nav>
+  <article class="guide-content">
+    <section id="install"><p class="step">01 / INSTALL</p><h2>Add grape-oas</h2><p>Use Ruby 3.2 or newer and Grape 3.0 or newer. Add the gem to your application’s Gemfile:</p><pre tabindex="0"><code>gem &quot;grape-oas&quot;</code></pre><p>Then install your dependencies:</p><pre tabindex="0"><code>bundle install</code></pre></section>
+    <section id="define"><p class="step">02 / DEFINE YOUR API</p><h2>A small, working example</h2><p>This API documents an integer path parameter and exposes a specification at <code>/swagger_doc</code>.</p><pre tabindex="0"><code># frozen_string_literal: true
+
+require &quot;grape_oas&quot;
+
+class CatalogAPI &lt; Grape::API
+  format :json
+
+  desc &quot;Find a book&quot;
+  params do
+    requires :id, type: Integer, desc: &quot;Book ID&quot;
+  end
+  get &quot;books/:id&quot; do
+    { id: params[:id], title: &quot;The Ruby Programming Language&quot; }
+  end
+
+  add_oas_documentation(
+    info: { title: &quot;Catalog API&quot;, version: &quot;1.0.0&quot; },
+  )
+end</code></pre><p>Mount <code>CatalogAPI</code> in your Rack application as you would any Grape API.</p></section>
+    <section id="serve"><p class="step">03 / SERVE THE DOCUMENT</p><h2>Choose your OpenAPI format</h2><p><code>add_oas_documentation</code> serves JSON and excludes documentation routes from the specification by default.</p><div class="table-scroll" role="region" aria-label="Documentation endpoints" tabindex="0"><table><thead><tr><th scope="col">Endpoint</th><th scope="col">Format</th></tr></thead><tbody><tr><td><code>/swagger_doc</code></td><td>OpenAPI 3.0, the default</td></tr><tr><td><code>/swagger_doc?oas=2</code></td><td>OpenAPI 2.0</td></tr><tr><td><code>/swagger_doc?oas=3.1</code></td><td>OpenAPI 3.1</td></tr></tbody></table></div></section>
+    <section id="generate"><p class="step">04 / GENERATE DIRECTLY</p><h2>Export without an endpoint</h2><p>With your API loaded, generate a Ruby hash and serialize it to JSON:</p><pre tabindex="0"><code>require &quot;json&quot;
+
+spec = GrapeOAS.generate(app: CatalogAPI, schema_type: :oas31)
+File.write(&quot;openapi.json&quot;, JSON.pretty_generate(spec))</code></pre><p>Use <code>:oas2</code>, <code>:oas3</code>, or <code>:oas31</code> to choose the format. <a href="https://github.com/numbata/grape-oas/blob/main/docs/USAGE.md">Explore more usage examples ↗</a></p></section>
+    <section id="integrations"><p class="step">05 / ADD INTEGRATIONS</p><h2>Bring your schemas along</h2><p>Install the integrations your application uses. They are optional dependencies:</p><pre tabindex="0"><code>gem &quot;grape-entity&quot;    # Response entities
+gem &quot;dry-validation&quot;  # Validation contracts
+gem &quot;dry-schema&quot;      # Standalone schemas</code></pre><p><a href="https://github.com/numbata/grape-oas/blob/main/docs/INTROSPECTORS.md">Read about schema introspection ↗</a></p></section>
+    <section id="reference"><p class="step">KEEP GOING</p><h2>The details live in the reference</h2><div class="reference-links"><a href="https://github.com/numbata/grape-oas/blob/main/docs/CONFIGURATION.md">Configuration <span>↗</span></a><a href="https://github.com/numbata/grape-oas/blob/main/docs/USAGE.md">Usage and examples <span>↗</span></a><a href="https://github.com/numbata/grape-oas/blob/main/docs/EXPORTERS.md">Custom exporters <span>↗</span></a><a href="https://github.com/numbata/grape-oas/blob/main/UPGRADING.md">Upgrading <span>↗</span></a></div><p>These links point to the current repository docs, which may include changes newer than this guide’s release.</p></section>
+  </article>
+</div>
+</main>
+  <footer class="site-footer wrap">
+    <p><strong>grape-oas</strong> <span>A Ruby gem. An open specification.</span></p>
+    <div><a href="https://rubygems.org/gems/grape-oas">RubyGems</a><a href="https://github.com/numbata/grape-oas/blob/main/CHANGELOG.md">Changelog</a><a href="https://github.com/numbata/grape-oas/blob/main/LICENSE.txt">MIT license</a></div>
+  </footer>
+</body>
+</html>
