@@ -2,6 +2,7 @@
 
 require "bundler/setup"
 require "json"
+require "timeout"
 require "grape_oas"
 
 abort "YJIT must be disabled" if defined?(RubyVM::YJIT) && RubyVM::YJIT.enabled?
@@ -9,6 +10,7 @@ abort "ZJIT must be disabled" if defined?(RubyVM::ZJIT) && RubyVM::ZJIT.enabled?
 
 route_counts = JSON.parse(ARGV.fetch(0))
 iterations = Integer(ARGV.fetch(1))
+case_timeout = Integer(ARGV.fetch(2))
 cases = []
 schema_types = %i[oas2 oas3 oas31]
 
@@ -29,15 +31,19 @@ route_counts.each do |route_count|
     warn "  Measuring #{route_count} routes / #{schema_type}"
     benchmark_case = { "routes" => route_count, "format" => schema_type.to_s }
     begin
-      document = GrapeOAS.generate(app: api, schema_type: schema_type)
-      actual_count = document.fetch("paths").size
-      raise "Expected #{route_count} paths, got #{actual_count}" unless actual_count == route_count
+      Timeout.timeout(case_timeout) do
+        document = GrapeOAS.generate(app: api, schema_type: schema_type)
+        actual_count = document.fetch("paths").size
+        raise "Expected #{route_count} paths, got #{actual_count}" unless actual_count == route_count
 
-      benchmark_case["samples_ms"] = Array.new(iterations) do
-        started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        GrapeOAS.generate(app: api, schema_type: schema_type)
-        (Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1_000
+        benchmark_case["samples_ms"] = Array.new(iterations) do
+          started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+          GrapeOAS.generate(app: api, schema_type: schema_type)
+          (Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at) * 1_000
+        end
       end
+    rescue Timeout::Error
+      benchmark_case["error"] = "Timed out after #{case_timeout} seconds, including warmup and measured generations"
     rescue StandardError => e
       benchmark_case["error"] = "#{e.class}: #{e.message}"
     end

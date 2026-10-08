@@ -19,5 +19,6 @@
 <% else %>
   <section class="methodology"><h2>No measurements published yet</h2><p>Reports appear here after a local benchmark run. Results are published with raw samples and environment details.</p><a href="<%= repo('tree/website') %>">Benchmark tooling ↗</a></section>
 <% end %>
+<% if report %><p class="reading-note">Each case has a <%= report.fetch('methodology').fetch('case_timeout_seconds') %>-second budget for warmup and measured generations. Timed-out cases are excluded from comparisons.</p><% end %>
 <section class="archive"><p class="eyebrow">PREVIOUS MEASUREMENTS</p><h2>Run archive</h2><ul><% reports.each do |name, archived| %><li><a href="<%= url("benchmarks/runs/#{name}/") %>"><%= h(archived.fetch('generated_at')) %><span><%= h(archived.fetch('environment').fetch('ruby').split.first(2).join(' ')) %> ↗</span></a></li><% end %></ul></section>
 </div>

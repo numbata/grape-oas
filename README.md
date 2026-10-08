@@ -34,6 +34,8 @@ bundle exec ruby benchmark/run.rb --refs v1.6.0,origin/main --routes 3 --iterati
 
 Do not interpret this synthetic route-count workload as HTTP throughput or entity/contract performance. Negative percentage changes mean faster generation. Compare only matching environments, lockfiles, and harness revisions. Rerun releases after any of those change. Failed cases are shown explicitly and do not produce comparisons.
 
+Each case has a 30-second budget for warmup plus measured generations. Timeouts are reported as failures, with no partial timings or percentage comparisons. Use `--case-timeout N` for longer runs. This bound prevents pathological historical cases from blocking a report.
+
 The runner records SHA references, harness revision and digest, samples, lockfile digest, exact dependencies, Ruby, OS, CPU, and methodology. It resolves refs before extraction and never checks out or edits the gem repository. Local paths and hostnames are not included in public reports. Commit harness changes before recording a published run.
 
 ## Build and preview

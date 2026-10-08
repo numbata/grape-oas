@@ -49,25 +49,26 @@ class GemSite
     FileUtils.mkdir_p(File.join(output, "assets"))
     FileUtils.cp(Dir[File.join(ROOT, "site", "assets", "*")], File.join(output, "assets"))
     File.write(File.join(output, ".nojekyll"), "")
-    render(output, "", "home", "OpenAPI documentation for Grape APIs", "Generate OpenAPI 2.0, 3.0, and 3.1 documents from your Grape API.")
-    render(output, "getting-started", "guide", "Getting started",
-           "Install grape-oas, document a Grape API, and generate your first OpenAPI document.",)
+    render(output: output, directory: "", page: "home", title: "OpenAPI documentation for Grape APIs",
+           description: "Generate OpenAPI 2.0, 3.0, and 3.1 documents from your Grape API.",)
+    render(output: output, directory: "getting-started", page: "guide", title: "Getting started",
+           description: "Install grape-oas, document a Grape API, and generate your first OpenAPI document.",)
     @report_name, @report = reports.first
-    render(output, "benchmarks", "benchmarks", "Release benchmarks",
-           "Measured OpenAPI generation times across grape-oas releases and API sizes.",)
+    render(output: output, directory: "benchmarks", page: "benchmarks", title: "Release benchmarks",
+           description: "Measured OpenAPI generation times across grape-oas releases and API sizes.",)
     reports.each do |name, raw_report|
       @report_name = name
       @report = raw_report
       directory = "benchmarks/runs/#{name}"
-      render(output, directory, "benchmarks", "Benchmark run #{name}",
-             "Reproducible generation timings and environment details for this benchmark run.",)
+      render(output: output, directory: directory, page: "benchmarks", title: "Benchmark run #{name}",
+             description: "Reproducible generation timings and environment details for this benchmark run.",)
       File.write(File.join(output, directory, "results.json"), "#{JSON.pretty_generate(raw_report)}\n")
       File.write(File.join(output, directory, "RESULTS.md"), BenchmarkReport.markdown(raw_report))
     end
     puts output
   end
 
-  def render(output, directory, page, title, description)
+  def render(output:, directory:, page:, title:, description:)
     @page = page
     @title = title
     @description = description

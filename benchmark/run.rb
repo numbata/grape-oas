@@ -14,7 +14,7 @@ root = File.expand_path("..", __dir__)
 options = {
   repo: File.expand_path("../../grape-oas", __dir__),
   refs: %w[v1.0.3 v1.1.0 v1.2.0 v1.3.0 v1.4.0 v1.5.1 v1.6.0 origin/main],
-  routes: [100, 500, 1_000], iterations: 10, output: File.join(root, "results")
+  routes: [100, 500, 1_000], iterations: 10, case_timeout: 30, output: File.join(root, "results")
 }
 OptionParser.new do |parser|
   parser.banner = "Usage: bundle exec ruby benchmark/run.rb [options]"
@@ -22,10 +22,12 @@ OptionParser.new do |parser|
   parser.on("--refs LIST", Array, "Comma-separated tags or commit refs") { |v| options[:refs] = v }
   parser.on("--routes LIST", Array, "Comma-separated route counts") { |v| options[:routes] = v.map { |n| Integer(n) } }
   parser.on("--iterations N", Integer, "Measured generations after one warmup") { |v| options[:iterations] = v }
+  parser.on("--case-timeout N", Integer, "Seconds allowed per case (default 30)") { |v| options[:case_timeout] = v }
   parser.on("--output PATH", "Directory for raw reports") { |v| options[:output] = File.expand_path(v) }
 end.parse!
-abort "Refs, routes, and iterations must be nonempty and positive" if options[:refs].empty? || options[:routes].empty? ||
-                                                                      options[:iterations] < 1 || options[:routes].any? { |n| n < 1 }
+invalid_options = options[:refs].empty? || options[:routes].empty? || options[:iterations] < 1 || options[:case_timeout] < 1 ||
+                  options[:routes].any? { |n| n < 1 }
+abort "Refs and routes must be nonempty; routes, iterations, and timeout must be positive" if invalid_options
 
 def capture!(*command)
   stdout, stderr, status = Open3.capture3(*command)
@@ -49,7 +51,8 @@ report = {
     "dependencies" => Bundler.load.specs.to_h { |spec| [spec.name, spec.version.to_s] },
     "lockfile_sha256" => Digest::SHA256.file(lockfile).hexdigest
   },
-  "methodology" => { "warmup" => 1, "iterations" => options[:iterations], "routes" => options[:routes],
+  "methodology" => { "warmup" => 1, "iterations" => options[:iterations], "case_timeout_seconds" => options[:case_timeout],
+                     "routes" => options[:routes],
                      "formats" => %w[oas2 oas3 oas31], "operation" => "GrapeOAS.generate; excludes API setup and JSON serialization" },
   "targets" => []
 }
@@ -70,7 +73,8 @@ options[:refs].each do |ref|
     stderr = +""
     status = nil
     Open3.popen3(env, RbConfig.ruby, *jit_flags, "-I", File.join(checkout, "lib"),
-                   File.join(__dir__, "worker.rb"), JSON.generate(options[:routes]), options[:iterations].to_s,) do |stdin, out, err, worker|
+                 File.join(__dir__, "worker.rb"), JSON.generate(options[:routes]), options[:iterations].to_s,
+                 options[:case_timeout].to_s,) do |stdin, out, err, worker|
       stdin.close
       errors = Thread.new do
         err.each_line do |line|
