@@ -1,6 +1,8 @@
 # grape-oas website
 
-Source for the [grape-oas website](https://numbata.github.io/grape-oas/), its getting-started guide, and reproducible release benchmarks. Tracked in [issue #170](https://github.com/numbata/grape-oas/issues/170).
+Source for the [grape-oas website](https://www.numbata.com/grape-oas/), its getting-started guide, and reproducible release benchmarks. Tracked in [issue #170](https://github.com/numbata/grape-oas/issues/170).
+
+GitHub Pages inherits the existing `www.numbata.com` domain from the account's user site. The default `numbata.github.io/grape-oas/` address redirects there. No custom domain configuration is added by this project.
 
 This is an independent branch, not a second copy of the gem. Do not merge it into `main`. The gem's source and reference docs stay on `main`; generated website files are published on `gh-pages`.
 
