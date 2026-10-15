@@ -327,6 +327,92 @@ module GrapeOAS
           refute param.fetch("schema", {}).key?("default"), "#{schema_type} emits a default for a callable"
         end
       end
+
+      # === Callable documentation default ===
+
+      def test_callable_documentation_default_evaluated
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :limit, type: Integer, documentation: { default: -> { 25 } }
+            optional :token, type: String, documentation: { default: proc { "generated" } }
+            optional :enabled, type: Grape::API::Boolean, documentation: { default: -> { false } }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        assert_equal 25, params.find { |p| p.name == "limit" }.schema.default
+        assert_equal "generated", params.find { |p| p.name == "token" }.schema.default
+        assert_equal false, params.find { |p| p.name == "enabled" }.schema.default # rubocop:disable Minitest/RefuteFalse
+      end
+
+      def test_callable_documentation_default_with_arguments_omitted
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :limit, type: Integer, documentation: { default: ->(params) { params[:page].to_i * 10 } }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        limit_param = params.find { |p| p.name == "limit" }
+
+        refute_nil limit_param
+        assert_nil limit_param.schema.default
+      end
+
+      def test_raising_callable_documentation_default_omitted_with_warning
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :limit, type: Integer, documentation: { default: -> { raise ArgumentError, "boom" } }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        params = nil
+        log_output = capture_grape_oas_log do
+          _body_schema, params = RequestParams.new(api: @api, route: route).build
+        end
+
+        assert_nil params.find { |p| p.name == "limit" }.schema.default
+        assert_match(/Proc evaluation failed for documentation default \(ArgumentError\): boom/, log_output)
+      end
+
+      def test_callable_documentation_default_in_exported_spec
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :limit, type: Integer, default: -> { 25 }, documentation: { default: -> { 25 } }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        %i[oas2 oas3 oas31].each do |schema_type|
+          spec = JSON.parse(JSON.generate(GrapeOAS.generate(app: api_class, schema_type: schema_type)))
+          param = spec.dig("paths", "/items", "get", "parameters").find { |p| p["name"] == "limit" }
+          default = schema_type == :oas2 ? param["default"] : param.dig("schema", "default")
+
+          assert_equal 25, default, "#{schema_type} default"
+        end
+      end
     end
   end
 end

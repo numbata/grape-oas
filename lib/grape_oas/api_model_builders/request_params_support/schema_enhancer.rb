@@ -47,8 +47,21 @@ module GrapeOAS
             if spec.key?(:default) && !spec[:default].respond_to?(:call)
               schema.default = spec[:default]
             elsif doc.key?(:default)
-              schema.default = doc[:default]
+              default = resolve_documentation_default(doc[:default])
+              schema.default = default unless default.nil?
             end
+          end
+
+          # Grape does not call documentation values. Only documentation generators read them,
+          # thus a callable here gives a static value for the spec. Call it with no arguments.
+          def resolve_documentation_default(value)
+            return value unless value.respond_to?(:call)
+            return nil unless value.respond_to?(:arity) && value.arity.zero?
+
+            value.call
+          rescue StandardError => e
+            GrapeOAS.logger.warn("Proc evaluation failed for documentation default (#{e.class}): #{e.message}")
+            nil
           end
 
           def apply_format_and_example(schema, doc)
