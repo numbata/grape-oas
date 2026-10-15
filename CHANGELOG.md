@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * [#175](https://github.com/numbata/grape-oas/pull/175): Apply entity-level `example` documentation to the generated schema, matching grape-swagger - [@numbata](https://github.com/numbata).
 * [#176](https://github.com/numbata/grape-oas/pull/176): Keep the danger PR check running in CI by pinning `git` below 6 - [@numbata](https://github.com/numbata).
 
+### Added
+
+- [#172](https://github.com/numbata/grape-oas/pull/172): Support `deprecated: true` in parameter and entity exposure `documentation` for OAS 3.0 and 3.1 - [@olivier-thatch](https://github.com/olivier-thatch).
+
 ### Fixed
 
 - [#173](https://github.com/numbata/grape-oas/pull/173): Omit lambda/proc parameter defaults, in `default:` and `documentation: { default: }`, from the generated spec instead of emitting `Proc#inspect`; a static `documentation: { default: }` still documents a callable `default:` - [@olivier-thatch](https://github.com/olivier-thatch).
