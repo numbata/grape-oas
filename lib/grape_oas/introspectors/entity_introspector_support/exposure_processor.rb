@@ -72,7 +72,7 @@ module GrapeOAS
                         else
                           schema_for_exposure(exposure, doc)
                         end
-          wrap_in_array_if_needed(prop_schema, doc)
+          apply_deprecated(wrap_in_array_if_needed(prop_schema, doc), doc)
         end
 
         # Checks if an exposure should be included in the schema.

@@ -7,6 +7,8 @@ module GrapeOAS
       # Grape exposes nested params as flat keys like "address[street]", "address[city]".
       # This class converts them back to proper nested schemas.
       class NestedParamsBuilder
+        include Concerns::OasUtilities
+
         BRACKET_PATTERN = /\[([^\]]+)\]/
         MAX_NESTING_DEPTH = 10
 
@@ -100,11 +102,12 @@ module GrapeOAS
 
           parent_type = parent_spec[:type]
 
-          if array_type?(parent_type)
-            build_array_with_children(parent_spec, nested_children, depth: depth)
-          else
-            build_hash_with_children(parent_spec, nested_children, depth: depth)
-          end
+          schema = if array_type?(parent_type)
+                     build_array_with_children(parent_spec, nested_children, depth: depth)
+                   else
+                     build_hash_with_children(parent_spec, nested_children, depth: depth)
+                   end
+          apply_deprecated(schema, parent_spec[:documentation] || {})
         end
 
         # Checks if type represents an array (class or string "Array")

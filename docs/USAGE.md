@@ -201,6 +201,27 @@ params do
 end
 ```
 
+## Deprecating Parameters and Fields
+
+```ruby
+params do
+  optional :search, type: String, documentation: { deprecated: true }
+end
+```
+
+```ruby
+class User < Grape::Entity
+  expose :login, documentation: { type: String, deprecated: true }
+  expose :old_address, using: Address, documentation: { deprecated: true }
+end
+```
+
+OAS 3.0 and 3.1 emit `deprecated: true` on the parameter (path, query, header,
+cookie) or on the schema property (request body, entity). A field that refers to
+another entity becomes `{ allOf: [{ $ref }], deprecated: true }`, so the
+referenced component itself is not deprecated. OAS 2.0 has no `deprecated`
+keyword for parameters or schemas and ignores the option.
+
 ## Entity Support
 
 ### Grape::Entity

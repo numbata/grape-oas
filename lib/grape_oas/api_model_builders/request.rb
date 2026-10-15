@@ -245,6 +245,7 @@ module GrapeOAS
           description: description,
           style: style,
           explode: explode,
+          deprecated: doc.fetch(:deprecated) { doc["deprecated"] } ? true : false,
         )
       end
 

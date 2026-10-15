@@ -58,6 +58,32 @@ module GrapeOAS
         refute size_param.key?("description")
         refute size_param["schema"].key?("description")
       end
+
+      def test_deprecated_parameter
+        param = ApiModel::Parameter.new(
+          location: "query", name: "q", schema: ApiModel::Schema.new(type: "string"), deprecated: true,
+        )
+        result = OAS3::Parameter.new(ApiModel::Operation.new(http_method: "get", parameters: [param])).build
+
+        assert result.first["deprecated"]
+      end
+
+      def test_deprecated_hoisted_from_schema
+        param = ApiModel::Parameter.new(
+          location: "query", name: "q", schema: ApiModel::Schema.new(type: "string", deprecated: true),
+        )
+        result = OAS3::Parameter.new(ApiModel::Operation.new(http_method: "get", parameters: [param])).build
+
+        assert result.first["deprecated"]
+        assert_equal({ "type" => "string" }, result.first["schema"])
+      end
+
+      def test_deprecated_omitted_by_default
+        param = ApiModel::Parameter.new(location: "query", name: "q", schema: ApiModel::Schema.new(type: "string"))
+        result = OAS3::Parameter.new(ApiModel::Operation.new(http_method: "get", parameters: [param])).build
+
+        refute result.first.key?("deprecated")
+      end
     end
   end
 end

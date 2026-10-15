@@ -35,6 +35,7 @@ module GrapeOAS
              contract: ComplexContract,
              documentation: {
                params: {
+                 query: { deprecated: true },
                  filters: { style: "form", explode: true },
                  range: { style: "deepObject", explode: true }
                }
@@ -42,6 +43,16 @@ module GrapeOAS
         get ":id/search" do
           { results: [] }
         end
+      end
+    end
+
+    def test_contract_query_param_documentation_marks_deprecated
+      %i[oas3 oas31].each do |dialect|
+        parameters = GrapeOAS.generate(app: GetContractAPI, schema_type: dialect)
+                             .dig("paths", "/items/{id}/search", "get", "parameters")
+
+        assert parameters.find { |p| p["name"] == "query" }["deprecated"], "#{dialect}: query"
+        refute parameters.find { |p| p["name"] == "tags" }.key?("deprecated"), "#{dialect}: tags"
       end
     end
 
