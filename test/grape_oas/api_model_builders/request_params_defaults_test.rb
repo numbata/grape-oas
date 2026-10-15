@@ -240,6 +240,93 @@ module GrapeOAS
         refute_nil value_param
         assert_equal "doc_default", value_param.schema.default
       end
+
+      # === Callable default (lambda / proc) ===
+
+      def test_callable_default_not_emitted
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :limit, type: Integer, default: -> { 25 }
+            optional :token, type: String, default: proc { "generated" }
+            optional :page_size, type: Integer, default: ->(params) { params[:page].to_i * 10 }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        # Grape evaluates callable defaults per request; the spec has no static value
+        %w[limit token page_size].each do |name|
+          param = params.find { |p| p.name == name }
+
+          refute_nil param, name
+          assert_nil param.schema.default, name
+        end
+      end
+
+      def test_callable_default_not_called
+        called = false
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :limit, type: Integer, default: -> { called = true }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        RequestParams.new(api: @api, route: api_class.routes.first).build
+
+        refute called, "callable default must not run at generation time"
+      end
+
+      def test_callable_default_falls_back_to_documentation_default
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :since, type: Time, default: -> { Time.now }, documentation: { default: "now" }
+          end
+          get "events" do
+            {}
+          end
+        end
+
+        route = api_class.routes.first
+        builder = RequestParams.new(api: @api, route: route)
+        _body_schema, params = builder.build
+
+        since_param = params.find { |p| p.name == "since" }
+
+        refute_nil since_param
+        assert_equal "now", since_param.schema.default
+      end
+
+      def test_callable_default_absent_from_exported_spec
+        api_class = Class.new(Grape::API) do
+          format :json
+          params do
+            optional :limit, type: Integer, default: -> { 25 }
+          end
+          get "items" do
+            {}
+          end
+        end
+
+        %i[oas2 oas3 oas31].each do |schema_type|
+          spec = JSON.parse(JSON.generate(GrapeOAS.generate(app: api_class, schema_type: schema_type)))
+          param = spec.dig("paths", "/items", "get", "parameters").find { |p| p["name"] == "limit" }
+
+          refute_nil param, schema_type
+          refute param.key?("default"), "#{schema_type} emits a default for a callable"
+          refute param.fetch("schema", {}).key?("default"), "#{schema_type} emits a default for a callable"
+        end
+      end
     end
   end
 end
