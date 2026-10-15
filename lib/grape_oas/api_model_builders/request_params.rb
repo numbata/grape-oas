@@ -148,6 +148,7 @@ module GrapeOAS
           collection_format: extract_collection_format(spec),
           style: style,
           explode: explode,
+          deprecated: doc[:deprecated] ? true : false,
         )
       end
 

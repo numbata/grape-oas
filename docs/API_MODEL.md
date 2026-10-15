@@ -111,6 +111,7 @@ GrapeOAS::ApiModel::Parameter
 | `description` | String | Parameter description |
 | `schema` | Schema | Parameter data type schema |
 | `collection_format` | String | Array format (OAS2: `csv`, `ssv`, `pipes`) |
+| `deprecated` | Boolean | Deprecation status (OAS3 only) |
 
 ### RequestBody
 
@@ -189,6 +190,7 @@ GrapeOAS::ApiModel::Schema
 | `unevaluated_properties` | Boolean | JSON Schema 2020-12 keyword |
 | `defs` | Hash | Local schema definitions |
 | `examples` | Array | Schema examples |
+| `deprecated` | Boolean | Deprecation status (OAS3 only) |
 | `extensions` | Hash | OpenAPI extensions |
 | `min_length` | Integer | Minimum string length |
 | `max_length` | Integer | Maximum string length |

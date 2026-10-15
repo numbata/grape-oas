@@ -290,6 +290,7 @@ end
 | `additional_properties` | ✅ | ✅ | For Hash types |
 | `x` (extensions) | ✅ | ✅ | x-* extensions |
 | `nullable` | ❌ | ✅ | OAS 3.1 nullable |
+| `deprecated` | ❌ | ✅ | OAS 3.x only |
 | `minimum` | ❌ | ✅ | Numeric minimum |
 | `maximum` | ❌ | ✅ | Numeric maximum |
 | `minLength` | ❌ | ✅ | String min length |
@@ -533,6 +534,7 @@ end
 | `param_type` | ✅ | ✅ | Parameter type |
 | `x` | ✅ | ✅ | Extensions |
 | `nullable` | ❌ | ✅ | Nullable value |
+| `deprecated` | ❌ | ✅ | OAS 3.x only |
 
 Use `type: [String]` for a collection and `types: [String, NilClass]` for a nullable scalar. Only this two-member nullable form is supported; other entity `types:` arrays emit a warning, are ignored, and remain tracked in [#15](https://github.com/numbata/grape-oas/issues/15). `using:` takes precedence and warns when combined with `types:`.
 

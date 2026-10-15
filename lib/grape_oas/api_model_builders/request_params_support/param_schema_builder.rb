@@ -22,7 +22,7 @@ module GrapeOAS
 
           schema = build_base_schema(spec, doc, raw_type)
           SchemaEnhancer.apply(schema, spec, doc)
-          schema
+          apply_deprecated(schema, doc)
         end
 
         private
