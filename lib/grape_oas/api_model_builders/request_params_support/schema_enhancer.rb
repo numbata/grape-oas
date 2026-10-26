@@ -43,7 +43,8 @@ module GrapeOAS
           def apply_default(schema, spec, doc)
             return unless schema.respond_to?(:default=)
 
-            if spec.key?(:default)
+            # Grape calls a callable default on each request. It has no static value to document.
+            if spec.key?(:default) && !spec[:default].respond_to?(:call)
               schema.default = spec[:default]
             elsif doc.key?(:default)
               schema.default = doc[:default]
