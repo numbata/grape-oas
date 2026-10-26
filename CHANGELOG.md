@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 * [#175](https://github.com/numbata/grape-oas/pull/175): Apply entity-level `example` documentation to the generated schema, matching grape-swagger - [@numbata](https://github.com/numbata).
+
+### Fixed
+
+- [#173](https://github.com/numbata/grape-oas/pull/173): Omit lambda/proc parameter defaults from the generated spec instead of emitting `Proc#inspect`; fall back to `documentation: { default: }` - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#174](https://github.com/numbata/grape-oas/pull/174): Evaluate lambda/proc values in parameter `documentation: { default: }` instead of emitting `Proc#inspect` - [@olivier-thatch](https://github.com/olivier-thatch).
+
 * Your contribution here
 
 ## [1.6.0] - 2026-09-21
