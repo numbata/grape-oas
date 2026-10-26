@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+* [#175](https://github.com/numbata/grape-oas/pull/175): Apply entity-level `example` documentation to the generated schema, matching grape-swagger - [@numbata](https://github.com/numbata).
 * Your contribution here
 
 ## [1.6.0] - 2026-09-21
