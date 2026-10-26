@@ -35,6 +35,7 @@ module GrapeOAS
           def apply_entity_level_properties(schema, doc)
             schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
             schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
+            schema.examples = doc[:example] if doc.key?(:example)
 
             defs = doc[:defs] || doc[:$defs]
             schema.defs = defs if defs.is_a?(Hash)
