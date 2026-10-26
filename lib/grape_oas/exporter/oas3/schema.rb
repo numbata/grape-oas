@@ -49,6 +49,7 @@ module GrapeOAS
             )
           end
           schema_hash["default"] = @schema.default unless @schema.default.nil?
+          schema_hash["deprecated"] = true if @schema.deprecated
           schema_hash
         end
 
@@ -174,6 +175,7 @@ module GrapeOAS
           result["format"] = @schema.format if @schema.format
           result["description"] = @schema.description.to_s if @schema.description
           result["default"] = @schema.default unless @schema.default.nil?
+          result["deprecated"] = true if @schema.deprecated
           if @schema.enum
             result["enum"] = normalize_enum(
               @schema.enum, result["type"], preserve_nil: enum_allows_null?(@schema, result["type"], null_union: true),
