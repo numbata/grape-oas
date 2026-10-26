@@ -41,6 +41,22 @@ module GrapeOAS
         refute schema_for(nil).nullable
       end
 
+      def test_root_example_is_applied_to_the_schema
+        example = { id: 1, name: "Rex" }
+
+        assert_equal example, schema_for(example: example).examples
+        assert_equal example, schema_for("example" => example).examples
+      end
+
+      def test_root_false_example_is_preserved
+        refute schema_for(example: false).examples
+        refute_nil schema_for(example: false).examples
+      end
+
+      def test_schema_has_no_examples_without_root_example
+        assert_nil schema_for(description: "No example").examples
+      end
+
       private
 
       def schema_for(documentation)
