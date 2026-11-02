@@ -196,5 +196,76 @@ module GrapeOAS
       assert_equal "anonymous", properties["name"]["default"]
       assert_equal 3, properties["retries"]["default"]
     end
+
+    # === Callable defaults (all OAS versions) ===
+
+    def test_callable_query_param_default_not_exported
+      api_class = Class.new(Grape::API) do
+        format :json
+        params do
+          optional :limit, type: Integer, default: -> { 25 }
+        end
+        get "items" do
+          {}
+        end
+      end
+
+      %i[oas2 oas3 oas31].each do |schema_type|
+        schema = GrapeOAS.generate(app: api_class, schema_type: schema_type)
+        param = schema["paths"]["/items"]["get"]["parameters"].find { |p| p["name"] == "limit" }
+
+        refute_nil param, schema_type
+        refute param.key?("default"), "#{schema_type} emits a default for a callable"
+        refute param.fetch("schema", {}).key?("default"), "#{schema_type} emits a default for a callable"
+      end
+    end
+
+    def test_callable_body_param_default_not_exported
+      api_class = Class.new(Grape::API) do
+        format :json
+        params do
+          optional :name, type: String, default: -> { "anonymous" }
+        end
+        post "items" do
+          {}
+        end
+      end
+
+      %i[oas2 oas3 oas31].each do |schema_type|
+        name = request_properties(api_class, schema_type)["name"]
+
+        refute_nil name, schema_type
+        refute name.key?("default"), "#{schema_type} emits a default for a callable"
+      end
+    end
+
+    def test_callable_nested_hash_child_default_not_exported
+      api_class = Class.new(Grape::API) do
+        format :json
+        params do
+          optional :filter, type: Hash do
+            optional :page, type: Integer, default: -> { 1 }
+          end
+        end
+        post "items" do
+          {}
+        end
+      end
+
+      %i[oas2 oas3 oas31].each do |schema_type|
+        page = request_properties(api_class, schema_type).dig("filter", "properties", "page")
+
+        refute_nil page, schema_type
+        refute page.key?("default"), "#{schema_type} emits a default for a callable"
+      end
+    end
+
+    private
+
+    def request_properties(api_class, schema_type)
+      schema = GrapeOAS.generate(app: api_class, schema_type: schema_type)
+      definitions = schema_type == :oas2 ? schema["definitions"] : schema["components"]["schemas"]
+      definitions["post_items_Request"]["properties"]
+    end
   end
 end
