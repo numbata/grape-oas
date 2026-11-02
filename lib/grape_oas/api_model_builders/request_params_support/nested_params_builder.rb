@@ -43,7 +43,7 @@ module GrapeOAS
             end
 
             required = spec[:required] || false
-            schema.add_property(name, child_schema, required: required)
+            schema.add_property(name, apply_deprecated(child_schema, spec[:documentation] || {}), required: required)
           end
 
           schema
@@ -102,12 +102,11 @@ module GrapeOAS
 
           parent_type = parent_spec[:type]
 
-          schema = if array_type?(parent_type)
-                     build_array_with_children(parent_spec, nested_children, depth: depth)
-                   else
-                     build_hash_with_children(parent_spec, nested_children, depth: depth)
-                   end
-          apply_deprecated(schema, parent_spec[:documentation] || {})
+          if array_type?(parent_type)
+            build_array_with_children(parent_spec, nested_children, depth: depth)
+          else
+            build_hash_with_children(parent_spec, nested_children, depth: depth)
+          end
         end
 
         # Checks if type represents an array (class or string "Array")
@@ -136,7 +135,8 @@ module GrapeOAS
                            else
                              @schema_builder.build(spec)
                            end
-            schema.add_property(name, child_schema, required: spec[:required] || false)
+            schema.add_property(name, apply_deprecated(child_schema, spec[:documentation] || {}),
+                                required: spec[:required] || false,)
           end
 
           apply_documentation_extensions(schema, parent_spec)

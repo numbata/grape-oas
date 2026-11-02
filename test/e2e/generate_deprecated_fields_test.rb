@@ -12,6 +12,7 @@ module GrapeOAS
       expose :name, documentation: { type: String }
       expose :login, documentation: { type: String, deprecated: true }
       expose :old_address, using: AddressEntity, documentation: { deprecated: true }
+      expose :described_address, using: AddressEntity, documentation: { deprecated: true, desc: "Old address" }
       expose :address, using: AddressEntity
       expose :aliases, documentation: { type: String, is_array: true, deprecated: true }
       expose :legacy do
@@ -31,6 +32,24 @@ module GrapeOAS
         optional :search, type: String, documentation: { deprecated: true }
       end
       get "/users" do
+        []
+      end
+
+      desc "Search users"
+      params do
+        optional :home, type: AddressEntity, documentation: { deprecated: true }
+        optional :work, type: AddressEntity
+        optional :filter, type: Hash, documentation: { deprecated: true } do
+          optional :city, type: String
+        end
+        optional :geo, type: Hash do
+          optional :area, type: Hash, documentation: { deprecated: true } do
+            optional :zip, type: String
+          end
+          optional :lat, type: Float
+        end
+      end
+      get "/users/search" do
         []
       end
 
@@ -94,11 +113,35 @@ module GrapeOAS
         assert props.dig("meta", "deprecated"), "#{dialect}: nesting exposure"
         refute props.fetch("legacy").key?("deprecated"), "#{dialect}: legacy"
 
-        old_address = props.fetch("old_address")
+        assert_equal({ "allOf" => [address_ref(props)], "deprecated" => true }, props.fetch("old_address"),
+                     "#{dialect}: using: exposure",)
+        assert_equal(
+          { "allOf" => [address_ref(props)], "description" => "Old address", "deprecated" => true },
+          props.fetch("described_address"),
+          "#{dialect}: description stays next to deprecated, not inside allOf",
+        )
+      end
+    end
 
-        assert old_address["deprecated"], "#{dialect}: using: exposure"
-        assert old_address.fetch("allOf").first.key?("$ref")
-        assert props.fetch("address").key?("$ref"), "#{dialect}: plain ref must stay a bare $ref"
+    def test_entity_typed_query_parameter_keeps_inline_schema
+      %i[oas3 oas31].each do |dialect|
+        params = search_params(dialect)
+        home = params.find { |p| p["name"] == "home" }
+        work = params.find { |p| p["name"] == "work" }
+
+        assert home["deprecated"], "#{dialect}: home"
+        refute work.key?("deprecated"), "#{dialect}: work"
+        assert_equal work["schema"], home["schema"], "#{dialect}: deprecated must not change the schema"
+      end
+    end
+
+    def test_bracket_params_inherit_deprecated_from_ancestors
+      %i[oas3 oas31].each do |dialect|
+        params = search_params(dialect).to_h { |p| [p["name"], p] }
+
+        assert params.fetch("filter[city]")["deprecated"], "#{dialect}: filter[city]"
+        assert params.fetch("geo[area][zip]")["deprecated"], "#{dialect}: geo[area][zip]"
+        refute params.fetch("geo[lat]").key?("deprecated"), "#{dialect}: geo[lat]"
       end
     end
 
@@ -108,6 +151,7 @@ module GrapeOAS
         address = schemas.fetch(schemas.keys.grep(/AddressEntity/).first)
 
         refute address.key?("deprecated"), "#{dialect}: AddressEntity component must not be deprecated"
+        refute address.key?("description"), "#{dialect}: exposure desc must not leak into the component"
       end
     end
 
@@ -117,14 +161,35 @@ module GrapeOAS
       end
     end
 
-    def test_oas2_omits_deprecated
-      refute_includes JSON.generate(spec(:oas2)), "deprecated\":true"
+    def test_oas2_keeps_main_shapes
+      oas2 = spec(:oas2)
+      definitions = oas2.fetch("definitions")
+      props = definitions.fetch(definitions.keys.grep(/UserEntity/).first).fetch("properties")
+
+      refute_includes JSON.generate(oas2), "deprecated\":true"
+      assert_equal({ "type" => "string" }, props.fetch("login"))
+      assert_equal address_ref(props), props.fetch("old_address")
+      assert_equal({ "allOf" => [address_ref(props)], "description" => "Old address" }, props.fetch("described_address"))
+      assert_equal({ "type" => "array", "items" => { "type" => "string" } }, props.fetch("aliases"))
+      assert_equal address_ref(props), definitions.dig("post_users_Request", "properties", "home")
     end
 
     private
 
     def spec(dialect)
-      GrapeOAS.generate(app: UsersAPI, schema_type: dialect)
+      # OAS 2.0 cannot express entity-typed query params and warns when dropping them.
+      generated = nil
+      capture_grape_oas_log { generated = GrapeOAS.generate(app: UsersAPI, schema_type: dialect) }
+      generated
+    end
+
+    def search_params(dialect)
+      spec(dialect).dig("paths", "/users/search", "get", "parameters")
+    end
+
+    # The undeprecated `address` exposure is a bare $ref to the shared component.
+    def address_ref(props)
+      props.fetch("address").tap { |ref| assert_equal ["$ref"], ref.keys }
     end
 
     def user_schema(dialect)

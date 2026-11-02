@@ -38,8 +38,10 @@ module GrapeOAS
         end
 
         # Marks a schema as deprecated when the documentation hash asks for it.
-        # A schema with a canonical name is a shared component, so the flag
-        # goes on an allOf wrapper and the component stays unchanged.
+        # A schema with a canonical name is a shared component: setting the flag
+        # on it would deprecate the component everywhere it is referenced, and
+        # OAS 3.0 ignores siblings of a bare $ref. The flag therefore goes on an
+        # allOf wrapper and the component stays unchanged.
         #
         # @param schema [ApiModel::Schema] the schema to mark
         # @param doc [Hash] the documentation hash

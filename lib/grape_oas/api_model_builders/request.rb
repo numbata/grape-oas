@@ -234,8 +234,8 @@ module GrapeOAS
       end
 
       def build_query_parameter(name, schema, required, doc = {})
-        style = doc.fetch(:style) { doc["style"] }
-        explode = doc.fetch(:explode) { doc["explode"] }
+        style = doc[:style]
+        explode = doc[:explode]
         description = doc[:desc] || doc[:description] || schema.description
         ApiModel::Parameter.new(
           location: "query",
@@ -245,7 +245,7 @@ module GrapeOAS
           description: description,
           style: style,
           explode: explode,
-          deprecated: doc.fetch(:deprecated) { doc["deprecated"] } ? true : false,
+          deprecated: doc[:deprecated] ? true : false,
         )
       end
 
@@ -254,7 +254,7 @@ module GrapeOAS
         return {} unless params.is_a?(Hash)
 
         params.each_with_object({}) do |(key, value), acc|
-          acc[key.to_s] = value.is_a?(Hash) ? value : {}
+          acc[key.to_s] = value.is_a?(Hash) ? DocKeyNormalizer.normalize(value) : {}
         end
       end
 

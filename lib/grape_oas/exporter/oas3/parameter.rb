@@ -17,13 +17,12 @@ module GrapeOAS
             schema_hash = @schema_builder.new(param.schema, @ref_tracker, nullable_strategy: @nullable_strategy).build
             schema_description = schema_hash.delete("description")
             description = param.description || schema_description
-            deprecated = schema_hash.delete("deprecated") || param.deprecated
             {
               "name" => param.name,
               "in" => param.location,
               "required" => param.required,
               "description" => description,
-              "deprecated" => (true if deprecated),
+              "deprecated" => (param.deprecated ? true : nil),
               "style" => param.style,
               "explode" => param.explode,
               "schema" => schema_hash

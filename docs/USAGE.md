@@ -221,10 +221,17 @@ end
 ```
 
 OAS 3.0 and 3.1 emit `deprecated: true` on the parameter (path, query, header,
-cookie) or on the schema property (request body, entity). A field that refers to
-another entity becomes `{ allOf: [{ $ref }], deprecated: true }`, so the
-referenced component itself is not deprecated. OAS 2.0 has no `deprecated`
-keyword for parameters or schemas and ignores the option.
+cookie) or on the schema property (request body, entity). The parameter's schema
+is the same as without the flag. When a deprecated `Hash` param is expanded into
+bracket query params (`filter[city]`), every expanded param is deprecated.
+
+A field that refers to another entity becomes
+`{ allOf: [{ $ref }], deprecated: true }`, with any `desc` next to `deprecated`,
+so the referenced component itself is not deprecated. OAS 2.0 has no
+`deprecated` keyword for parameters or schemas and ignores the option.
+
+Dry contract query params take the flag from the route documentation:
+`desc "...", contract: C, documentation: { params: { q: { deprecated: true } } }`.
 
 ## Entity Support
 

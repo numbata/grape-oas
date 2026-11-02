@@ -128,7 +128,15 @@ module GrapeOAS
           items = @schema.all_of.map { |item| build_schema_or_ref(item) }
           result = { "allOf" => items }
           apply_composition_attributes(result)
+          return items.first if deprecated_only_wrapper?(result)
+
           result
+        end
+
+        # OAS 2.0 has no deprecated keyword, so a wrapper that exists only to
+        # carry it (see OasUtilities.apply_deprecated) renders as its member.
+        def deprecated_only_wrapper?(result)
+          @schema.deprecated && !@schema.nullable && result.size == 1 && result["allOf"].one?
         end
 
         def apply_composition_attributes(result)

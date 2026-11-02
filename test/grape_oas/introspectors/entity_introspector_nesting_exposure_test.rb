@@ -287,8 +287,8 @@ module GrapeOAS
         assert_includes items.items.properties.keys, "beta"
       end
 
-      # === Nullable uses OR semantics across branches ===
-      # If any branch is nullable, the merged result is nullable,
+      # === Nullable and deprecated use OR semantics across branches ===
+      # If any branch is nullable (or deprecated), the merged result is too,
       # since conditional branches represent alternatives.
 
       class NullableOrEntity < Grape::Entity
@@ -308,6 +308,14 @@ module GrapeOAS
         info = schema.properties["meta"].properties["info"]
 
         assert info.nullable
+      end
+
+      def test_nesting_merger_keeps_deprecated_from_any_branch
+        schema_a = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
+        schema_b = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT, deprecated: true)
+
+        assert EntityIntrospectorSupport::NestingMerger.merge(schema_a, schema_b).deprecated
+        assert EntityIntrospectorSupport::NestingMerger.merge(schema_b, schema_a).deprecated
       end
 
       # === MAX_MERGE_DEPTH exceeded emits warning and degrades gracefully ===
@@ -437,14 +445,6 @@ module GrapeOAS
       end
 
       # === dup_hash_recursive with nested hash in extensions ===
-
-      def test_nesting_merger_keeps_deprecated_from_any_branch
-        schema_a = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT)
-        schema_b = ApiModel::Schema.new(type: Constants::SchemaTypes::OBJECT, deprecated: true)
-
-        assert EntityIntrospectorSupport::NestingMerger.merge(schema_a, schema_b).deprecated
-        assert EntityIntrospectorSupport::NestingMerger.merge(schema_b, schema_a).deprecated
-      end
 
       def test_nesting_merger_deep_copies_nested_extension_hashes
         # Trigger the `when Hash then dup_hash_recursive(v)` branch by merging

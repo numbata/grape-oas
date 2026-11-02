@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- [#172](https://github.com/numbata/grape-oas/pull/172): Support `deprecated: true` in parameter and entity exposure `documentation` for OAS 3.0 and 3.1 - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#172](https://github.com/numbata/grape-oas/pull/172): Support `deprecated: true` in parameter and entity exposure `documentation`, emitted in OAS 3.0 and 3.1 and ignored in OAS 2.0 - [@olivier-thatch](https://github.com/olivier-thatch).
 
 ### Fixed
 

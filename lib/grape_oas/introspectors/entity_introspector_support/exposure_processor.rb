@@ -242,12 +242,17 @@ module GrapeOAS
                      else
                        schema.nullable || inferred_nullable || PropertyExtractor.extract_nullable(doc)
                      end
-          if nullable && schema.canonical_name
+          # A deprecated is_array exposure carries the flag on the array, not on
+          # its items, so only a non-array exposure needs a wrapper here.
+          deprecated_ref = doc[:deprecated] && !doc[:is_array]
+          if (nullable || deprecated_ref) && schema.canonical_name
             # Don't mutate the shared cached entity schema. Create a wrapper with
             # all_of so the exporter emits { nullable: true, allOf: [{ $ref }] }.
             # collect_refs traverses all_of and registers the original schema as a
             # component, keeping its definition free of this property's nullable.
-            schema = ApiModel::Schema.new(nullable: true, all_of: [schema])
+            # Wrapping before desc/format are applied keeps them on the wrapper,
+            # next to the deprecated flag that apply_deprecated sets later.
+            schema = ApiModel::Schema.new(nullable: nullable, all_of: [schema])
           else
             schema.nullable = nullable
           end
