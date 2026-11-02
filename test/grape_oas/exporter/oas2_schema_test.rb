@@ -754,6 +754,41 @@ module GrapeOAS
         assert_equal(-2, offset["minimum"])
         assert_equal 2, offset["maximum"]
       end
+
+      # === allOf wrappers that only carry deprecated (OAS 2.0 has no keyword) ===
+
+      def test_deprecated_only_wrapper_renders_bare_ref
+        wrapper = ApiModel::Schema.new(all_of: [address_component], deprecated: true)
+
+        assert_equal({ "$ref" => "#/definitions/Address" }, OAS2::Schema.new(wrapper).build)
+      end
+
+      def test_deprecated_wrapper_with_description_keeps_all_of
+        wrapper = ApiModel::Schema.new(all_of: [address_component], deprecated: true, description: "Old")
+
+        assert_equal(
+          { "allOf" => [{ "$ref" => "#/definitions/Address" }], "description" => "Old" },
+          OAS2::Schema.new(wrapper).build,
+        )
+      end
+
+      def test_nullable_deprecated_wrapper_keeps_all_of
+        wrapper = ApiModel::Schema.new(all_of: [address_component], deprecated: true, nullable: true)
+
+        assert_equal({ "allOf" => [{ "$ref" => "#/definitions/Address" }] }, OAS2::Schema.new(wrapper).build)
+      end
+
+      def test_single_member_all_of_without_deprecated_is_kept
+        wrapper = ApiModel::Schema.new(all_of: [address_component])
+
+        assert_equal({ "allOf" => [{ "$ref" => "#/definitions/Address" }] }, OAS2::Schema.new(wrapper).build)
+      end
+
+      private
+
+      def address_component
+        ApiModel::Schema.new(type: "object", canonical_name: "Address")
+      end
     end
 
     class OAS2NullableDefaultStrategyTest < Minitest::Test
