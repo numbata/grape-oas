@@ -227,10 +227,12 @@ bracket query params (`filter[city]`), every expanded param is deprecated.
 
 A field that refers to another entity becomes
 `{ allOf: [{ $ref }], deprecated: true }`, with any `desc` next to `deprecated`,
-so the referenced component itself is not deprecated. An exposure with `example`
-or `values` already renders as an inline copy of the entity; it keeps that copy
-and gains `deprecated: true`. OAS 2.0 has no `deprecated` keyword for parameters
-or schemas and ignores the option.
+so the referenced component itself is not deprecated. If the exposure also sets
+`example`, `values`, `additional_properties`, `unevaluated_properties` or `defs`,
+which an `allOf` wrapper cannot carry, it renders as an inline copy of the entity
+with those attributes, its `desc`, and `deprecated: true`. OAS 2.0 has no
+`deprecated` keyword for parameters or schemas and emits no flag; such an
+exposure is still an inline copy there.
 
 Dry contract query params take the flag from the route documentation:
 `desc "...", contract: C, documentation: { params: { q: { deprecated: true } } }`.

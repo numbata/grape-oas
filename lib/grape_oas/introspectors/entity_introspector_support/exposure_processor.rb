@@ -8,11 +8,11 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
-        # Exposure documentation keys that keep a deprecated `using:` exposure
-        # on the inline-copy path instead of the early allOf wrapper: example and
-        # values already inline a copy of the shared schema, the composition
-        # exporters drop the other attributes, and additionalProperties next to
-        # allOf would reject every property. apply_deprecated flags the result.
+        # Exposure documentation keys an allOf wrapper cannot carry: the
+        # composition exporters drop them, and additionalProperties next to allOf
+        # would reject every property. A deprecated `using:` exposure that sets
+        # any of them gets an inline copy of the shared schema instead of the
+        # wrapper, so its metadata stays local; apply_deprecated flags the copy.
         WRAPPER_INCOMPATIBLE_KEYS = %i[example values additional_properties unevaluated_properties defs $defs].freeze
 
         def initialize(entity_class, stack:, registry:)
@@ -250,9 +250,12 @@ module GrapeOAS
                        schema.nullable || inferred_nullable || PropertyExtractor.extract_nullable(doc)
                      end
           # A deprecated is_array exposure carries the flag on the array, not on
-          # its items, so only a non-array exposure needs a wrapper here.
-          deprecated_ref = doc[:deprecated] && !doc[:is_array] &&
-                           WRAPPER_INCOMPATIBLE_KEYS.none? { |key| doc.key?(key) }
+          # its items, so only a non-array exposure needs a wrapper or copy here.
+          deprecated_ref = doc[:deprecated] && !doc[:is_array] && schema.canonical_name
+          if deprecated_ref && WRAPPER_INCOMPATIBLE_KEYS.any? { |key| doc.key?(key) }
+            schema = dup_cached_schema(schema, reason: "deprecated", value: true)
+            deprecated_ref = false
+          end
           if (nullable || deprecated_ref) && schema.canonical_name
             # Don't mutate the shared cached entity schema. Create a wrapper with
             # all_of so the exporter emits { nullable: true, allOf: [{ $ref }] }.

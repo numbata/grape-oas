@@ -13,6 +13,8 @@ module GrapeOAS
       expose :login, documentation: { type: String, deprecated: true }
       expose :old_address, using: AddressEntity, documentation: { deprecated: true }
       expose :described_address, using: AddressEntity, documentation: { deprecated: true, desc: "Old address" }
+      expose :restricted_address, using: AddressEntity,
+                                  documentation: { deprecated: true, desc: "Restricted", additional_properties: false }
       expose :address, using: AddressEntity
       expose :aliases, documentation: { type: String, is_array: true, deprecated: true }
       expose :legacy do
@@ -185,6 +187,13 @@ module GrapeOAS
           props.fetch("described_address"),
           "#{dialect}: description stays next to deprecated, not inside allOf",
         )
+        assert_equal(
+          address_component(dialect).merge(
+            "description" => "Restricted", "additionalProperties" => false, "deprecated" => true,
+          ),
+          props.fetch("restricted_address"),
+          "#{dialect}: metadata a wrapper cannot carry goes on a local copy",
+        )
       end
     end
 
@@ -212,11 +221,11 @@ module GrapeOAS
 
     def test_shared_component_is_not_deprecated
       %i[oas3 oas31].each do |dialect|
-        schemas = spec(dialect).dig("components", "schemas")
-        address = schemas.fetch(schemas.keys.grep(/AddressEntity/).first)
+        address = address_component(dialect)
 
         refute address.key?("deprecated"), "#{dialect}: AddressEntity component must not be deprecated"
         refute address.key?("description"), "#{dialect}: exposure desc must not leak into the component"
+        refute address.key?("additionalProperties"), "#{dialect}: exposure restriction must not leak"
       end
     end
 
@@ -226,7 +235,7 @@ module GrapeOAS
       end
     end
 
-    def test_oas2_keeps_main_shapes
+    def test_oas2_shapes
       oas2 = spec(:oas2)
       definitions = oas2.fetch("definitions")
       props = definitions.fetch(definitions.keys.grep(/UserEntity/).first).fetch("properties")
@@ -235,6 +244,7 @@ module GrapeOAS
       assert_equal({ "type" => "string" }, props.fetch("login"))
       assert_equal address_ref(props), props.fetch("old_address")
       assert_equal({ "allOf" => [address_ref(props)], "description" => "Old address" }, props.fetch("described_address"))
+      assert_equal address_component(:oas2).merge("description" => "Restricted"), props.fetch("restricted_address")
       assert_equal({ "type" => "array", "items" => { "type" => "string" } }, props.fetch("aliases"))
       body = oas2.dig("paths", "/users", "post", "parameters").find { |p| p["in"] == "body" }
 
@@ -249,6 +259,10 @@ module GrapeOAS
       generated = nil
       capture_grape_oas_log { generated = GrapeOAS.generate(app: UsersAPI, schema_type: dialect) }
       generated
+    end
+
+    def address_component(dialect)
+      entity_schema(dialect, /AddressEntity/)
     end
 
     def search_params(dialect)
