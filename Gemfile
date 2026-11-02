@@ -36,6 +36,8 @@ group :development, :test do
   gem "danger-changelog", "~> 0.8", require: false
   gem "danger-pr-comment", require: false
   gem "danger-toc", "~> 0.2", require: false
+  # danger 9.6.1 reads Git::Base at load time, which git 6 removed.
+  gem "git", "< 6", require: false
 end
 
 group :test do
