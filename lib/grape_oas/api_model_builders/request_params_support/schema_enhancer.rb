@@ -43,12 +43,19 @@ module GrapeOAS
           def apply_default(schema, spec, doc)
             return unless schema.respond_to?(:default=)
 
-            # Grape calls a callable default on each request. It has no static value to document.
-            if spec.key?(:default) && !spec[:default].respond_to?(:call)
+            # Unlike `values:`, defaults are not evaluated: Grape runs a Proc default per
+            # request, so there is no static value to document. Use
+            # `documentation: { default: }` instead.
+            if spec.key?(:default) && static_default?(spec[:default])
               schema.default = spec[:default]
-            elsif doc.key?(:default)
+            elsif doc.key?(:default) && static_default?(doc[:default])
               schema.default = doc[:default]
             end
+          end
+
+          # Any callable is skipped, not only Proc, because the exporters cannot serialize it.
+          def static_default?(value)
+            !value.respond_to?(:call)
           end
 
           def apply_format_and_example(schema, doc)

@@ -53,6 +53,10 @@ params do
   optional :role, type: String, default: 'user', values: ['admin', 'user', 'guest']
   optional :age, type: Integer, desc: 'Age in years', documentation: { minimum: 0, maximum: 150 }
 
+  # Callable defaults run per request and are omitted from the spec;
+  # use documentation: { default: } to document a value
+  optional :since, type: Time, default: -> { Time.now }, documentation: { default: 'now' }
+
   # Array parameters
   optional :tags, type: Array[String], desc: 'User tags'
   optional :scores, type: Array[Integer], desc: 'Score values'

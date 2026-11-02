@@ -307,25 +307,24 @@ module GrapeOAS
         assert_equal "now", since_param.schema.default
       end
 
-      def test_callable_default_absent_from_exported_spec
+      def test_callable_documentation_default_not_emitted_or_called
+        called = false
         api_class = Class.new(Grape::API) do
           format :json
           params do
-            optional :limit, type: Integer, default: -> { 25 }
+            optional :limit, type: Integer, documentation: { default: -> { called = true } }
           end
           get "items" do
             {}
           end
         end
 
-        %i[oas2 oas3 oas31].each do |schema_type|
-          spec = JSON.parse(JSON.generate(GrapeOAS.generate(app: api_class, schema_type: schema_type)))
-          param = spec.dig("paths", "/items", "get", "parameters").find { |p| p["name"] == "limit" }
+        _body_schema, params = RequestParams.new(api: @api, route: api_class.routes.first).build
+        limit_param = params.find { |p| p.name == "limit" }
 
-          refute_nil param, schema_type
-          refute param.key?("default"), "#{schema_type} emits a default for a callable"
-          refute param.fetch("schema", {}).key?("default"), "#{schema_type} emits a default for a callable"
-        end
+        refute_nil limit_param
+        assert_nil limit_param.schema.default
+        refute called, "callable documentation default must not run at generation time"
       end
     end
   end

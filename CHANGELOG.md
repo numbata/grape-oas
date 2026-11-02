@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#173](https://github.com/numbata/grape-oas/pull/173): Omit lambda/proc parameter defaults from the generated spec instead of emitting `Proc#inspect`; fall back to `documentation: { default: }` - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#173](https://github.com/numbata/grape-oas/pull/173): Omit lambda/proc parameter defaults, in `default:` and `documentation: { default: }`, from the generated spec instead of emitting `Proc#inspect`; a static `documentation: { default: }` still documents a callable `default:` - [@olivier-thatch](https://github.com/olivier-thatch).
+
 * Your contribution here
 
 ## [1.6.0] - 2026-09-21
