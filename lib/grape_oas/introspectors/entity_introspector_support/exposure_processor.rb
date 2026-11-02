@@ -8,6 +8,13 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
+        # Exposure documentation keys that keep a deprecated `using:` exposure
+        # on the inline-copy path instead of the early allOf wrapper: example and
+        # values already inline a copy of the shared schema, the composition
+        # exporters drop the other attributes, and additionalProperties next to
+        # allOf would reject every property. apply_deprecated flags the result.
+        WRAPPER_INCOMPATIBLE_KEYS = %i[example values additional_properties unevaluated_properties defs $defs].freeze
+
         def initialize(entity_class, stack:, registry:)
           @entity_class = entity_class
           @stack = stack
@@ -244,7 +251,8 @@ module GrapeOAS
                      end
           # A deprecated is_array exposure carries the flag on the array, not on
           # its items, so only a non-array exposure needs a wrapper here.
-          deprecated_ref = doc[:deprecated] && !doc[:is_array]
+          deprecated_ref = doc[:deprecated] && !doc[:is_array] &&
+                           WRAPPER_INCOMPATIBLE_KEYS.none? { |key| doc.key?(key) }
           if (nullable || deprecated_ref) && schema.canonical_name
             # Don't mutate the shared cached entity schema. Create a wrapper with
             # all_of so the exporter emits { nullable: true, allOf: [{ $ref }] }.

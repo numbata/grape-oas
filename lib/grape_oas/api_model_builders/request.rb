@@ -50,7 +50,7 @@ module GrapeOAS
           if contract
             # Dry contracts are kept inline (no canonical_name)
             # no-op
-          elsif body_schema.properties.values.any? { |prop| prop.respond_to?(:canonical_name) && prop.canonical_name }
+          elsif body_schema.properties.values.any? { |prop| Concerns::OasUtilities.component_reference?(prop) }
             # keep entity/property refs intact; don't override
           elsif operation.respond_to?(:operation_id) && operation.operation_id
             body_schema.canonical_name = "#{operation.operation_id}_Request"

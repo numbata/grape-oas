@@ -59,6 +59,17 @@ module GrapeOAS
           OasUtilities.apply_deprecated(schema, doc)
         end
 
+        # True when the schema renders as a reference to a shared component:
+        # the component itself, or the wrapper apply_deprecated puts around it.
+        #
+        # @param schema [ApiModel::Schema]
+        # @return [Boolean]
+        def self.component_reference?(schema)
+          return true if schema.canonical_name
+
+          !!(schema.deprecated && schema.all_of&.one? && schema.all_of.first.canonical_name)
+        end
+
         # Converts a CamelCase string to snake_case.
         #
         # @param str [String] the string to convert
