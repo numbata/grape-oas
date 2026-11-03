@@ -12,7 +12,7 @@ module GrapeOAS
         # composition exporters drop them, and additionalProperties next to allOf
         # would reject every property. A deprecated `using:` exposure that sets
         # any of them gets an inline copy of the shared schema instead of the
-        # wrapper, so its metadata stays local; apply_deprecated flags the copy.
+        # wrapper, so its metadata stays local.
         WRAPPER_INCOMPATIBLE_KEYS = %i[example values additional_properties unevaluated_properties defs $defs].freeze
 
         def initialize(entity_class, stack:, registry:)
@@ -262,7 +262,7 @@ module GrapeOAS
             # collect_refs traverses all_of and registers the original schema as a
             # component, keeping its definition free of this property's nullable.
             # Wrapping before desc/format are applied keeps them on the wrapper,
-            # next to the deprecated flag that apply_deprecated sets later.
+            # next to the deprecated flag.
             schema = ApiModel::Schema.new(nullable: nullable, all_of: [schema])
           else
             schema.nullable = nullable

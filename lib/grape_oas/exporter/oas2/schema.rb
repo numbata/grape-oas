@@ -133,8 +133,8 @@ module GrapeOAS
           result
         end
 
-        # OAS 2.0 has no deprecated keyword, so a wrapper that exists only to
-        # carry it (see OasUtilities.apply_deprecated) renders as its member.
+        # OAS 2.0 has no deprecated keyword, so an allOf that exists only to
+        # carry it renders as its member.
         def deprecated_only_wrapper?(result)
           @schema.deprecated && !@schema.nullable && result.size == 1 && result["allOf"].one?
         end

@@ -236,6 +236,10 @@ exposure is still an inline copy there.
 
 Dry contract query params take the flag from the route documentation:
 `desc "...", contract: C, documentation: { params: { q: { deprecated: true } } }`.
+Dry contract request body properties cannot be marked deprecated this way.
+
+When conditional exposures share a key, the merged property is deprecated if any
+branch is, the same way `nullable` merges.
 
 ## Entity Support
 

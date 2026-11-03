@@ -37,6 +37,25 @@ module GrapeOAS
           refute component.deprecated
         end
       end
+
+      def test_component_reference_recognises_components_and_deprecation_wrappers
+        component = ApiModel::Schema.new(type: "object", canonical_name: "Address")
+        wrapper = Concerns::OasUtilities.apply_deprecated(component, { deprecated: true })
+
+        assert Concerns::OasUtilities.component_reference?(component)
+        assert Concerns::OasUtilities.component_reference?(wrapper)
+      end
+
+      def test_component_reference_rejects_inline_schemas
+        inline = ApiModel::Schema.new(type: "string")
+        deprecated_inline = Concerns::OasUtilities.apply_deprecated(ApiModel::Schema.new(type: "string"),
+                                                                    { deprecated: true })
+        undeprecated_allof = ApiModel::Schema.new(all_of: [ApiModel::Schema.new(canonical_name: "Address")])
+
+        refute Concerns::OasUtilities.component_reference?(inline)
+        refute Concerns::OasUtilities.component_reference?(deprecated_inline)
+        refute Concerns::OasUtilities.component_reference?(undeprecated_allof)
+      end
     end
   end
 end
