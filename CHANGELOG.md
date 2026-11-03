@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - [#173](https://github.com/numbata/grape-oas/pull/173): Omit lambda/proc parameter defaults, in `default:` and `documentation: { default: }`, from the generated spec instead of emitting `Proc#inspect`; a static `documentation: { default: }` still documents a callable `default:` - [@olivier-thatch](https://github.com/olivier-thatch).
+- [#178](https://github.com/numbata/grape-oas/pull/178): Stop entity exposures named like root-level documentation keys (`example`, `additional_properties`, `description`, `nullable`, ...) from leaking into the entity schema - [@numbata](https://github.com/numbata).
 
 * Your contribution here
 
