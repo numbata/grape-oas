@@ -118,9 +118,13 @@ module GrapeOAS
         schema.extensions = root_ext if root_ext
       end
 
+      # Grape::Entity.documentation is a per-exposure aggregate, not root-level
+      # documentation; only an entity's own override counts as the latter.
       def entity_doc
-        doc = @entity_class.respond_to?(:documentation) ? (@entity_class.documentation || {}) : {}
-        DocKeyNormalizer.normalize(doc)
+        return {} unless @entity_class.respond_to?(:documentation)
+        return {} if defined?(Grape::Entity) && @entity_class.method(:documentation).owner == Grape::Entity.singleton_class
+
+        DocKeyNormalizer.normalize(@entity_class.documentation || {})
       rescue NoMethodError
         {}
       end
