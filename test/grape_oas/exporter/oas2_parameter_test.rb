@@ -200,6 +200,17 @@ module GrapeOAS
         assert_equal %w[small medium large], size_param["enum"]
       end
 
+      def test_string_parameter_enum_normalized_from_symbols
+        schema = ApiModel::Schema.new(type: "string")
+        schema.enum = %i[asc desc]
+        param = ApiModel::Parameter.new(location: "query", name: "sort_order", schema: schema)
+        operation = ApiModel::Operation.new(http_method: "get", parameters: [param])
+
+        result = OAS2::Parameter.new(operation).build
+
+        assert_equal %w[asc desc], result.first["enum"]
+      end
+
       def test_nullable_integer_parameter_enum_drops_nil
         schema = ApiModel::Schema.new(type: "integer", nullable: true)
         schema.enum = [1, 2, nil]

@@ -129,6 +129,15 @@ module GrapeOAS
 
       # === Enum normalization tests ===
 
+      def test_string_schema_enum_normalized_from_symbols
+        schema = ApiModel::Schema.new(type: "string")
+        schema.enum = %i[asc desc]
+
+        result = OAS3::Schema.new(schema).build
+
+        assert_equal %w[asc desc], result["enum"]
+      end
+
       def test_integer_schema_enum_normalized_from_strings
         schema = ApiModel::Schema.new(type: "integer")
         schema.enum = %w[1 2 3]
@@ -136,6 +145,15 @@ module GrapeOAS
         result = OAS3::Schema.new(schema).build
 
         assert_equal [1, 2, 3], result["enum"]
+      end
+
+      def test_integer_schema_with_symbol_enum_omits_enum
+        schema = ApiModel::Schema.new(type: "integer")
+        schema.enum = [:one]
+
+        result = OAS3::Schema.new(schema).build
+
+        refute result.key?("enum")
       end
 
       def test_number_schema_enum_normalized_from_strings
@@ -389,6 +407,17 @@ module GrapeOAS
       end
 
       # === $ref + allOf wrapping tests ===
+
+      def test_ref_wrapper_enum_normalized_from_symbols
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "string", description: "Sort order")
+        ref_schema.enum = %i[asc desc]
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        child = OAS3::Schema.new(parent_schema, Set.new).build["properties"]["child"]
+
+        assert_equal %w[asc desc], child["enum"]
+      end
 
       def test_ref_with_description_wraps_in_allof
         ref_tracker = Set.new
