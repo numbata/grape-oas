@@ -268,6 +268,44 @@ module GrapeOAS
         refute species.items.nullable, "Expected array items to remain non-nullable"
       end
 
+      def test_exposures_named_like_root_doc_keys_do_not_leak_into_entity_schema
+        entity_class = Class.new(Grape::Entity) do
+          %i[example additional_properties unevaluated_properties defs description nullable x-leaked].each do |name|
+            expose name, documentation: { type: String, desc: "exposure doc" }
+          end
+        end
+
+        schema = Introspectors::EntityIntrospector.new(entity_class).build_schema
+
+        assert_nil schema.examples
+        assert_nil schema.additional_properties
+        assert_nil schema.unevaluated_properties
+        assert_nil schema.description
+        refute schema.nullable
+        assert_empty schema.defs.to_h
+        assert_empty schema.extensions.to_h
+        assert_equal 7, schema.properties.size
+      end
+
+      def test_entity_overriding_documentation_keeps_root_level_properties
+        parent = Class.new(Grape::Entity) do
+          expose :example, documentation: { type: String }
+
+          def self.documentation
+            { desc: "root", additional_properties: false }
+          end
+        end
+        child = Class.new(parent)
+
+        [parent, child].each do |klass|
+          schema = Introspectors::EntityIntrospector.new(klass).build_schema
+
+          assert_equal "root", schema.description
+          refute schema.additional_properties
+          assert_nil schema.examples
+        end
+      end
+
       def test_nullable_item_schema_does_not_make_array_nullable
         item_class = Class.new(Grape::Entity) do
           expose :name, documentation: { type: String }
