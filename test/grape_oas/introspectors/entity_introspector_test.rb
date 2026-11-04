@@ -270,7 +270,7 @@ module GrapeOAS
 
       def test_exposures_named_like_root_doc_keys_do_not_leak_into_entity_schema
         entity_class = Class.new(Grape::Entity) do
-          %i[example additional_properties unevaluated_properties defs description nullable].each do |name|
+          %i[example additional_properties unevaluated_properties defs description nullable x-leaked].each do |name|
             expose name, documentation: { type: String, desc: "exposure doc" }
           end
         end
@@ -283,7 +283,8 @@ module GrapeOAS
         assert_nil schema.description
         refute schema.nullable
         assert_empty schema.defs.to_h
-        assert_equal 6, schema.properties.size
+        assert_empty schema.extensions.to_h
+        assert_equal 7, schema.properties.size
       end
 
       def test_entity_overriding_documentation_keeps_root_level_properties
