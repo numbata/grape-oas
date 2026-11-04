@@ -2,7 +2,38 @@
 
 This document describes the release process for the grape-oas gem.
 
-## Pre-Release Checks
+## One-time setup
+
+Publishing uses [RubyGems Trusted Publishing](https://guides.rubygems.org/trusted-publishing/); no API key or OTP is stored.
+
+1. Create a GitHub environment named `release`, restricted to deployments from `main`. Required reviewers are optional.
+2. As a gem owner, add a GitHub Actions trusted publisher on the gem's RubyGems.org page: owner `numbata`, repository `grape-oas`, workflow `release.yml`, environment `release`.
+3. Allow the Actions bot to push directly to `main`.
+4. Set the `RELEASERS` repository variable to the space-separated GitHub usernames allowed to release, e.g. `gh variable set RELEASERS --body "numbata"`. A missing or empty variable blocks every release.
+5. Optional, for the release-notes introduction: add a repository secret `COPILOT_PAT`, a fine-grained personal access token of a user with a Copilot licence (with the "Copilot Requests" permission). Without it the draft contains the changelog entries only.
+
+## Release with the workflow
+
+Make sure `CHANGELOG.md` has the notes under `## [Unreleased]`, then run the
+[Release workflow](https://github.com/numbata/grape-oas/actions/workflows/release.yml) on `main`:
+
+```bash
+gh workflow run release.yml --ref main                  # release the version in version.rb
+gh workflow run release.yml --ref main -f version=1.7.0 # release an explicit version
+gh workflow run release.yml --ref main -f dry_run=true  # run every check and build, publish nothing
+```
+
+A dry run is the safe way to try the workflow: it checks, prepares and tests the release, builds the gem and shows the notes draft in the run summary, then stops before authenticating to RubyGems. Nothing is tagged, pushed or published.
+
+The workflow checks that the actor is in `RELEASERS`, that the version is not yet a tag or RubyGems version and is greater than the latest tag, then dates the changelog, runs the tests and RuboCop, builds the gem, publishes it to RubyGems, pushes the release commit and `vX.Y.Z` tag, creates a **draft** GitHub release, and bumps the patch version for the next iteration.
+
+The draft contains an introduction written by a pinned Copilot CLI (capped at 50 AI credits per run) in a separate job that holds none of the publishing credentials, from the changelog (it falls back to the changelog alone if the Copilot call fails or `COPILOT_PAT` is not set), the changelog entries, a thanks line for contributors other than `numbata` and bots, and the full-changelog link. Review and edit the draft, then publish it.
+
+If a run fails after the gem was published, the `release-vX.Y.Z` artifact holds the built gem and a git bundle with the prepared commit and tag for manual recovery.
+
+## Release manually
+
+### Pre-Release Checks
 
 Before releasing, ensure:
 
@@ -16,9 +47,9 @@ Before releasing, ensure:
 
 3. The version number in `lib/grape_oas/version.rb` is correct.
 
-## Release Steps
+### Release Steps
 
-### Automated Release Process
+The manual steps below do not create a GitHub release or release notes; add them yourself on GitHub afterwards.
 
 1. **Update the version** in `lib/grape_oas/version.rb` to the release version
 

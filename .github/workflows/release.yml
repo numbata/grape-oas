@@ -1,44 +1,300 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (MAJOR.MINOR.PATCH). Leave blank to release the version in version.rb.'
+        required: false
+        type: string
+      dry_run:
+        description: 'Run every check and build the gem and notes, but stop before publishing anything.'
+        required: false
+        type: boolean
+        default: false
 
-permissions:
-  contents: write
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
-  release:
+  # Drafts the release introduction. Runs apart from the publishing job so the
+  # npm-installed Copilot CLI never shares a job with the RubyGems and push credentials.
+  intro:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
     steps:
-      - uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-      - name: Extract changelog
-        id: changelog
-        shell: bash
-        run: |
-          set -euo pipefail
-          tag="${GITHUB_REF_NAME}"
-          version="${tag#v}"
-          notes="$(awk -v version="$version" '
-            $0 ~ "^## \\[" version "\\] - " {found=1; next}
-            found && $0 ~ "^## \\[" {exit}
-            found {print}
-          ' CHANGELOG.md)"
-          if [[ -z "${notes// }" ]]; then
-            echo "No changelog entry found for ${version}" >&2
-            exit 1
+    - name: Verify the actor may release
+      env:
+        RELEASERS: ${{ vars.RELEASERS }}
+        ACTOR: ${{ github.triggering_actor }}
+      run: |
+        for user in $RELEASERS; do
+          if [ "${user,,}" = "${ACTOR,,}" ]; then exit 0; fi
+        done
+        echo "::error::$ACTOR is not listed in the RELEASERS repository variable."
+        exit 1
+
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Build the prompt
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        awk '/^## \[Unreleased\]/{f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md | grep -v -i 'Your contribution here' > notes.md
+        PREV=$(git tag --list 'v[0-9]*' | sort -V | tail -1)
+        {
+          echo "Write the opening of GitHub release notes for the grape-oas gem, in the same style as the example."
+          echo "Output only: 2-3 short paragraphs summarising the release for users, then a paragraph starting '**Before upgrading:**' (only if there are behaviour changes; otherwise omit it), then a paragraph starting '**Upgrade if:**'."
+          echo "Base everything strictly on the changelog below. Do not invent changes, and do not repeat the changelog list or add a thanks line."
+          echo
+          echo "## Example (previous release opening)"
+          gh release view "$PREV" --json body --jq .body | awk '/^### /{exit} {print}'
+          echo
+          echo "## Changelog for this release"
+          cat notes.md
+        } > prompt.txt
+
+    - name: Draft release introduction
+      id: ai
+      continue-on-error: true
+      timeout-minutes: 10
+      env:
+        COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
+      run: |
+        # Scripts are skipped and the version is pinned: bump it deliberately after trying a newer CLI.
+        npm install --global --ignore-scripts @github/copilot@1.0.105
+        # No tool permissions are granted, so Copilot can only answer from the prompt.
+        copilot -s -p "$(cat prompt.txt)" --no-ask-user --max-ai-credits 50 > ai_intro.md
+        test -s ai_intro.md
+
+    - name: Report a failed introduction
+      if: steps.ai.outcome == 'failure'
+      run: echo "::warning::The Copilot introduction could not be generated (check COPILOT_PAT and the step log). The draft will contain the changelog entries only."
+
+    - name: Share the introduction
+      if: steps.ai.outcome == 'success'
+      uses: actions/upload-artifact@v7
+      with:
+        name: release-intro
+        path: ai_intro.md
+
+  release:
+    needs: intro
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Verify release commit is current
+      id: start
+      run: |
+        git fetch origin main
+        if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+          echo "::error::main has advanced since this run was dispatched. Start a new release run."
+          exit 1
+        fi
+        echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.4'
+        bundler-cache: true
+
+    - name: Set requested version
+      if: inputs.version != ''
+      env:
+        REQUESTED_VERSION: ${{ inputs.version }}
+      run: |
+        ruby -e '
+          version = ARGV.first
+          abort "Expected MAJOR.MINOR.PATCH (pre-release versions are not supported), got #{version.inspect}" unless version.match?(/\A(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\z/)
+          path = "lib/grape_oas/version.rb"
+          File.write(path, File.read(path).sub(/VERSION = ".+"/) { %(VERSION = "#{version}") })
+        ' "$REQUESTED_VERSION"
+
+    - name: Get version from version.rb
+      id: get_version
+      run: |
+        VERSION=$(ruby -e 'puts File.read("lib/grape_oas/version.rb")[/VERSION = "(.+)"/, 1]')
+        if ! printf '%s' "$VERSION" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
+          echo "::error::Expected MAJOR.MINOR.PATCH in version.rb (pre-release versions are not supported), got '$VERSION'."
+          exit 1
+        fi
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "Releasing version: $VERSION"
+
+    - name: Configure git
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Reject a version that already exists
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: |
+        TAG="v$VERSION"
+        if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+          echo "::error::Tag $TAG already exists. See RELEASING.md to recover a partial release."
+          exit 1
+        fi
+        CODE=$(curl -s --max-time 30 -o /dev/null -w '%{http_code}' "https://rubygems.org/api/v2/rubygems/grape-oas/versions/$VERSION.json")
+        if [ "$CODE" = 200 ]; then
+          echo "::error::Version $VERSION is already published on RubyGems. See RELEASING.md to recover a partial release."
+          exit 1
+        elif [ "$CODE" != 404 ]; then
+          echo "::error::Could not check RubyGems for $VERSION (HTTP $CODE). Retry the run."
+          exit 1
+        fi
+        LATEST=$(git tag --list 'v[0-9]*' | sed 's/^v//' | sort -V | tail -1)
+        if [ -n "$LATEST" ] && [ "$(printf '%s\n%s\n' "$LATEST" "$VERSION" | sort -V | tail -1)" != "$VERSION" ]; then
+          echo "::error::Version $VERSION is not greater than the latest release $LATEST."
+          exit 1
+        fi
+
+    - name: Prepare changelog
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: |
+        git add lib/grape_oas/version.rb
+        bundle exec rake release:prerelease
+        # prerelease commits nothing when the changelog was already prepared, so
+        # commit whatever is left (the version bump) to keep the tag on a commit that has it.
+        git add -u
+        if ! git diff --cached --quiet; then
+          git commit -m "Prepare release $VERSION"
+        fi
+        if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+          echo "::error::Release preparation left uncommitted changes."
+          exit 1
+        fi
+        test "$(ruby -e 'puts File.read("lib/grape_oas/version.rb")[/VERSION = "(.+)"/, 1]')" = "$VERSION"
+
+    - name: Extract release notes
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: |
+        awk -v version="$VERSION" '
+          $0 ~ "^## \\[" version "\\] - " {found=1; next}
+          found && $0 ~ "^## \\[" {exit}
+          found {print}
+        ' CHANGELOG.md > release_notes.md
+        if [ -z "$(tr -d '[:space:]' < release_notes.md)" ]; then
+          echo "::error::No changelog entries found for $VERSION."
+          exit 1
+        fi
+
+    - name: Fetch the introduction
+      continue-on-error: true
+      uses: actions/download-artifact@v8
+      with:
+        name: release-intro
+
+    - name: Compose release notes
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: |
+        PREV=$(git tag --list 'v[0-9]*' | sort -V | tail -1)
+        # Drop numbata and bot accounts (e.g. dependabot[bot]) before stripping the brackets.
+        grep -oE '\[@[A-Za-z0-9-]+(\[bot\])?\]' release_notes.md | grep -v -i -E '^\[@(numbata|.*\[bot\])\]$' | tr -d '[]' | sort -fu > contributors.txt
+        {
+          if [ -s ai_intro.md ]; then
+            cat ai_intro.md; echo
           fi
-          {
-            echo "notes<<EOF"
-            echo "$notes"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-      - name: Create GitHub release
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body: ${{ steps.changelog.outputs.notes }}
+          cat release_notes.md
+          echo
+          echo "---"
+          echo
+          if [ -s contributors.txt ]; then
+            echo "Thanks to $(sed 's/^@\(.*\)$/[@\1](https:\/\/github.com\/\1)/' contributors.txt | paste -sd, - | sed 's/,/, /g') for their contributions."
+            echo
+          fi
+          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV...v$VERSION"
+        } > final_notes.md
+        { echo "## Release notes preview"; echo; cat final_notes.md; } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Run specs and lint against prepared release
+      run: bundle exec rake
+
+    - name: Create git tag
+      run: git tag "v${{ steps.get_version.outputs.version }}"
+
+    - name: Build gem
+      run: gem build grape-oas.gemspec
+
+    - name: Save prepared source for recovery
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: git bundle create release.bundle "v$VERSION"
+
+    - name: Upload release recovery files
+      uses: actions/upload-artifact@v7
+      with:
+        name: release-v${{ steps.get_version.outputs.version }}
+        path: |
+          release.bundle
+          grape-oas-${{ steps.get_version.outputs.version }}.gem
+        if-no-files-found: error
+
+    - name: Verify main did not advance during the run
+      if: ${{ !inputs.dry_run }}
+      env:
+        START_SHA: ${{ steps.start.outputs.sha }}
+      run: |
+        git fetch origin main
+        if [ "$(git rev-parse origin/main)" != "$START_SHA" ]; then
+          echo "::error::main advanced while the release was running. Nothing was published; start a new release run."
+          exit 1
+        fi
+
+    - name: Authenticate to RubyGems with trusted publishing
+      if: ${{ !inputs.dry_run }}
+      uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+
+    - name: Push gem to RubyGems
+      if: ${{ !inputs.dry_run }}
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: |
+        if ! gem push "grape-oas-$VERSION.gem"; then
+          echo "::error::RubyGems upload failed. Check whether the version was published before retrying; no tag or GitHub release has been pushed."
+          exit 1
+        fi
+
+    - name: Push release commit and tag atomically
+      if: ${{ !inputs.dry_run }}
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: git push --atomic origin HEAD:main "v$VERSION"
+
+    - name: Create GitHub Release
+      if: ${{ !inputs.dry_run }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: |
+        gh release create "v$VERSION" \
+          --verify-tag \
+          --title "v$VERSION" \
+          --draft \
+          --notes-file final_notes.md \
+          "grape-oas-$VERSION.gem"
+
+    - name: Prepare next development iteration
+      if: ${{ !inputs.dry_run }}
+      run: |
+        bundle exec rake release:postrelease
+        git push origin main
