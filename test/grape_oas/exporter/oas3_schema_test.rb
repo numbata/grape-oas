@@ -147,7 +147,7 @@ module GrapeOAS
         assert_equal [1, 2, 3], result["enum"]
       end
 
-      def test_integer_schema_symbol_enum_remains_incompatible
+      def test_integer_schema_with_symbol_enum_omits_enum
         schema = ApiModel::Schema.new(type: "integer")
         schema.enum = [:one]
 
@@ -407,6 +407,17 @@ module GrapeOAS
       end
 
       # === $ref + allOf wrapping tests ===
+
+      def test_ref_wrapper_enum_normalized_from_symbols
+        ref_schema = ApiModel::Schema.new(canonical_name: "MyEntity", type: "string", description: "Sort order")
+        ref_schema.enum = %i[asc desc]
+        parent_schema = ApiModel::Schema.new(type: "object")
+        parent_schema.add_property("child", ref_schema)
+
+        child = OAS3::Schema.new(parent_schema, Set.new).build["properties"]["child"]
+
+        assert_equal %w[asc desc], child["enum"]
+      end
 
       def test_ref_with_description_wraps_in_allof
         ref_tracker = Set.new
