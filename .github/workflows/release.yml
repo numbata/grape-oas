@@ -21,7 +21,6 @@ jobs:
   # Drafts the release introduction. Runs apart from the publishing job so the
   # npm-installed Copilot CLI never shares a job with the RubyGems and push credentials.
   intro:
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -32,21 +31,26 @@ jobs:
         RELEASERS: ${{ vars.RELEASERS }}
         ACTOR: ${{ github.triggering_actor }}
       run: |
+        if [ "$GITHUB_REF" != refs/heads/main ]; then
+          echo "::error::Releases can only run from main (got $GITHUB_REF)."
+          exit 1
+        fi
         for user in $RELEASERS; do
           if [ "${user,,}" = "${ACTOR,,}" ]; then exit 0; fi
         done
         echo "::error::$ACTOR is not listed in the RELEASERS repository variable."
         exit 1
 
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         persist-credentials: false
+        fetch-tags: true
 
     - name: Build the prompt
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        awk '/^## \[Unreleased\]/{f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md | grep -v -i 'Your contribution here' > notes.md
+        awk '/^## \[Unreleased\]/{f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md | grep -v -i 'Your contribution here' > notes.md || true
         PREV=$(git tag --list 'v[0-9]*' | sort -V | tail -1)
         {
           echo "Write the opening of GitHub release notes for the grape-oas gem, in the same style as the example."
@@ -79,14 +83,13 @@ jobs:
 
     - name: Share the introduction
       if: steps.ai.outcome == 'success'
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: release-intro
         path: ai_intro.md
 
   release:
     needs: intro
-    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -94,7 +97,22 @@ jobs:
       id-token: write
 
     steps:
-    - uses: actions/checkout@v7
+    - name: Verify the actor may release
+      env:
+        RELEASERS: ${{ vars.RELEASERS }}
+        ACTOR: ${{ github.triggering_actor }}
+      run: |
+        if [ "$GITHUB_REF" != refs/heads/main ]; then
+          echo "::error::Releases can only run from main (got $GITHUB_REF)."
+          exit 1
+        fi
+        for user in $RELEASERS; do
+          if [ "${user,,}" = "${ACTOR,,}" ]; then exit 0; fi
+        done
+        echo "::error::$ACTOR is not listed in the RELEASERS repository variable."
+        exit 1
+
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         fetch-depth: 0
 
@@ -109,7 +127,7 @@ jobs:
         echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
     - name: Set up Ruby
-      uses: ruby/setup-ruby@v1
+      uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
       with:
         ruby-version: '3.4'
         bundler-cache: true
@@ -199,7 +217,7 @@ jobs:
 
     - name: Fetch the introduction
       continue-on-error: true
-      uses: actions/download-artifact@v8
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
       with:
         name: release-intro
 
@@ -230,7 +248,9 @@ jobs:
       run: bundle exec rake
 
     - name: Create git tag
-      run: git tag -a "v${{ steps.get_version.outputs.version }}" -m "v${{ steps.get_version.outputs.version }}"
+      env:
+        VERSION: ${{ steps.get_version.outputs.version }}
+      run: git tag -a "v$VERSION" -m "v$VERSION"
 
     - name: Build gem
       run: gem build grape-oas.gemspec
@@ -241,11 +261,12 @@ jobs:
       run: git bundle create release.bundle "v$VERSION"
 
     - name: Upload release recovery files
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: release-v${{ steps.get_version.outputs.version }}
         path: |
           release.bundle
+          final_notes.md
           grape-oas-${{ steps.get_version.outputs.version }}.gem
         if-no-files-found: error
 
@@ -260,7 +281,8 @@ jobs:
           echo "::error::main advanced while the release was running. Nothing was published; start a new release run."
           exit 1
         fi
-        # Fail now, while stopping is still safe, if the push to main would be rejected.
+        # Catches a non-fast-forward or unreachable remote only; it cannot prove that branch
+        # rules allow the bot, so the first real release is the real test of the push path.
         git push --dry-run --atomic origin HEAD:main "v$VERSION"
 
     - name: Authenticate to RubyGems with trusted publishing

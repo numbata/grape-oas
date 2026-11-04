@@ -23,13 +23,15 @@ gh workflow run release.yml --ref main -f version=1.7.0 # release an explicit ve
 gh workflow run release.yml --ref main -f dry_run=true  # run every check and build, publish nothing
 ```
 
-A dry run is the safe way to try the workflow: it checks, prepares and tests the release, builds the gem and shows the notes draft in the run summary, then stops before authenticating to RubyGems. Nothing is tagged, pushed or published.
+A dry run is the safe way to try the workflow: it checks, prepares and tests the release, builds the gem and shows the notes draft in the run summary, then stops before authenticating to RubyGems. Nothing is tagged, pushed or published. A dry run cannot prove the final push to `main` is allowed by your branch rules; only the first real release does, and a dry run still spends the Copilot credits for the introduction.
 
 The workflow checks that the actor is in `RELEASERS`, that the version is not yet a tag or RubyGems version and is greater than the latest tag, then dates the changelog, runs the tests and RuboCop, builds the gem, publishes it to RubyGems, pushes the release commit and `vX.Y.Z` tag, creates a **draft** GitHub release, and bumps the patch version for the next iteration.
 
 The draft contains an introduction written by a pinned Copilot CLI (capped at 50 AI credits per run) in a separate job that holds none of the publishing credentials, from the changelog (it falls back to the changelog alone if the Copilot call fails or `COPILOT_PAT` is not set), the changelog entries, a thanks line for contributors other than `numbata` and bots, and the full-changelog link. Review and edit the draft, then publish it.
 
 If a run fails after the gem was published, the `release-vX.Y.Z` artifact holds the built gem and a git bundle with the prepared commit and tag for manual recovery.
+
+Commits and tags pushed by the workflow with the built-in token do not trigger other workflows (such as CI) on `main`.
 
 ## Recovering a partial release
 
@@ -38,11 +40,13 @@ The error messages point here. Find the stage that failed, then:
 - **Failed before "Push gem to RubyGems":** nothing was published or pushed. Fix the cause and run the workflow again.
 - **Gem published, but the push to `main` failed** (version exists on RubyGems, no tag): download the `release-vX.Y.Z` artifact, then from a clone of `main`:
   ```bash
-  git fetch release.bundle "vX.Y.Z" && git merge --ff-only FETCH_HEAD   # the prepared release commit
-  git tag -a vX.Y.Z -m vX.Y.Z && git push --atomic origin HEAD:main vX.Y.Z
+  git fetch release.bundle tag vX.Y.Z   # the tag keeps pointing at the commit the gem was built from
+  git merge vX.Y.Z                      # fast-forwards, or creates a merge commit if main moved
+  git push --atomic origin HEAD:main vX.Y.Z
+  gh release create vX.Y.Z --draft --notes-file final_notes.md grape-oas-X.Y.Z.gem
+  bundle exec rake release:postrelease && git push origin main
   ```
-  Then create the release: `gh release create vX.Y.Z --draft --generate-notes grape-oas-X.Y.Z.gem`, and bump the version and add an `Unreleased` section with `bundle exec rake release:postrelease`.
-- **Tag and gem exist, but no GitHub release:** `gh release create vX.Y.Z --draft --generate-notes grape-oas-X.Y.Z.gem`.
+- **Tag and gem exist, but no GitHub release:** `gh release create vX.Y.Z --draft --notes-file final_notes.md grape-oas-X.Y.Z.gem` (`final_notes.md` is in the recovery artifact).
 - **Everything released, but the next-iteration bump failed:** run `bundle exec rake release:postrelease` and push `main`.
 
 ## Release manually
