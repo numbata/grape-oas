@@ -31,6 +31,20 @@ The draft contains an introduction written by a pinned Copilot CLI (capped at 50
 
 If a run fails after the gem was published, the `release-vX.Y.Z` artifact holds the built gem and a git bundle with the prepared commit and tag for manual recovery.
 
+## Recovering a partial release
+
+The error messages point here. Find the stage that failed, then:
+
+- **Failed before "Push gem to RubyGems":** nothing was published or pushed. Fix the cause and run the workflow again.
+- **Gem published, but the push to `main` failed** (version exists on RubyGems, no tag): download the `release-vX.Y.Z` artifact, then from a clone of `main`:
+  ```bash
+  git fetch release.bundle "vX.Y.Z" && git merge --ff-only FETCH_HEAD   # the prepared release commit
+  git tag -a vX.Y.Z -m vX.Y.Z && git push --atomic origin HEAD:main vX.Y.Z
+  ```
+  Then create the release: `gh release create vX.Y.Z --draft --generate-notes grape-oas-X.Y.Z.gem`, and bump the version and add an `Unreleased` section with `bundle exec rake release:postrelease`.
+- **Tag and gem exist, but no GitHub release:** `gh release create vX.Y.Z --draft --generate-notes grape-oas-X.Y.Z.gem`.
+- **Everything released, but the next-iteration bump failed:** run `bundle exec rake release:postrelease` and push `main`.
+
 ## Release manually
 
 ### Pre-Release Checks

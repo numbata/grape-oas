@@ -54,7 +54,7 @@ jobs:
           echo "Base everything strictly on the changelog below. Do not invent changes, and do not repeat the changelog list or add a thanks line."
           echo
           echo "## Example (previous release opening)"
-          gh release view "$PREV" --json body --jq .body | awk '/^### /{exit} {print}'
+          gh release view "$PREV" --json body --jq .body 2>/dev/null | awk '/^### /{exit} {print}' || true
           echo
           echo "## Changelog for this release"
           cat notes.md
@@ -230,7 +230,7 @@ jobs:
       run: bundle exec rake
 
     - name: Create git tag
-      run: git tag "v${{ steps.get_version.outputs.version }}"
+      run: git tag -a "v${{ steps.get_version.outputs.version }}" -m "v${{ steps.get_version.outputs.version }}"
 
     - name: Build gem
       run: gem build grape-oas.gemspec
@@ -253,12 +253,15 @@ jobs:
       if: ${{ !inputs.dry_run }}
       env:
         START_SHA: ${{ steps.start.outputs.sha }}
+        VERSION: ${{ steps.get_version.outputs.version }}
       run: |
         git fetch origin main
         if [ "$(git rev-parse origin/main)" != "$START_SHA" ]; then
           echo "::error::main advanced while the release was running. Nothing was published; start a new release run."
           exit 1
         fi
+        # Fail now, while stopping is still safe, if the push to main would be rejected.
+        git push --dry-run --atomic origin HEAD:main "v$VERSION"
 
     - name: Authenticate to RubyGems with trusted publishing
       if: ${{ !inputs.dry_run }}
