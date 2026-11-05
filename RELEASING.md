@@ -1,4 +1,4 @@
-# Releasing Grape::OAS
+# Releasing GrapeOAS
 
 This document describes the release process for the grape-oas gem.
 
@@ -25,11 +25,13 @@ gh workflow run release.yml --ref main -f dry_run=true  # run every check and bu
 
 A dry run is the safe way to try the workflow: it checks, prepares and tests the release, builds the gem and shows the notes draft in the run summary, then stops before authenticating to RubyGems. Nothing is tagged, pushed or published. A dry run cannot prove the final push to `main` is allowed by your branch rules; only the first real release does, and a dry run still spends the Copilot credits for the introduction.
 
-The workflow first validates the actor (`RELEASERS`), the `main` ref and the version in a cheap gate job, before any paid or privileged step. It also requires that the `CI` workflow passed on the latest non-bot commit of `main`, and runs the tests and RuboCop (Ruby 3.4 only; CI covers the full matrix) in a separate job that has no publishing credentials, before the version is bumped. The publishing job then checks that the actor is in `RELEASERS` again (so a re-run is gated too), that the version is not yet a tag or RubyGems version and is greater than the latest tag, then dates the changelog, builds the gem, publishes it to RubyGems, pushes the release commit and `vX.Y.Z` tag, creates a **draft** GitHub release, and bumps the patch version for the next iteration.
+The workflow first validates the actor (`RELEASERS`), the `main` ref and the version (format, not yet a tag or RubyGems version, greater than the latest tag) in a cheap gate job, before any paid or privileged step. It also requires that the `CI` workflow passed on the latest non-bot commit of `main`, and runs the tests and RuboCop (Ruby 3.4 only; CI covers the full matrix) in a separate job that has no publishing credentials, before the version is bumped. The publishing job then checks that the actor is in `RELEASERS` again (so a re-run is gated too), then dates the changelog, builds the gem, publishes it to RubyGems, pushes the release commit and `vX.Y.Z` tag, creates a **draft** GitHub release, and bumps the patch version for the next iteration.
 
 The draft contains an introduction written by a pinned Copilot CLI (capped at 50 AI credits per run) in a separate job that holds none of the publishing credentials, from the changelog (it falls back to the changelog alone if the Copilot call fails or `COPILOT_PAT` is not set), the changelog entries, a thanks line for contributors other than `numbata` and bots, and the full-changelog link. Review and edit the draft, then publish it.
 
 If a run fails after the gem was published, the `release-vX.Y.Z` artifact holds the built gem and a git bundle with the prepared commit and tag for manual recovery.
+
+The gem is published before the release commit and tag are pushed on purpose: if the RubyGems upload fails, `main` and the tags are untouched and the run can simply be repeated. The cost is the recovery path below when `main` moves in that short window; a dry-run push right before publishing keeps that window small.
 
 Commits and tags pushed by the workflow with the built-in token do not trigger other workflows (such as CI) on `main`.
 

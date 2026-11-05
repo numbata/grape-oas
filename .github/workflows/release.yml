@@ -44,6 +44,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         persist-credentials: false
+        fetch-tags: true
 
     - name: Resolve and validate the version
       id: version
@@ -56,6 +57,29 @@ jobs:
           exit 1
         fi
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+    - name: Reject a version that already exists
+      env:
+        VERSION: ${{ steps.version.outputs.version }}
+      run: |
+        TAG="v$VERSION"
+        if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
+          echo "::error::Tag $TAG already exists. See RELEASING.md to recover a partial release."
+          exit 1
+        fi
+        CODE=$(curl -s --max-time 30 -o /dev/null -w '%{http_code}' "https://rubygems.org/api/v2/rubygems/grape-oas/versions/$VERSION.json")
+        if [ "$CODE" = 200 ]; then
+          echo "::error::Version $VERSION is already published on RubyGems. See RELEASING.md to recover a partial release."
+          exit 1
+        elif [ "$CODE" != 404 ]; then
+          echo "::error::Could not check RubyGems for $VERSION (HTTP $CODE). Retry the run."
+          exit 1
+        fi
+        LATEST=$(git tag --list 'v[0-9]*' | sed 's/^v//' | sort -V | tail -1)
+        if [ -n "$LATEST" ] && [ "$(printf '%s\n%s\n' "$LATEST" "$VERSION" | sort -V | tail -1)" != "$VERSION" ]; then
+          echo "::error::Version $VERSION is not greater than the latest release $LATEST."
+          exit 1
+        fi
 
   test:
     needs: gate
@@ -100,10 +124,10 @@ jobs:
         GH_TOKEN: ${{ github.token }}
       run: |
         VERSION='${{ needs.gate.outputs.version }}'
-        awk '/^## \[Unreleased\]/{f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md | grep -v -i 'Your contribution here' > notes.md || true
+        # Same precedence as the release job: the dated section for this version, else Unreleased.
+        awk -v version="$VERSION" '$0 ~ "^## \\[" version "\\] - " {f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md > notes.md
         if [ -z "$(tr -d '[:space:]' < notes.md)" ]; then
-          # Already prepared by hand: use the dated section for this version instead.
-          awk -v version="$VERSION" '$0 ~ "^## \\[" version "\\] - " {f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md > notes.md
+          awk '/^## \[Unreleased\]/{f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md | grep -v -i 'Your contribution here' > notes.md || true
         fi
         if [ -z "$(tr -d '[:space:]' < notes.md)" ]; then
           echo "has_notes=false" >> "$GITHUB_OUTPUT"
@@ -240,29 +264,6 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Reject a version that already exists
-      env:
-        VERSION: ${{ steps.get_version.outputs.version }}
-      run: |
-        TAG="v$VERSION"
-        if git ls-remote --exit-code --tags origin "refs/tags/$TAG" > /dev/null; then
-          echo "::error::Tag $TAG already exists. See RELEASING.md to recover a partial release."
-          exit 1
-        fi
-        CODE=$(curl -s --max-time 30 -o /dev/null -w '%{http_code}' "https://rubygems.org/api/v2/rubygems/grape-oas/versions/$VERSION.json")
-        if [ "$CODE" = 200 ]; then
-          echo "::error::Version $VERSION is already published on RubyGems. See RELEASING.md to recover a partial release."
-          exit 1
-        elif [ "$CODE" != 404 ]; then
-          echo "::error::Could not check RubyGems for $VERSION (HTTP $CODE). Retry the run."
-          exit 1
-        fi
-        LATEST=$(git tag --list 'v[0-9]*' | sed 's/^v//' | sort -V | tail -1)
-        if [ -n "$LATEST" ] && [ "$(printf '%s\n%s\n' "$LATEST" "$VERSION" | sort -V | tail -1)" != "$VERSION" ]; then
-          echo "::error::Version $VERSION is not greater than the latest release $LATEST."
-          exit 1
-        fi
-
     - name: Prepare changelog
       env:
         VERSION: ${{ steps.get_version.outputs.version }}
@@ -320,7 +321,9 @@ jobs:
             echo "Thanks to $(sed 's/^@\(.*\)$/[@\1](https:\/\/github.com\/\1)/' contributors.txt | paste -sd, - | sed 's/,/, /g') for their contributions."
             echo
           fi
-          echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV...v$VERSION"
+          if [ -n "$PREV" ]; then
+            echo "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV...v$VERSION"
+          fi
         } > final_notes.md
         { echo "## Release notes preview"; echo; cat final_notes.md; } >> "$GITHUB_STEP_SUMMARY"
 
