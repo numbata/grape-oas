@@ -16,6 +16,39 @@ Before releasing, ensure:
 
 3. The version number in `lib/grape_oas/version.rb` is correct.
 
+## Release with the workflow
+
+One-time setup:
+
+1. Create a GitHub environment named `release`, restricted to `main`.
+2. Add a RubyGems trusted publisher for the gem: owner `numbata`, repository `grape-oas`, workflow `release.yml`, environment `release`.
+3. Allow the Actions bot to push directly to `main`.
+4. Set the `RELEASERS` repository variable to the GitHub usernames allowed to release, space-separated (`gh variable set RELEASERS --body "numbata"`). An empty variable blocks every release.
+5. Optional: add the `COPILOT_PAT` secret (a fine-grained token with the "Copilot Requests" permission) for the release introduction. Without it the draft has the changelog only.
+
+Release by putting the notes under `## [Unreleased]` in `CHANGELOG.md`, then running the Release workflow on `main`:
+
+```bash
+gh workflow run release.yml --ref main                  # release the version in version.rb
+gh workflow run release.yml --ref main -f version=1.7.0 # release an explicit version
+gh workflow run release.yml --ref main -f dry_run=true  # run every check and prepare, publish nothing
+```
+
+The `prepare` job checks the actor, version, changelog notes, that CI passed on the latest human commit and that the version is not yet tagged or on RubyGems. It then runs the specs and lint and writes the release commit and the next-iteration commit, and it uploads them as the `release-commits` artifact. Only the version file and the changelog may change. The `intro` job drafts the Copilot introduction, and the `publish` job, the only one with RubyGems credentials, pushes the gem, then the commits and the tag, then creates a **draft** GitHub release. Review and publish the draft.
+
+A dry run stops before publishing, so it does not exercise the final push to `main`; the first real release does.
+
+### Recovering a partial release
+
+- **Failed before "Push gem to RubyGems":** nothing was published or pushed. Fix the cause and run the workflow again.
+- **Gem published, but the push to main failed:** download `release-commits`, then from a clone of `main` that has not moved:
+  ```bash
+  git fetch release.bundle 'release-prepared:release-prepared' vX.Y.Z
+  git push --atomic origin release-prepared:main vX.Y.Z
+  ```
+  If `main` moved, run `git merge release-prepared`, resolve `CHANGELOG.md` and `lib/grape_oas/version.rb` keeping the dated release section and the next version, then push `HEAD:main vX.Y.Z`.
+- **Tag and gem exist, but no GitHub release:** create the draft with `gh release create vX.Y.Z --draft --notes-file <notes> grape-oas-X.Y.Z.gem`, writing the notes by hand.
+
 ## Release Steps
 
 ### Automated Release Process
