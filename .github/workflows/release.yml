@@ -21,6 +21,7 @@ jobs:
   gate:
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -44,7 +45,7 @@ jobs:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       with:
         persist-credentials: false
-        fetch-tags: true
+        fetch-depth: 0
 
     - name: Resolve and validate the version
       id: version
@@ -78,6 +79,27 @@ jobs:
         LATEST=$(git tag --list 'v[0-9]*' | sed 's/^v//' | sort -V | tail -1)
         if [ -n "$LATEST" ] && [ "$(printf '%s\n%s\n' "$LATEST" "$VERSION" | sort -V | tail -1)" != "$VERSION" ]; then
           echo "::error::Version $VERSION is not greater than the latest release $LATEST."
+          exit 1
+        fi
+
+    - name: Verify release commit is current
+      run: |
+        git fetch origin main
+        if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+          echo "::error::main has advanced since this run was dispatched. Start a new release run."
+          exit 1
+        fi
+
+    - name: Verify CI passed on the commit being released
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        # Commits pushed by this workflow's bot do not trigger CI, so check the latest human commit.
+        SHA=$(git log -1 --format=%H --perl-regexp --author='^(?!github-actions\[bot\])' )
+        # The newest run must have finished successfully (not cancelled, timed out or still running).
+        RESULT=$(gh run list --workflow ci.yml --commit "$SHA" --limit 1 --json conclusion --jq '.[0].conclusion // ""')
+        if [ "$RESULT" != success ]; then
+          echo "::error::CI has not passed on ${SHA:0:7} (latest run: ${RESULT:-none or still running}). Wait for CI or fix it before releasing."
           exit 1
         fi
 
@@ -183,7 +205,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: release
     permissions:
-      actions: read
       contents: write
       id-token: write
 
@@ -216,19 +237,6 @@ jobs:
           exit 1
         fi
         echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
-    - name: Verify CI passed on the commit being released
-      env:
-        GH_TOKEN: ${{ github.token }}
-      run: |
-        # Commits pushed by this workflow's bot do not trigger CI, so check the latest human commit.
-        SHA=$(git log -1 --format=%H --perl-regexp --author='^(?!github-actions\[bot\])' )
-        # The newest run must have finished successfully (not cancelled, timed out or still running).
-        RESULT=$(gh run list --workflow ci.yml --commit "$SHA" --limit 1 --json conclusion --jq '.[0].conclusion // ""')
-        if [ "$RESULT" != success ]; then
-          echo "::error::CI has not passed on ${SHA:0:7} (latest run: ${RESULT:-none or still running}). Wait for CI or fix it before releasing."
-          exit 1
-        fi
 
     - name: Set up Ruby
       uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
@@ -351,7 +359,6 @@ jobs:
         if-no-files-found: error
 
     - name: Verify main did not advance during the run
-      if: ${{ !inputs.dry_run }}
       env:
         START_SHA: ${{ steps.start.outputs.sha }}
         VERSION: ${{ steps.get_version.outputs.version }}
