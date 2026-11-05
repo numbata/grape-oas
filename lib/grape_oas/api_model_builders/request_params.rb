@@ -138,8 +138,6 @@ module GrapeOAS
 
       def build_parameter(name, location, required, schema, spec, inherited_deprecated: false)
         doc = spec[:documentation] || {}
-        style = doc.fetch(:style) { doc["style"] }
-        explode = doc.fetch(:explode) { doc["explode"] }
 
         ApiModel::Parameter.new(
           location: location,
@@ -148,17 +146,17 @@ module GrapeOAS
           schema: schema,
           description: spec[:documentation]&.dig(:desc) || spec[:desc],
           collection_format: extract_collection_format(spec),
-          style: style,
-          explode: explode,
-          deprecated: doc[:deprecated] || inherited_deprecated ? true : false,
+          style: doc[:style],
+          explode: doc[:explode],
+          deprecated: !!(doc[:deprecated] || inherited_deprecated),
         )
       end
 
       # A bracket param like "filter[geo][lat]" is deprecated when any of its
       # ancestors ("filter", "filter[geo]") is.
       def ancestor_deprecated?(name, all_params)
-        name.to_enum(:scan, /\[/).any? do
-          all_params.dig(name[0, Regexp.last_match.begin(0)], :documentation, :deprecated)
+        name.each_char.with_index.any? do |char, index|
+          char == "[" && all_params.dig(name[0, index], :documentation, :deprecated)
         end
       end
 
