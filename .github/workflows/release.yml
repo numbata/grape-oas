@@ -74,7 +74,8 @@ jobs:
         ruby-version: '3.4'
         bundler-cache: true
 
-    # Runs here, without publishing credentials, so dependency code never shares a job with them.
+    # Runs without publishing credentials. The release job still loads the Rakefile, and so the
+    # dev bundle, for the prerelease/postrelease tasks; only the test run is isolated here.
     - name: Run specs and lint
       run: bundle exec rake
 
@@ -82,6 +83,7 @@ jobs:
   # npm-installed Copilot CLI never shares a job with the RubyGems and push credentials.
   intro:
     needs: gate
+    timeout-minutes: 20
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -134,7 +136,7 @@ jobs:
         npm install --global --ignore-scripts @github/copilot@1.0.105
         # No tool permissions are granted, so Copilot can only answer from the prompt.
         # Run outside the checkout so Copilot does not load the repository's agent instructions.
-        cd "$RUNNER_TEMP" && cp "$GITHUB_WORKSPACE/prompt.txt" . 
+        cd "$RUNNER_TEMP" && cp "$GITHUB_WORKSPACE/prompt.txt" .
         copilot -s -p "$(cat prompt.txt)" --no-ask-user --max-ai-credits 50 > "$GITHUB_WORKSPACE/ai_intro.md"
         test -s "$GITHUB_WORKSPACE/ai_intro.md"
 
@@ -151,6 +153,9 @@ jobs:
 
   release:
     needs: [gate, intro, test]
+    # The introduction is optional: a failed intro job must not block the release.
+    if: ${{ !cancelled() && needs.gate.result == 'success' && needs.test.result == 'success' }}
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     environment: release
     permissions:
@@ -194,9 +199,10 @@ jobs:
       run: |
         # Commits pushed by this workflow's bot do not trigger CI, so check the latest human commit.
         SHA=$(git log -1 --format=%H --perl-regexp --author='^(?!github-actions\[bot\])' )
-        RESULTS=$(gh run list --workflow ci.yml --commit "$SHA" --json conclusion --jq '.[].conclusion')
-        if ! printf '%s\n' "$RESULTS" | grep -qx success || printf '%s\n' "$RESULTS" | grep -qx failure; then
-          echo "::error::CI has not passed on ${SHA:0:7} (results: ${RESULTS:-none}). Wait for CI or fix it before releasing."
+        # The newest run must have finished successfully (not cancelled, timed out or still running).
+        RESULT=$(gh run list --workflow ci.yml --commit "$SHA" --limit 1 --json conclusion --jq '.[0].conclusion // ""')
+        if [ "$RESULT" != success ]; then
+          echo "::error::CI has not passed on ${SHA:0:7} (latest run: ${RESULT:-none or still running}). Wait for CI or fix it before releasing."
           exit 1
         fi
 

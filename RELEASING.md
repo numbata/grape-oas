@@ -25,7 +25,7 @@ gh workflow run release.yml --ref main -f dry_run=true  # run every check and bu
 
 A dry run is the safe way to try the workflow: it checks, prepares and tests the release, builds the gem and shows the notes draft in the run summary, then stops before authenticating to RubyGems. Nothing is tagged, pushed or published. A dry run cannot prove the final push to `main` is allowed by your branch rules; only the first real release does, and a dry run still spends the Copilot credits for the introduction.
 
-The workflow first validates the actor (`RELEASERS`), the `main` ref and the version in a cheap gate job, before any paid or privileged step. It also requires that the `CI` workflow passed on the latest non-bot commit of `main`, and runs the tests and RuboCop (Ruby 3.4 only; CI covers the full matrix) in a job that has no publishing credentials. The publishing job then checks that the actor is in `RELEASERS` again (so a re-run is gated too), that the version is not yet a tag or RubyGems version and is greater than the latest tag, then dates the changelog, runs the tests and RuboCop, builds the gem, publishes it to RubyGems, pushes the release commit and `vX.Y.Z` tag, creates a **draft** GitHub release, and bumps the patch version for the next iteration.
+The workflow first validates the actor (`RELEASERS`), the `main` ref and the version in a cheap gate job, before any paid or privileged step. It also requires that the `CI` workflow passed on the latest non-bot commit of `main`, and runs the tests and RuboCop (Ruby 3.4 only; CI covers the full matrix) in a separate job that has no publishing credentials, before the version is bumped. The publishing job then checks that the actor is in `RELEASERS` again (so a re-run is gated too), that the version is not yet a tag or RubyGems version and is greater than the latest tag, then dates the changelog, builds the gem, publishes it to RubyGems, pushes the release commit and `vX.Y.Z` tag, creates a **draft** GitHub release, and bumps the patch version for the next iteration.
 
 The draft contains an introduction written by a pinned Copilot CLI (capped at 50 AI credits per run) in a separate job that holds none of the publishing credentials, from the changelog (it falls back to the changelog alone if the Copilot call fails or `COPILOT_PAT` is not set), the changelog entries, a thanks line for contributors other than `numbata` and bots, and the full-changelog link. Review and edit the draft, then publish it.
 
@@ -46,6 +46,7 @@ The error messages point here. Find the stage that failed, then:
   gh release create vX.Y.Z --draft --notes-file final_notes.md grape-oas-X.Y.Z.gem
   bundle exec rake release:postrelease && git push origin main
   ```
+  If `main` moved, `git merge` may conflict in `CHANGELOG.md`; keep both the new entries and the dated release section.
 - **Tag and gem exist, but no GitHub release:** `gh release create vX.Y.Z --draft --notes-file final_notes.md grape-oas-X.Y.Z.gem` (`final_notes.md` is in the recovery artifact).
 - **Everything released, but the next-iteration bump failed:** run `bundle exec rake release:postrelease` and push `main`.
 
