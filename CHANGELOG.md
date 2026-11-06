@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
-## [Unreleased]
+## [1.6.1] - 2026-11-06
 
 ### Changed
 
@@ -19,8 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#166](https://github.com/numbata/grape-oas/pull/166): Serialize Symbol enum values as strings so `type: Symbol` parameters with `values:` keep their `enum` in OAS 3.0/3.1 - [@numbata](https://github.com/numbata).
 - [#173](https://github.com/numbata/grape-oas/pull/173): Omit lambda/proc parameter defaults, in `default:` and `documentation: { default: }`, from the generated spec instead of emitting `Proc#inspect`; a static `documentation: { default: }` still documents a callable `default:` - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#178](https://github.com/numbata/grape-oas/pull/178): Stop entity exposures named like root-level documentation keys (`example`, `additional_properties`, `description`, `nullable`, ...) from leaking into the entity schema - [@numbata](https://github.com/numbata).
-
-* Your contribution here
 
 ## [1.6.0] - 2026-09-21
 
