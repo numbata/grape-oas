@@ -64,10 +64,11 @@ module GrapeOAS
           end
 
           # Copies scalar metadata. First non-nil wins for description/format/examples;
-          # nullable uses OR; extensions are merged (last branch wins for overlapping keys).
+          # nullable and deprecated use OR; extensions are merged (last branch wins for overlapping keys).
           def copy_branch_metadata(merged, source)
             merged.description ||= source.description
             merged.nullable = true if source.nullable
+            merged.deprecated = true if source.deprecated
             merged.format ||= source.format
             merged.examples ||= source.examples if source.respond_to?(:examples)
             return unless source.respond_to?(:extensions) && source.extensions

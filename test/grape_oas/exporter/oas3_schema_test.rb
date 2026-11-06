@@ -5,6 +5,15 @@ require "test_helper"
 module GrapeOAS
   module Exporter
     class OAS3SchemaTest < Minitest::Test
+      def test_deprecated_flag_is_emitted_on_plain_and_composition_schemas
+        plain = ApiModel::Schema.new(type: "string", deprecated: true)
+        wrapper = ApiModel::Schema.new(all_of: [ApiModel::Schema.new(type: "object")], deprecated: true)
+
+        assert OAS3::Schema.new(plain).build["deprecated"]
+        assert OAS3::Schema.new(wrapper).build["deprecated"]
+        refute OAS3::Schema.new(ApiModel::Schema.new(type: "string")).build.key?("deprecated")
+      end
+
       # === Zero value constraint tests ===
 
       def test_integer_schema_with_zero_minimum

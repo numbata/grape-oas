@@ -37,6 +37,39 @@ module GrapeOAS
           OasUtilities.extract_nullable(doc)
         end
 
+        # Marks a schema as deprecated when the documentation hash asks for it.
+        # A schema with a canonical name is a shared component: setting the flag
+        # on it would deprecate the component everywhere it is referenced, and
+        # OAS 3.0 ignores siblings of a bare $ref. The flag therefore goes on an
+        # allOf wrapper and the component stays unchanged.
+        #
+        # @param schema [ApiModel::Schema] the schema to mark
+        # @param doc [Hash] the documentation hash
+        # @return [ApiModel::Schema] the schema, or its wrapper
+        def self.apply_deprecated(schema, doc)
+          return schema unless doc[:deprecated]
+
+          schema = ApiModel::Schema.new(all_of: [schema]) if schema.canonical_name
+          schema.deprecated = true
+          schema
+        end
+
+        # Instance method version
+        def apply_deprecated(schema, doc)
+          OasUtilities.apply_deprecated(schema, doc)
+        end
+
+        # True when the schema renders as a reference to a shared component:
+        # the component itself, or the wrapper apply_deprecated puts around it.
+        #
+        # @param schema [ApiModel::Schema]
+        # @return [Boolean]
+        def self.component_reference?(schema)
+          return true if schema.canonical_name
+
+          !!(schema.deprecated && schema.all_of&.one? && schema.all_of.first.canonical_name)
+        end
+
         # Converts a CamelCase string to snake_case.
         #
         # @param str [String] the string to convert

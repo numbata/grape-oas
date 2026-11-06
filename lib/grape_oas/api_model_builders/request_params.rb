@@ -76,7 +76,8 @@ module GrapeOAS
           mapped_name = path_param_name_map.fetch(name, name)
 
           if location == "body"
-            body_schema.add_property(name, schema, required: required)
+            body_schema.add_property(name, Concerns::OasUtilities.apply_deprecated(schema, spec[:documentation] || {}),
+                                     required: required,)
           else
             path_params << build_parameter(mapped_name, location, required, schema, spec)
           end
@@ -110,7 +111,8 @@ module GrapeOAS
             # only the root itself matches the URL template.
             next if root_location == "path"
 
-            params << build_parameter(name, root_location, spec[:required] || false, schema_builder.build(spec), spec)
+            params << build_parameter(name, root_location, spec[:required] || false, schema_builder.build(spec), spec,
+                                      inherited_deprecated: ancestor_deprecated?(name, all_params),)
             next
           end
 
@@ -134,10 +136,8 @@ module GrapeOAS
         params
       end
 
-      def build_parameter(name, location, required, schema, spec)
+      def build_parameter(name, location, required, schema, spec, inherited_deprecated: false)
         doc = spec[:documentation] || {}
-        style = doc.fetch(:style) { doc["style"] }
-        explode = doc.fetch(:explode) { doc["explode"] }
 
         ApiModel::Parameter.new(
           location: location,
@@ -146,9 +146,18 @@ module GrapeOAS
           schema: schema,
           description: spec[:documentation]&.dig(:desc) || spec[:desc],
           collection_format: extract_collection_format(spec),
-          style: style,
-          explode: explode,
+          style: doc[:style],
+          explode: doc[:explode],
+          deprecated: !!(doc[:deprecated] || inherited_deprecated),
         )
+      end
+
+      # A bracket param like "filter[geo][lat]" is deprecated when any of its
+      # ancestors ("filter", "filter[geo]") is.
+      def ancestor_deprecated?(name, all_params)
+        name.each_char.with_index.any? do |char, index|
+          char == "[" && all_params.dig(name[0, index], :documentation, :deprecated)
+        end
       end
 
       def extract_collection_format(spec)

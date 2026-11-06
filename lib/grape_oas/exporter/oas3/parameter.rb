@@ -22,6 +22,7 @@ module GrapeOAS
               "in" => param.location,
               "required" => param.required,
               "description" => description,
+              "deprecated" => (param.deprecated ? true : nil),
               "style" => param.style,
               "explode" => param.explode,
               "schema" => schema_hash

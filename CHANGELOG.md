@@ -19,6 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [#176](https://github.com/numbata/grape-oas/pull/176): Keep the danger PR check running in CI by pinning `git` below 6 - [@numbata](https://github.com/numbata).
 - [#180](https://github.com/numbata/grape-oas/pull/180): Automate releases with verified packaging, gem publication and a draft GitHub release - [@numbata](https://github.com/numbata).
 
+### Added
+
+- [#172](https://github.com/numbata/grape-oas/pull/172): Support `deprecated: true` in parameter and entity exposure `documentation`, emitted in OAS 3.0 and 3.1 (OAS 2.0 has no `deprecated` keyword) - [@olivier-thatch](https://github.com/olivier-thatch).
+
 ### Fixed
 
 - [#166](https://github.com/numbata/grape-oas/pull/166): Serialize Symbol enum values as strings so `type: Symbol` parameters with `values:` keep their `enum` in OAS 3.0/3.1 - [@numbata](https://github.com/numbata).

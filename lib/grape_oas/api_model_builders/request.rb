@@ -50,7 +50,7 @@ module GrapeOAS
           if contract
             # Dry contracts are kept inline (no canonical_name)
             # no-op
-          elsif body_schema.properties.values.any? { |prop| prop.respond_to?(:canonical_name) && prop.canonical_name }
+          elsif body_schema.properties.values.any? { |prop| Concerns::OasUtilities.component_reference?(prop) }
             # keep entity/property refs intact; don't override
           elsif operation.respond_to?(:operation_id) && operation.operation_id
             body_schema.canonical_name = "#{operation.operation_id}_Request"
@@ -234,8 +234,8 @@ module GrapeOAS
       end
 
       def build_query_parameter(name, schema, required, doc = {})
-        style = doc.fetch(:style) { doc["style"] }
-        explode = doc.fetch(:explode) { doc["explode"] }
+        style = doc[:style]
+        explode = doc[:explode]
         description = doc[:desc] || doc[:description] || schema.description
         ApiModel::Parameter.new(
           location: "query",
@@ -245,6 +245,7 @@ module GrapeOAS
           description: description,
           style: style,
           explode: explode,
+          deprecated: doc[:deprecated] ? true : false,
         )
       end
 
@@ -253,7 +254,7 @@ module GrapeOAS
         return {} unless params.is_a?(Hash)
 
         params.each_with_object({}) do |(key, value), acc|
-          acc[key.to_s] = value.is_a?(Hash) ? value : {}
+          acc[key.to_s] = value.is_a?(Hash) ? DocKeyNormalizer.normalize(value) : {}
         end
       end
 

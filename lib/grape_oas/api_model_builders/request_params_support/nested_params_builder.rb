@@ -7,6 +7,8 @@ module GrapeOAS
       # Grape exposes nested params as flat keys like "address[street]", "address[city]".
       # This class converts them back to proper nested schemas.
       class NestedParamsBuilder
+        include Concerns::OasUtilities
+
         BRACKET_PATTERN = /\[([^\]]+)\]/
         MAX_NESTING_DEPTH = 10
 
@@ -41,7 +43,7 @@ module GrapeOAS
             end
 
             required = spec[:required] || false
-            schema.add_property(name, child_schema, required: required)
+            schema.add_property(name, apply_deprecated(child_schema, spec[:documentation] || {}), required: required)
           end
 
           schema
@@ -133,7 +135,8 @@ module GrapeOAS
                            else
                              @schema_builder.build(spec)
                            end
-            schema.add_property(name, child_schema, required: spec[:required] || false)
+            schema.add_property(name, apply_deprecated(child_schema, spec[:documentation] || {}),
+                                required: spec[:required] || false,)
           end
 
           apply_documentation_extensions(schema, parent_spec)

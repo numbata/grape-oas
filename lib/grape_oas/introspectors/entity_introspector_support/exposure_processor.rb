@@ -8,6 +8,13 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
+        # Exposure documentation keys an allOf wrapper cannot carry: the
+        # composition exporters drop them, and additionalProperties next to allOf
+        # would reject every property. A deprecated `using:` exposure that sets
+        # any of them gets an inline copy of the shared schema instead of the
+        # wrapper, so its metadata stays local.
+        WRAPPER_INCOMPATIBLE_KEYS = %i[example values additional_properties unevaluated_properties defs $defs].freeze
+
         def initialize(entity_class, stack:, registry:)
           @entity_class = entity_class
           @stack = stack
@@ -72,7 +79,7 @@ module GrapeOAS
                         else
                           schema_for_exposure(exposure, doc)
                         end
-          wrap_in_array_if_needed(prop_schema, doc)
+          apply_deprecated(wrap_in_array_if_needed(prop_schema, doc), doc)
         end
 
         # Checks if an exposure should be included in the schema.
@@ -242,12 +249,21 @@ module GrapeOAS
                      else
                        schema.nullable || inferred_nullable || PropertyExtractor.extract_nullable(doc)
                      end
-          if nullable && schema.canonical_name
+          # A deprecated is_array exposure carries the flag on the array, not on
+          # its items, so only a non-array exposure needs a wrapper or copy here.
+          deprecated_ref = doc[:deprecated] && !doc[:is_array] && schema.canonical_name
+          if deprecated_ref && WRAPPER_INCOMPATIBLE_KEYS.any? { |key| doc.key?(key) }
+            schema = dup_cached_schema(schema, reason: "deprecated", value: true)
+            deprecated_ref = false
+          end
+          if (nullable || deprecated_ref) && schema.canonical_name
             # Don't mutate the shared cached entity schema. Create a wrapper with
             # all_of so the exporter emits { nullable: true, allOf: [{ $ref }] }.
             # collect_refs traverses all_of and registers the original schema as a
             # component, keeping its definition free of this property's nullable.
-            schema = ApiModel::Schema.new(nullable: true, all_of: [schema])
+            # Wrapping before desc/format are applied keeps them on the wrapper,
+            # next to the deprecated flag.
+            schema = ApiModel::Schema.new(nullable: nullable, all_of: [schema])
           else
             schema.nullable = nullable
           end

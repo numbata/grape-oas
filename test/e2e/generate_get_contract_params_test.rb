@@ -35,6 +35,7 @@ module GrapeOAS
              contract: ComplexContract,
              documentation: {
                params: {
+                 query: { deprecated: true },
                  filters: { style: "form", explode: true },
                  range: { style: "deepObject", explode: true }
                }
@@ -42,6 +43,34 @@ module GrapeOAS
         get ":id/search" do
           { results: [] }
         end
+
+        desc "Search items with string-keyed documentation",
+             contract: ComplexContract,
+             documentation: { params: { "price_min" => { "deprecated" => true, "style" => "form" } } }
+        get ":id/legacy_search" do
+          { results: [] }
+        end
+      end
+    end
+
+    def test_contract_query_param_documentation_marks_deprecated
+      %i[oas3 oas31].each do |dialect|
+        parameters = GrapeOAS.generate(app: GetContractAPI, schema_type: dialect)
+                             .dig("paths", "/items/{id}/search", "get", "parameters")
+
+        assert parameters.find { |p| p["name"] == "query" }["deprecated"], "#{dialect}: query"
+        refute parameters.find { |p| p["name"] == "tags" }.key?("deprecated"), "#{dialect}: tags"
+      end
+    end
+
+    def test_contract_query_param_documentation_accepts_string_keys
+      %i[oas3 oas31].each do |dialect|
+        parameters = GrapeOAS.generate(app: GetContractAPI, schema_type: dialect)
+                             .dig("paths", "/items/{id}/legacy_search", "get", "parameters")
+        price_min = parameters.find { |p| p["name"] == "price_min" }
+
+        assert price_min["deprecated"], "#{dialect}: price_min"
+        assert_equal "form", price_min["style"], "#{dialect}: price_min style"
       end
     end
 
