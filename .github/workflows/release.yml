@@ -81,7 +81,7 @@ jobs:
         git fetch origin main
         [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || { echo "::error::main moved since dispatch."; exit 1; }
         SHA=$(ruby .github/scripts/release_candidate.rb ci-base)
-        RESULT=$(gh run list --workflow ci.yml --commit "$SHA" --limit 1 --json conclusion --jq '.[0].conclusion // ""')
+        RESULT=$(gh run list --workflow ci.yml --branch main --event push --commit "$SHA" --limit 1 --json conclusion --jq '.[0].conclusion // ""')
         [ "$RESULT" = success ] || { echo "::error::CI has not passed on ${SHA:0:7} (latest: ${RESULT:-none})."; exit 1; }
 
     - name: Set up Ruby
@@ -102,8 +102,6 @@ jobs:
         ruby -e 'p = "lib/grape_oas/version.rb"; File.write(p, File.read(p).sub(/VERSION = ".+"/) { %(VERSION = "#{ARGV.first}") })' "$VERSION"
         git add lib/grape_oas/version.rb
         bundle exec rake release:prerelease
-        git add lib/grape_oas/version.rb CHANGELOG.md
-        git diff --cached --quiet || git commit -m "Prepare release $VERSION"
         git tag -a "v$VERSION" -m "v$VERSION"
         bundle exec rake release:postrelease
         git branch --force release-prepared HEAD
@@ -136,7 +134,7 @@ jobs:
         VERSION: ${{ needs.prepare.outputs.version }}
         GH_TOKEN: ${{ github.token }}
       run: |
-        NOTES=$(awk '/^## \[Unreleased\]/{f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md | grep -vi 'Your contribution here' || true)
+        NOTES=$(awk '/^## \[Unreleased\]/{f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md | grep -viE '^[[:space:]]*[-*]?[[:space:]]*Your contribution here\.?[[:space:]]*$' || true)
         PREV=$(git tag --list 'v[0-9]*' | sort -V | tail -1)
         {
           echo "Write the opening of GitHub release notes for the grape-oas gem, in the same style as the example."

@@ -26,6 +26,7 @@ class ReleaseCandidate
 
     notes = changelog.split(/^## \[Unreleased\]/, 2).last.split(/^## \[/, 2).first
     notes = notes.gsub(/^\s*[-*]?\s*Your contribution here\.?\s*$/i, "")
+    notes = notes.gsub(/^ {0,3}\#{1,6}(?:[ \t]+.*)?$/, "")
     raise Invalid, "No notes under Unreleased" if notes.strip.empty?
 
     requested

@@ -128,6 +128,38 @@ class ReleaseCandidateTest < Minitest::Test
     assert_equal "1.6.1\n", stdout
   end
 
+  def test_rejects_unreleased_categories_without_notes
+    write("CHANGELOG.md", CHANGELOG.sub("* New feature", "### Added\n\n* Your contribution here\n\n### Fixed"))
+    commit("Empty categories")
+    @base = git("rev-parse", "HEAD").strip
+    _stdout, stderr, status = verify("version")
+
+    refute_predicate status, :success?, stderr
+    assert_includes stderr, "No notes under Unreleased"
+  end
+
+  def test_accepts_notes_under_unreleased_categories
+    write("CHANGELOG.md", CHANGELOG.sub("* New feature", "### Added\n\n* New feature\n\n### Fixed"))
+    commit("Categorized notes")
+    @base = git("rev-parse", "HEAD").strip
+    stdout, stderr, status = verify("version")
+
+    assert_predicate status, :success?, stderr
+    assert_equal "1.7.0\n", stdout
+  end
+
+  def test_intro_preserves_notes_mentioning_the_placeholder
+    workflow = YAML.load_file(File.expand_path("../../.github/workflows/release.yml", __dir__))
+    prompt = workflow.fetch("jobs").fetch("intro").fetch("steps").find { |step| step["name"] == "Build the prompt" }
+    extract = prompt.fetch("run").lines.find { |line| line.start_with?("NOTES=") }
+    note = '* Fix handling of "Your contribution here" in release notes.'
+    write("CHANGELOG.md", CHANGELOG.sub("* New feature", "* Your contribution here\n\n#{note}"))
+    stdout, stderr, status = Open3.capture3("bash", "-ec", "#{extract}\nprintf '%s' \"$NOTES\"", chdir: @directory)
+
+    assert_predicate status, :success?, stderr
+    assert_equal note, stdout.strip
+  end
+
   def test_ci_skips_only_a_verified_release_pair
     prepare_candidate
     expected = @base
