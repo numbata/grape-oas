@@ -8,13 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-* [#175](https://github.com/numbata/grape-oas/pull/175): Apply entity-level `example` documentation to the generated schema, matching grape-swagger - [@numbata](https://github.com/numbata).
-* [#176](https://github.com/numbata/grape-oas/pull/176): Keep the danger PR check running in CI by pinning `git` below 6 - [@numbata](https://github.com/numbata).
-* [#166](https://github.com/numbata/grape-oas/pull/166): Serialize Symbol enum values as strings so `type: Symbol` parameters with `values:` keep their `enum` in OAS 3.0/3.1 - [@numbata](https://github.com/numbata).
-* [#180](https://github.com/numbata/grape-oas/pull/180): Automate releases with verified packaging, gem publication and a draft GitHub release - [@numbata](https://github.com/numbata).
+### Changed
+
+- [#175](https://github.com/numbata/grape-oas/pull/175): Apply entity-level `example` documentation to the generated schema, matching grape-swagger - [@numbata](https://github.com/numbata).
+- [#176](https://github.com/numbata/grape-oas/pull/176): Keep the danger PR check running in CI by pinning `git` below 6 - [@numbata](https://github.com/numbata).
+- [#180](https://github.com/numbata/grape-oas/pull/180): Automate releases with verified packaging, gem publication and a draft GitHub release - [@numbata](https://github.com/numbata).
 
 ### Fixed
 
+- [#166](https://github.com/numbata/grape-oas/pull/166): Serialize Symbol enum values as strings so `type: Symbol` parameters with `values:` keep their `enum` in OAS 3.0/3.1 - [@numbata](https://github.com/numbata).
 - [#173](https://github.com/numbata/grape-oas/pull/173): Omit lambda/proc parameter defaults, in `default:` and `documentation: { default: }`, from the generated spec instead of emitting `Proc#inspect`; a static `documentation: { default: }` still documents a callable `default:` - [@olivier-thatch](https://github.com/olivier-thatch).
 - [#178](https://github.com/numbata/grape-oas/pull/178): Stop entity exposures named like root-level documentation keys (`example`, `additional_properties`, `description`, `nullable`, ...) from leaking into the entity schema - [@numbata](https://github.com/numbata).
 
