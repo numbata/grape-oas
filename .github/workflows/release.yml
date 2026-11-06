@@ -22,7 +22,7 @@ concurrency:
 jobs:
   # Runs the dev bundle, so it holds no push, id-token or RubyGems permissions.
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     permissions:
       actions: read
@@ -118,7 +118,7 @@ jobs:
   # Drafts the introduction without any release permissions. Optional: a failure leaves the changelog only.
   intro:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 20
     permissions:
       contents: read
@@ -176,7 +176,7 @@ jobs:
       artifact_id: ${{ steps.upload.outputs.artifact-id }}
     needs: [prepare, intro]
     if: ${{ !cancelled() && needs.prepare.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -249,7 +249,7 @@ jobs:
   publish:
     needs: [prepare, package]
     if: ${{ !cancelled() && !inputs.dry_run && needs.prepare.result == 'success' && needs.package.result == 'success' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     environment: release
     permissions:
