@@ -173,11 +173,76 @@ jobs:
         name: release-intro
         path: ${{ runner.temp }}/ai_intro.md
 
-  # Publishes the prepared release. Runs no dev bundle: it evaluates only the gemspec at the release tag.
+  # Builds and previews the exact release package without publishing credentials, including on dry runs.
+  package:
+    needs: [prepare, intro]
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      with:
+        persist-credentials: false
+        fetch-depth: 0
+
+    - name: Download and fetch the release commits
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      with:
+        name: release-commits
+    - env:
+        VERSION: ${{ needs.prepare.outputs.version }}
+      run: git fetch release.bundle "release-prepared:refs/heads/release-prepared" "v$VERSION"
+
+    - name: Set up Ruby
+      uses: ruby/setup-ruby@de492cf36cbab201753d720ce4f4e336cd688c94 # v1.336.0
+      with:
+        ruby-version: '3.4'
+        bundler: none
+
+    - name: Build the gem from the release tag
+      env:
+        VERSION: ${{ needs.prepare.outputs.version }}
+      run: |
+        git switch --detach "v$VERSION"
+        gem build grape-oas.gemspec
+
+    - name: Fetch the introduction
+      continue-on-error: true
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      with:
+        name: release-intro
+        path: intro
+
+    - name: Compose release notes
+      env:
+        VERSION: ${{ needs.prepare.outputs.version }}
+      run: |
+        NOTES=$(awk -v version="$VERSION" '$0 ~ "^## \\[" version "\\] - " {f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md)
+        PREV=$(git tag --list 'v[0-9]*' | grep -vx "v$VERSION" | sort -V | tail -1 || true)
+        {
+          if [ -s intro/ai_intro.md ]; then cat intro/ai_intro.md; echo; fi
+          printf '%s\n' "$NOTES"
+          [ -z "$PREV" ] || printf '\n**Full Changelog**: https://github.com/%s/compare/%s...v%s\n' "$GITHUB_REPOSITORY" "$PREV" "$VERSION"
+        } > final_notes.md
+        { echo "## Release notes preview"; echo; cat final_notes.md; } >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Upload the release package
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      with:
+        name: release-package
+        path: |
+          grape-oas-${{ needs.prepare.outputs.version }}.gem
+          final_notes.md
+        if-no-files-found: error
+
+  # Publishes the prepared package without running repository Ruby code.
   # This is the only job with the RubyGems trusted-publishing token.
   publish:
-    needs: [prepare, intro]
-    if: ${{ !cancelled() && !inputs.dry_run && needs.prepare.result == 'success' }}
+    needs: [prepare, package]
+    if: ${{ !cancelled() && !inputs.dry_run && needs.prepare.result == 'success' && needs.package.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: release
@@ -215,25 +280,10 @@ jobs:
         ruby-version: '3.4'
         bundler: none
 
-    - name: Build the gem from the release tag
-      env:
-        VERSION: ${{ needs.prepare.outputs.version }}
-      run: |
-        git switch --detach "v$VERSION"
-        gem build grape-oas.gemspec
-
-    - name: Compose release notes
-      env:
-        VERSION: ${{ needs.prepare.outputs.version }}
-      run: |
-        NOTES=$(awk -v version="$VERSION" '$0 ~ "^## \\[" version "\\] - " {f=1;next} f&&/^## \[/{exit} f' CHANGELOG.md)
-        PREV=$(git tag --list 'v[0-9]*' | grep -vx "v$VERSION" | sort -V | tail -1 || true)
-        {
-          if [ -s intro/ai_intro.md ]; then cat intro/ai_intro.md; echo; fi
-          printf '%s\n' "$NOTES"
-          [ -z "$PREV" ] || printf '\n**Full Changelog**: https://github.com/%s/compare/%s...v%s\n' "$GITHUB_REPOSITORY" "$PREV" "$VERSION"
-        } > final_notes.md
-        { echo "## Release notes preview"; echo; cat final_notes.md; } >> "$GITHUB_STEP_SUMMARY"
+    - name: Download the release package
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      with:
+        name: release-package
 
     - name: Authenticate to RubyGems with trusted publishing
       uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0

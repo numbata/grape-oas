@@ -34,24 +34,26 @@ gh workflow run release.yml --ref main -f version=1.7.0 # release an explicit ve
 gh workflow run release.yml --ref main -f dry_run=true  # run every check and prepare, publish nothing
 ```
 
-The `prepare` job checks the actor, version, changelog notes, that CI passed on the latest human commit and that the version is not yet tagged or on RubyGems. It then runs the specs and lint and writes the release commit and the next-iteration commit, and it uploads them as the `release-commits` artifact. Only the version file and the changelog may change. The `intro` job drafts the Copilot introduction, and the `publish` job, the only one with RubyGems credentials, pushes the gem, then the commits and the tag, then creates a **draft** GitHub release. Review and publish the draft.
+The `prepare` job checks the actor, version, changelog notes, that CI passed on the latest human commit and that the version is not yet tagged or on RubyGems. It then runs the specs and lint and writes the release commit and the next-iteration commit, and it uploads them as the `release-commits` artifact. Only the version file and the changelog may change. The `intro` job drafts the optional Copilot introduction. The `package` job builds the gem from the release tag, combines the introduction with the changelog notes, previews them in the run summary, and uploads the gem and `final_notes.md` as `release-package`. These jobs have no publishing credentials. The `publish` job, the only one with RubyGems credentials, downloads that exact package, pushes the gem, then the commits and the tag, then creates a **draft** GitHub release. Review and publish the draft. The workflow already prepares the next development iteration; do not run the manual post-release steps afterwards.
 
-A dry run stops before publishing, so it does not exercise the final push to `main`; the first real release does.
+A dry run builds the gem and previews the release notes without entering the publishing job or authenticating to RubyGems. Both release artifacts remain available for inspection. It does not exercise the final push to `main`; the first real release does.
 
 ### Recovering a partial release
 
 - **Failed before "Push gem to RubyGems":** nothing was published or pushed. Fix the cause and run the workflow again.
-- **Gem published, but the push to main failed:** download `release-commits`, then from a clone of `main` that has not moved:
+- **Gem published, but the push to main failed:** download `release-commits` and `release-package`, then from a clone of `main` that has not moved:
   ```bash
   git fetch release.bundle 'release-prepared:release-prepared' vX.Y.Z
   git push --atomic origin release-prepared:main vX.Y.Z
   ```
-  If `main` moved, run `git merge release-prepared`, resolve `CHANGELOG.md` and `lib/grape_oas/version.rb` keeping the dated release section and the next version, then push `HEAD:main vX.Y.Z`.
-- **Tag and gem exist, but no GitHub release:** create the draft with `gh release create vX.Y.Z --draft --notes-file <notes> grape-oas-X.Y.Z.gem`, writing the notes by hand.
+  If `main` moved, run `git merge release-prepared`, resolve `CHANGELOG.md` and `lib/grape_oas/version.rb` keeping the dated release section and the next version, then push `HEAD:main vX.Y.Z`. Create the draft GitHub release using the next recovery step.
+- **Tag and gem exist, but no GitHub release:** download `release-package` for the built gem and `final_notes.md`, then run `gh release create vX.Y.Z --verify-tag --draft --notes-file final_notes.md grape-oas-X.Y.Z.gem`. If the artifact has expired, retrieve the published gem with `gem fetch grape-oas --version X.Y.Z` and write the notes by hand.
 
-## Release Steps
+## Manual release fallback
 
-### Automated Release Process
+Use these steps instead of the workflow. They do not create a GitHub release or release notes; create those manually afterwards.
+
+### Release steps
 
 1. **Update the version** in `lib/grape_oas/version.rb` to the release version
 
@@ -102,9 +104,9 @@ A dry run stops before publishing, so it does not exercise the final push to `ma
    - Push the gem to RubyGems.org
 </details>
 
-## Post-Release
+## Manual post-release preparation
 
-You can automate the post-release preparation with:
+Run this once after a manual release only. The workflow already performs this preparation:
 
 ```bash
 bundle exec rake release:postrelease
@@ -116,7 +118,7 @@ This task will:
 - Ensure CHANGELOG.md has an "Unreleased" section with "* Your contribution here" placeholder
 - Commit the changes with message "Prepare for next development iteration"
 
-**Note**: The task is idempotent - safe to run multiple times without duplicating work.
+**Note**: Each invocation bumps the patch version again. Do not repeat it after a successful run.
 
 <details>
 <summary>Manual Post-Release Steps (if needed)</summary>
