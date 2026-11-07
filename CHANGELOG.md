@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-* Your contribution here
+### Fixed
+
+- [#169](https://github.com/numbata/grape-oas/pull/169): Preserve descriptions on nested request container parameters - [@numbata](https://github.com/numbata).
 
 ## [1.6.1] - 2026-11-06
 
