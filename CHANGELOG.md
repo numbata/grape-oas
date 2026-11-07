@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- [#168](https://github.com/numbata/grape-oas/pull/168): Keep entity exposure descriptions off the shared schema of an entity, for `using:` and `type:` arrays alike, and keep a described property's `additional_properties`, `unevaluated_properties` and `defs` on its own inline schema - [@numbata](https://github.com/numbata).
+- [#168](https://github.com/numbata/grape-oas/pull/168): Keep entity exposure descriptions off the shared schema of an entity, for `using:` and `type:` arrays alike; a described entity property is now emitted as `allOf` with its `$ref` and `description`, and one with `additional_properties`, `unevaluated_properties` or `defs` is inlined so those keywords survive - [@numbata](https://github.com/numbata).
 
 ## [1.6.1] - 2026-11-06
 
