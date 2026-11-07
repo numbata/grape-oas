@@ -8,6 +8,8 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
+        OBJECT_KEYWORD_DOC_KEYS = %i[additional_properties unevaluated_properties defs $defs].freeze
+
         def initialize(entity_class, stack:, registry:)
           @entity_class = entity_class
           @stack = stack
@@ -62,17 +64,21 @@ module GrapeOAS
 
         # Builds the property schema for an exposure, routing nesting exposures
         # to the inline-object path. Wraps in array if doc[:is_array] is set.
+        # A described array of an entity carries the description on the array,
+        # not on the shared item schema.
         #
         # @param exposure the entity exposure
         # @param doc [Hash] normalized documentation hash
         # @return [ApiModel::Schema]
         def build_property_schema(exposure, doc)
-          prop_schema = if nesting_exposure?(exposure)
-                          build_nesting_exposure_schema(exposure, doc)
-                        else
-                          schema_for_exposure(exposure, doc)
-                        end
-          wrap_in_array_if_needed(prop_schema, doc)
+          return wrap_in_array_if_needed(build_nesting_exposure_schema(exposure, doc), doc) if nesting_exposure?(exposure)
+
+          # A shared entity item schema must not carry the description.
+          array_desc = doc[:desc] if doc[:is_array] && type_resolver.resolve_entity_from_opts(exposure, doc)
+          item_doc = array_desc ? doc.except(:desc) : doc
+          array_schema = wrap_in_array_if_needed(schema_for_exposure(exposure, item_doc), doc)
+          array_schema.description = array_desc if array_desc
+          array_schema
         end
 
         # Checks if an exposure should be included in the schema.
@@ -235,6 +241,7 @@ module GrapeOAS
 
         def apply_exposure_properties(schema, doc, inferred_nullable: false)
           schema = schema.dup if inferred_nullable && !schema.canonical_name
+          schema = dup_for_object_keywords(schema, doc)
           nullable_false = doc[:nullable] == false ||
                            (doc[:x].is_a?(Hash) && doc[:x][:nullable] == false)
           nullable = if (schema.nullable || inferred_nullable) && nullable_false
@@ -260,16 +267,30 @@ module GrapeOAS
               RangeUtils.apply_to_schema(schema, normalized)
             end
           end
-          schema.description = doc[:desc] if doc[:desc]
+          if doc[:desc]
+            # Keep the description local to this property: wrap shared entity
+            # schemas instead of mutating the cached canonical schema.
+            schema = ApiModel::Schema.new(all_of: [schema]) if schema.canonical_name
+            schema.description = doc[:desc]
+          end
           schema.format = doc[:format] if doc[:format]
           schema = apply_example_to_schema(schema, doc[:example]) if doc.key?(:example) && !array_valued_example?(doc)
-          schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
-          schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
+          schema.additional_properties = doc[:additional_properties] unless doc[:additional_properties].nil?
+          schema.unevaluated_properties = doc[:unevaluated_properties] unless doc[:unevaluated_properties].nil?
           defs = doc[:defs] || doc[:$defs]
           schema.defs = defs if defs.is_a?(Hash)
           x_ext = extract_extensions(doc)
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
           schema
+        end
+
+        # Composition wrappers (allOf) never emit object keywords, so a shared entity
+        # schema gets an inline copy to carry them.
+        def dup_for_object_keywords(schema, doc)
+          keywords = doc.slice(*OBJECT_KEYWORD_DOC_KEYS).compact
+          return schema if keywords.empty? || !schema.canonical_name
+
+          dup_cached_schema(schema, reason: "object keywords", value: keywords)
         end
 
         # Cached entity schemas (via using:) are shared across all exposures that

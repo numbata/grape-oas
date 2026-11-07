@@ -110,7 +110,8 @@ module GrapeOAS
         assert_equal "object", schema.type
         assert_equal %w[name settings].sort, schema.properties.keys.sort
 
-        settings_schema = schema.properties["settings"]
+        settings_prop = schema.properties["settings"]
+        settings_schema = settings_prop.all_of.first
 
         assert_equal "object", settings_schema.type
         # The key assertion: settings should have the SettingsEntity's properties,
@@ -118,8 +119,9 @@ module GrapeOAS
         assert_equal "GrapeOAS::Introspectors::EntityIntrospectorTest::SettingsEntity", settings_schema.canonical_name
         assert_includes settings_schema.properties.keys, "enabled"
         assert_includes settings_schema.properties.keys, "mode"
-        # Description from documentation should still be applied
-        assert_equal "The settings", settings_schema.description
+        # Description stays on the property wrapper, not the shared entity schema
+        assert_equal "The settings", settings_prop.description
+        assert_nil settings_schema.description
       end
 
       # === Recursive/self-referential entity tests ===
