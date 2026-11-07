@@ -74,7 +74,7 @@ module GrapeOAS
           return wrap_in_array_if_needed(build_nesting_exposure_schema(exposure, doc), doc) if nesting_exposure?(exposure)
 
           # A shared entity item schema must not carry the description.
-          array_desc = doc[:desc] if doc[:is_array] && type_resolver.resolve_entity_from_opts(exposure, doc)
+          array_desc = doc[:desc] if doc[:is_array] && type_resolver.entity_reference?(exposure, doc)
           item_doc = array_desc ? doc.except(:desc) : doc
           array_schema = wrap_in_array_if_needed(schema_for_exposure(exposure, item_doc), doc)
           array_schema.description = array_desc if array_desc

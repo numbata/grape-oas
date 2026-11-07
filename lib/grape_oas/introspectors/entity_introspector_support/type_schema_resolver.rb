@@ -77,6 +77,15 @@ module GrapeOAS
           nil
         end
 
+        # Whether using:/type: names an entity, as a class or as a constant name.
+        def entity_reference?(exposure, doc)
+          return true if resolve_entity_from_opts(exposure, doc)
+
+          opts = exposure.instance_variable_get(:@options) || {}
+          type = opts[:using] || doc[:type]
+          (type.is_a?(String) || type.is_a?(Symbol)) && !resolve_entity_from_string(type.to_s).nil?
+        end
+
         private
 
         def schema_for_type(type)

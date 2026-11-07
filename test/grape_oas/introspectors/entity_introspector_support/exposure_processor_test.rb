@@ -276,6 +276,18 @@ module GrapeOAS
           end
         end
 
+        class NamedScopedPage < Grape::Entity
+          expose :photos, documentation: { type: ScopedImage.name, is_array: true, desc: "Photos" }
+        end
+
+        def test_described_entity_array_named_by_string_keeps_description_off_shared_items
+          prop = EntityIntrospector.new(NamedScopedPage).build_schema.properties["photos"]
+
+          assert_equal "Photos", prop.description
+          assert prop.items.canonical_name, "items must be the bare entity schema"
+          assert_nil prop.items.description
+        end
+
         def test_object_keywords_do_not_mutate_the_shared_entity_schema
           schema = EntityIntrospector.new(StrictScopedPage).build_schema
           shared = schema.properties["logo"].all_of.first
