@@ -240,6 +240,50 @@ module GrapeOAS
           assert_equal "Gallery", gallery.description
           assert_nil gallery.items.description
         end
+
+        class StrictScopedPage < Grape::Entity
+          expose :hero, using: ScopedImage, documentation: { desc: "Hero image", additional_properties: false }
+          expose :logo, using: ScopedImage, documentation: { desc: "Page logo" }
+        end
+
+        def test_described_property_keeps_additional_properties_on_its_own_schema
+          schema = EntityIntrospector.new(StrictScopedPage).build_schema
+          hero = schema.properties["hero"]
+          logo = schema.properties["logo"]
+
+          assert_equal "Hero image", hero.description
+          assert_same false, hero.additional_properties
+          assert_nil hero.canonical_name
+          assert_nil logo.all_of.first.additional_properties
+          assert_same false, GrapeOAS::Exporter::OAS3::Schema.new(hero).build["additionalProperties"]
+        end
+
+        class SpelledScopedPage < Grape::Entity
+          expose :gallery, using: ScopedImage, documentation: { desc: "Gallery", is_array: true }
+          expose :photos, documentation: { type: ScopedImage, is_array: true, desc: "Photos" }
+        end
+
+        def test_described_entity_array_spellings_share_item_shape
+          schema = EntityIntrospector.new(SpelledScopedPage).build_schema
+
+          { "gallery" => "Gallery", "photos" => "Photos" }.each do |name, desc|
+            prop = schema.properties[name]
+
+            assert_equal desc, prop.description
+            assert prop.items.canonical_name, "#{name} items must be the bare entity schema"
+            assert_nil prop.items.all_of, "#{name} items must not be wrapped"
+            assert_nil prop.items.description
+          end
+        end
+
+        def test_object_keywords_do_not_mutate_the_shared_entity_schema
+          schema = EntityIntrospector.new(StrictScopedPage).build_schema
+          shared = schema.properties["logo"].all_of.first
+
+          assert shared.canonical_name
+          assert_nil shared.additional_properties
+          refute_same shared, schema.properties["hero"]
+        end
       end
     end
   end

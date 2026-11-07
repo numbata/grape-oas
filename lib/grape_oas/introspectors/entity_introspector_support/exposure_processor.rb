@@ -8,6 +8,8 @@ module GrapeOAS
       class ExposureProcessor
         include GrapeOAS::ApiModelBuilders::Concerns::OasUtilities
 
+        OBJECT_KEYWORD_DOC_KEYS = %i[additional_properties unevaluated_properties defs $defs].freeze
+
         def initialize(entity_class, stack:, registry:)
           @entity_class = entity_class
           @stack = stack
@@ -62,8 +64,8 @@ module GrapeOAS
 
         # Builds the property schema for an exposure, routing nesting exposures
         # to the inline-object path. Wraps in array if doc[:is_array] is set.
-        # A described array of a `using:` entity carries the description on the
-        # array, not on the shared item schema.
+        # A described array of an entity carries the description on the array,
+        # not on the shared item schema.
         #
         # @param exposure the entity exposure
         # @param doc [Hash] normalized documentation hash
@@ -71,8 +73,8 @@ module GrapeOAS
         def build_property_schema(exposure, doc)
           return wrap_in_array_if_needed(build_nesting_exposure_schema(exposure, doc), doc) if nesting_exposure?(exposure)
 
-          # Gated on using: because only a shared entity item schema would leak its description onto other properties.
-          array_desc = doc[:desc] if doc[:is_array] && exposure_options(exposure)[:using]
+          # A shared entity item schema must not carry the description.
+          array_desc = doc[:desc] if doc[:is_array] && type_resolver.resolve_entity_from_opts(exposure, doc)
           item_doc = array_desc ? doc.except(:desc) : doc
           array_schema = wrap_in_array_if_needed(schema_for_exposure(exposure, item_doc), doc)
           array_schema.description = array_desc if array_desc
@@ -239,6 +241,7 @@ module GrapeOAS
 
         def apply_exposure_properties(schema, doc, inferred_nullable: false)
           schema = schema.dup if inferred_nullable && !schema.canonical_name
+          schema = dup_for_object_keywords(schema, doc)
           nullable_false = doc[:nullable] == false ||
                            (doc[:x].is_a?(Hash) && doc[:x][:nullable] == false)
           nullable = if (schema.nullable || inferred_nullable) && nullable_false
@@ -279,6 +282,15 @@ module GrapeOAS
           x_ext = extract_extensions(doc)
           schema.extensions = x_ext if x_ext && schema.respond_to?(:extensions=)
           schema
+        end
+
+        # Composition wrappers (allOf) never emit object keywords, so a shared entity
+        # schema gets an inline copy to carry them.
+        def dup_for_object_keywords(schema, doc)
+          keywords = doc.slice(*OBJECT_KEYWORD_DOC_KEYS)
+          return schema if keywords.empty? || !schema.canonical_name
+
+          dup_cached_schema(schema, reason: "object keywords", value: keywords)
         end
 
         # Cached entity schemas (via using:) are shared across all exposures that
