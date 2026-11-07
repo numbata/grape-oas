@@ -288,6 +288,20 @@ module GrapeOAS
         refute result.key?("enum"), "a nil-only enum on a non-nullable schema must not leak `enum: null`"
       end
 
+      def test_composition_wrapper_keeps_example_and_additional_properties
+        image = ApiModel::Schema.new(canonical_name: "Image", type: "object")
+        property = ApiModel::Schema.new(
+          all_of: [image], description: "Image", examples: { "url" => "http://x" }, additional_properties: false,
+        )
+
+        result = OAS31::Schema.new(property).build
+
+        assert_equal [{ "url" => "http://x" }], result["examples"]
+        assert_includes result, "additionalProperties"
+        refute result["additionalProperties"]
+        assert_equal [{ "$ref" => "#/components/schemas/Image" }], result["allOf"]
+      end
+
       private
 
       def generate_doc_with_schema(schema)

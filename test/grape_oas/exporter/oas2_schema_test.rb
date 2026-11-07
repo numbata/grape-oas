@@ -763,6 +763,20 @@ module GrapeOAS
         assert_equal(-2, offset["minimum"])
         assert_equal 2, offset["maximum"]
       end
+
+      def test_composition_wrapper_keeps_example_and_additional_properties
+        image = ApiModel::Schema.new(canonical_name: "Image", type: "object")
+        property = ApiModel::Schema.new(
+          all_of: [image], description: "Image", examples: { "url" => "http://x" }, additional_properties: false,
+        )
+
+        result = OAS2::Schema.new(property).build
+
+        assert_equal({ "url" => "http://x" }, result["example"])
+        assert_includes result, "additionalProperties"
+        refute result["additionalProperties"]
+        assert_equal [{ "$ref" => "#/definitions/Image" }], result["allOf"]
+      end
     end
 
     class OAS2NullableDefaultStrategyTest < Minitest::Test

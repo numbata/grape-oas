@@ -139,6 +139,8 @@ module GrapeOAS
           result["enum"] = normalize_enum(@schema.enum, @schema.type, preserve_nil: enum_allows_null?(@schema)) if @schema.enum
           result.delete("enum") if result.key?("enum") && result["enum"].nil?
           apply_constraints(result)
+          result["example"] = @schema.examples if @schema.examples
+          result["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
           apply_extensions(result)
         end
 
