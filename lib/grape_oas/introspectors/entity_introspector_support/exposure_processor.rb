@@ -275,8 +275,8 @@ module GrapeOAS
           end
           schema.format = doc[:format] if doc[:format]
           schema = apply_example_to_schema(schema, doc[:example]) if doc.key?(:example) && !array_valued_example?(doc)
-          schema.additional_properties = doc[:additional_properties] if doc.key?(:additional_properties)
-          schema.unevaluated_properties = doc[:unevaluated_properties] if doc.key?(:unevaluated_properties)
+          schema.additional_properties = doc[:additional_properties] unless doc[:additional_properties].nil?
+          schema.unevaluated_properties = doc[:unevaluated_properties] unless doc[:unevaluated_properties].nil?
           defs = doc[:defs] || doc[:$defs]
           schema.defs = defs if defs.is_a?(Hash)
           x_ext = extract_extensions(doc)
