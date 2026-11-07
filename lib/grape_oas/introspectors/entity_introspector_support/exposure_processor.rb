@@ -62,6 +62,8 @@ module GrapeOAS
 
         # Builds the property schema for an exposure, routing nesting exposures
         # to the inline-object path. Wraps in array if doc[:is_array] is set.
+        # A described array of a `using:` entity carries the description on the
+        # array, not on the shared item schema.
         #
         # @param exposure the entity exposure
         # @param doc [Hash] normalized documentation hash
@@ -69,7 +71,7 @@ module GrapeOAS
         def build_property_schema(exposure, doc)
           return wrap_in_array_if_needed(build_nesting_exposure_schema(exposure, doc), doc) if nesting_exposure?(exposure)
 
-          # Array descriptions belong to the array, not its shared item schema.
+          # Gated on using: because only a shared entity item schema would leak its description onto other properties.
           array_desc = doc[:desc] if doc[:is_array] && exposure_options(exposure)[:using]
           item_doc = array_desc ? doc.except(:desc) : doc
           array_schema = wrap_in_array_if_needed(schema_for_exposure(exposure, item_doc), doc)
