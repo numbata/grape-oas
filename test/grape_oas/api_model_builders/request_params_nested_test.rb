@@ -79,7 +79,7 @@ module GrapeOAS
               requires :x, type: Integer
             end
             optional :region, type: Hash, desc: "Fallback description",
-                               documentation: { desc: "Documented description" } do
+                              documentation: { desc: "Documented description" } do
               requires :name, type: String
             end
           end
@@ -92,6 +92,31 @@ module GrapeOAS
 
         assert_equal "The crop area", body_schema.properties["crop"].description
         assert_equal "Documented description", body_schema.properties["region"].description
+      end
+
+      def test_nested_array_of_hash_and_two_level_hash_keep_spec_description
+        api_class = Class.new(Grape::API) do
+          params do
+            optional :tags, type: Array, desc: "List of tags" do
+              requires :name, type: String
+            end
+            optional :outer, type: Hash, desc: "Outer hash" do
+              optional :inner, type: Hash, desc: "Inner hash" do
+                requires :value, type: String
+              end
+            end
+          end
+          post "things" do
+            {}
+          end
+        end
+
+        body_schema, = RequestParams.new(api: @api, route: api_class.routes.first).build
+        tags = body_schema.properties["tags"]
+
+        assert_equal "List of tags", tags.items.description
+        assert_equal "Outer hash", body_schema.properties["outer"].description
+        assert_equal "Inner hash", body_schema.properties["outer"].properties["inner"].description
       end
 
       def test_nested_hash_propagates_required_fields
