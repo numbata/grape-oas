@@ -113,6 +113,7 @@ module GrapeOAS
 
           result = build_schema_or_ref(first_schema)
           result["description"] = @schema.description.to_s if @schema.description
+          result["example"] = @schema.examples if @schema.examples
 
           apply_compatibility_composition_extension(result)
           apply_extensions(result)
