@@ -113,6 +113,7 @@ module GrapeOAS
 
           result = build_schema_or_ref(first_schema)
           result["description"] = @schema.description.to_s if @schema.description
+          result["example"] = @schema.examples if @schema.examples
 
           apply_compatibility_composition_extension(result)
           apply_extensions(result)
@@ -139,6 +140,7 @@ module GrapeOAS
           result["enum"] = normalize_enum(@schema.enum, @schema.type, preserve_nil: enum_allows_null?(@schema)) if @schema.enum
           result.delete("enum") if result.key?("enum") && result["enum"].nil?
           apply_constraints(result)
+          result["example"] = @schema.examples if @schema.examples
           apply_extensions(result)
         end
 

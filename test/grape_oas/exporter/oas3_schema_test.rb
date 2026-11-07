@@ -1419,6 +1419,16 @@ module GrapeOAS
         assert_equal "string", result["type"]
         assert_equal "binary", result["format"]
       end
+
+      def test_composition_wrapper_keeps_example
+        image = ApiModel::Schema.new(canonical_name: "Image", type: "object")
+        property = ApiModel::Schema.new(all_of: [image], description: "Image", examples: { "url" => "http://x" })
+
+        result = OAS3::Schema.new(property).build
+
+        assert_equal({ "url" => "http://x" }, result["example"])
+        assert_equal [{ "$ref" => "#/components/schemas/Image" }], result["allOf"]
+      end
     end
   end
 end
