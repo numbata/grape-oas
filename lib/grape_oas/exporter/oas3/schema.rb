@@ -182,7 +182,6 @@ module GrapeOAS
           sanitize_enum_against_type(result)
           apply_all_constraints(result)
           apply_examples(result)
-          result["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
           apply_composition_extensions(result)
           normalize_file_type!(result)
           result

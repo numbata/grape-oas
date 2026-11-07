@@ -140,7 +140,6 @@ module GrapeOAS
           result.delete("enum") if result.key?("enum") && result["enum"].nil?
           apply_constraints(result)
           result["example"] = @schema.examples if @schema.examples
-          result["additionalProperties"] = @schema.additional_properties unless @schema.additional_properties.nil?
           apply_extensions(result)
         end
 
