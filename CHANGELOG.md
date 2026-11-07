@@ -9,7 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-* Your contribution here
+### Fixed
+
+- [#168](https://github.com/numbata/grape-oas/pull/168): Keep entity exposure descriptions from leaking onto the shared schema of a `using:` entity - [@numbata](https://github.com/numbata).
 
 ## [1.6.1] - 2026-11-06
 
