@@ -284,6 +284,44 @@ module GrapeOAS
           assert_nil shared.additional_properties
           refute_same shared, schema.properties["hero"]
         end
+
+        def test_each_object_keyword_on_described_property_stays_on_its_own_schema
+          {
+            additional_properties: false,
+            unevaluated_properties: false,
+            defs: { "Note" => { type: "string" } },
+            :$defs => { "Note" => { type: "string" } }
+          }.each do |key, value|
+            klass = Class.new(Grape::Entity) do
+              expose :hero, using: ScopedImage, documentation: { desc: "Hero image", key => value }
+              expose :logo, using: ScopedImage, documentation: { desc: "Page logo" }
+            end
+            schema = EntityIntrospector.new(klass).build_schema
+            hero = schema.properties["hero"]
+            shared = schema.properties["logo"].all_of.first
+            attr = key.to_s.delete_prefix("$")
+
+            assert_equal value, hero.public_send(attr), "#{key} must stay on the described property"
+            assert_nil hero.canonical_name, "#{key} must inline the described property"
+            assert_nil hero.all_of, "#{key} must not wrap the described property in allOf"
+            assert shared.canonical_name, "#{key} must not clear the shared schema name"
+            refute_equal value, shared.public_send(attr), "#{key} must not reach the shared schema"
+          end
+        end
+
+        class NilKeywordScopedPage < Grape::Entity
+          expose :hero, using: ScopedImage, documentation: { desc: "Hero image", additional_properties: nil }
+        end
+
+        def test_nil_object_keyword_does_not_inline_described_property
+          schema = EntityIntrospector.new(NilKeywordScopedPage).build_schema
+          hero = schema.properties["hero"]
+
+          assert_equal "Hero image", hero.description
+          assert_nil hero.canonical_name
+          refute_nil hero.all_of.first.canonical_name
+          assert_nil hero.additional_properties
+        end
       end
     end
   end

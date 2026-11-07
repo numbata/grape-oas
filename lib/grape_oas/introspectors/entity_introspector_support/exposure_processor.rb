@@ -287,7 +287,7 @@ module GrapeOAS
         # Composition wrappers (allOf) never emit object keywords, so a shared entity
         # schema gets an inline copy to carry them.
         def dup_for_object_keywords(schema, doc)
-          keywords = doc.slice(*OBJECT_KEYWORD_DOC_KEYS)
+          keywords = doc.slice(*OBJECT_KEYWORD_DOC_KEYS).compact
           return schema if keywords.empty? || !schema.canonical_name
 
           dup_cached_schema(schema, reason: "object keywords", value: keywords)
